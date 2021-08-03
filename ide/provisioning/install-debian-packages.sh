@@ -24,6 +24,30 @@ update_pkg() {
   apt-get update
 }
 
+echo Installing dependencies for the Linux target...
+apt-get install ${APTOPTS[*]} make g++ \
+  zlib1g-dev \
+  libfmt-dev \
+  libdbus-1-dev \
+  libsodium-dev \
+  libfreetype6-dev \
+  libpng-dev libjpeg-dev \
+  libtiff5-dev libgeotiff-dev \
+  libssl-dev \
+  libcurl4-openssl-dev \
+  libc-ares-dev \
+  liblua5.4-dev \
+  libxml-parser-perl \
+  libasound2-dev \
+  libsdl2-dev \
+  librsvg2-bin xsltproc \
+  imagemagick gettext \
+  mesa-common-dev libgl1-mesa-dev libegl1-mesa-dev \
+  fonts-dejavu \
+  libnetcdf-c++4-dev \
+  libnetcdf-dev \
+  xz-utils
+echo
 install_base() {
   echo Installing base dependencies...
   apt-get install ${APTOPTS[*]} make \
