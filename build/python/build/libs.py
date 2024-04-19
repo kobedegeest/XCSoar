@@ -474,8 +474,8 @@ libsalsa = AutotoolsProject(
 )
 
 netcdf = AutotoolsProject(
-    'https://storage.googleapis.com/lazyrasp.com/xcsoar/netcdf-c-4.6.2.tar.gz',
-    'https://storage.googleapis.com/lazyrasp.com/xcsoar/netcdf-c-4.6.2.tar.gz',
+    ('https://storage.googleapis.com/lazyrasp.com/xcsoar/netcdf-c-4.6.2.tar.gz',
+    'https://storage.googleapis.com/lazyrasp.com/xcsoar/netcdf-c-4.6.2.tar.gz'),
     'eda1be377fce86e5d91b30a00b15bb7ea9c97f5c5ef007901145549786781710',
     'lib/libnetcdf.a',
     [
@@ -495,8 +495,8 @@ netcdf = AutotoolsProject(
 )
 
 netcdfcxx = AutotoolsProject(
-    'https://storage.googleapis.com/lazyrasp.com/xcsoar/netcdf-cxx-4.2.tar.gz',
-    'https://storage.googleapis.com/lazyrasp.com/xcsoar/netcdf-cxx-4.2.tar.gz',
+    ('https://storage.googleapis.com/lazyrasp.com/xcsoar/netcdf-cxx-4.2.tar.gz',
+    'https://storage.googleapis.com/lazyrasp.com/xcsoar/netcdf-cxx-4.2.tar.gz'),
     '95ed6ab49a0ee001255eac4e44aacb5ca4ea96ba850c08337a3e4c9a0872ccd1',
     'lib/libnetcdf_c++.a',
     [
