@@ -19,6 +19,9 @@ Copyright_License {
 
 #include "CDFDecoder.hpp"
 
+#include "util/AllocatedArray.hxx"
+
+
 #ifdef ANDROID
 #include <netcdfcpp.h>
 #include <geotiffio.h>
