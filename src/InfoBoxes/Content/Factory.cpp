@@ -844,7 +844,7 @@ static constexpr MetaData meta_data[] = {
     N_("Nearest airspace horizontal"),
     N_("Near AS H"),
     N_("The horizontal distance to the nearest airspace."),
-    UpdateInfoBoxNearestAirspaceHorizontal,
+    IBFHelper<InfoBoxNearestAirspaceHorizontal>::Create,
   },
 
   // e_NearestAirspaceVertical
