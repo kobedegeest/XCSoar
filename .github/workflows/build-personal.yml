@@ -1,0 +1,122 @@
+---
+on:
+  workflow_dispatch:
+  push:
+    paths-ignore:
+      - 'cloud/**'
+      - 'doc/**'
+      - 'fuzzer/**'
+      - 'ide/**'
+      - 'kobo/**'
+      - 'python/**'
+      - '.github/workflows/build-container.yml'
+      - '.github/workflows/build-unix.yml'
+      - '.readthedocs.yaml'
+    branches:
+      - master
+      - 'use'
+
+env:
+  DEBUG: n
+  BOOST: boost_1_85_0
+  
+jobs:
+  build-android:
+    runs-on: ubuntu-22.04
+
+    env:
+      TARGET: ANDROIDAARCH64
+      TARGET_BIN: XCSoar-debug
+      TARGET_FINAL: XCSoar-debug
+      TARGET_EXT: apk
+      NDK: r26d
+
+    steps:
+      - name: set vars for push
+        if: github.event_name == 'push'
+        run: |
+          echo "DEBUG=n" >> $GITHUB_ENV
+          echo "TARGET_FINAL=XCSoar" >> $GITHUB_ENV
+
+      - id: checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - id: cache-ccache
+        uses: hendrikmuhs/ccache-action@v1
+        with:
+          key: ${{ env.TARGET }}
+
+      - name: "Cache Boost"
+        uses: actions/cache@v4
+        with:
+          key: ${{ env.BOOST }}-${{ hashFiles('lib/boost/patches/**') }}
+          path: |
+            ${{ github.workspace }}/output/download/${{ env.BOOST }}.tar.bz2
+            ${{ github.workspace }}/output/src/stamp-${{ env.BOOST }}
+            ${{ github.workspace }}/output/src/${{ env.BOOST }}/boost
+
+      - name: "Cache third-party libraries"
+        uses: actions/cache@v4
+        with:
+          key: ${{ runner.os }}-libs-${{ env.TARGET }}-${{ hashFiles('build/**') }}
+          path: |
+            ${{ github.workspace }}/output/ANDROID/*/lib
+            !${{ github.workspace }}/output/ANDROID/*/lib/build
+
+      - name: find githash
+        run: |
+          echo "git_hash=$(git rev-parse --short $GITHUB_SHA)" >> $GITHUB_ENV
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            make \
+            quilt \
+            g++ \
+            librsvg2-bin xsltproc \
+            imagemagick gettext sox \
+            vorbis-tools \
+            cmake ninja-build
+
+      - name: Install Android NDK
+        # We need NDK r26, but the GitHub runner has only r25
+        run: |
+          mkdir -p output/download
+          cd output/download
+          wget --quiet https://dl.google.com/android/repository/android-ndk-${{env.NDK}}-linux.zip
+          unzip -q android-ndk-${{env.NDK}}-linux.zip
+          rm android-ndk-${{env.NDK}}-linux.zip
+          echo ANDROID_NDK_LATEST_HOME=$PWD/android-ndk-${{env.NDK}} >> $GITHUB_ENV
+
+      - name: Compile XCSoar
+        run: |
+          make -j$(nproc) \
+            TARGET=${{env.TARGET}} \
+            ANDROID_NDK=${ANDROID_NDK_LATEST_HOME} \
+            ANDROID_SDK=${ANDROID_HOME} \
+            DEBUG=${{env.DEBUG}} \
+            USE_CCACHE=y \
+            V=2
+
+      - name: upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.TARGET_FINAL }}-${{ env.git_hash }}.${{ env.TARGET_EXT }}
+          path: output/ANDROID/bin/${{ env.TARGET_BIN }}.${{ env.TARGET_EXT }}
+
+      - name: Deploy to Staging server
+        if: |
+          github.repository == 'XCSoar/XCSoar' &&
+          github.ref == 'ref/heads/master' &&
+          github.event == 'push'
+        uses: easingthemes/ssh-deploy@main
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.REPOSITORY_SSH_KEY }}
+          ARGS: "-rltgoDzvO"
+          SOURCE: output/${{ env.TARGET }}/bin/${{ env.TARGET_BIN }}.${{ env.TARGET_EXT }}
+          REMOTE_HOST: ${{ secrets.REPOSITORY_HOST }}
+          REMOTE_USER: ${{ secrets.REPOSITORY_SSH_USER }}
+          TARGET: ${{ secrets.REPOSITORY_REMOTE_PATH }}/testing/${{ env.TARGET }}/
