@@ -14,7 +14,7 @@ on:
       - '.readthedocs.yaml'
     branches:
       - master
-      - 'WIP'
+      - 'skysight'
 
 env:
   DEBUG: n
