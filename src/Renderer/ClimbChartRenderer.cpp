@@ -53,7 +53,7 @@ RenderClimbChart(Canvas &canvas, const PixelRect rc,
   chart.Begin();
 
   if (fs.thermal_average.IsEmpty()) {
-    chart.DrawNoData();
+    chart.DrawNoData(_("No Data\r\nThis graph will show thermal strength using barplot.\r\nDuring flight only last 45 minutes will be shown.\r\nPost flight full flight time data will be plotted."));
     chart.Finish();
     return;
   }
