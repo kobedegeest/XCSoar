@@ -164,7 +164,8 @@ DIALOG_SOURCES += \
 	$(SRC)/Dialogs/Weather/NOAAList.cpp \
 	$(SRC)/Dialogs/Weather/NOAADetails.cpp
     
-ifneq ($(HAVE_WIN32),y)
+ifeq ($(HAVE_HTTP),y)
+# add SkySight on Windows too
 DIALOG_SOURCES += \
 	$(SRC)/Dialogs/Weather/SkysightDialog.cpp
 endif
@@ -634,7 +635,8 @@ XCSOAR_SOURCES += \
 	$(SRC)/Weather/NOAAStore.cpp \
 	$(SRC)/Weather/NOAAUpdater.cpp
 
-ifneq ($(HAVE_WIN32),y)
+ifeq ($(HAVE_HTTP),y)
+# add SkySight on Windows too
 XCSOAR_SOURCES += \
 	$(SRC)/Weather/Skysight/Skysight.cpp \
 	$(SRC)/Weather/Skysight/CDFDecoder.cpp \
