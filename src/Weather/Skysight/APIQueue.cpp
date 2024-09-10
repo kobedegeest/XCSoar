@@ -17,7 +17,29 @@ SkysightAPIQueue::~SkysightAPIQueue() {
   timer.Cancel();
 }
 
-void
+bool 
+SkysightAPIQueue::IsLoggedIn() {
+  uint64_t now = (uint64_t)std::chrono::system_clock::to_time_t(
+      BrokenDateTime::NowUTC().ToTimePoint());
+
+  // Add a 2-minute padding so that token doesn't expire mid-way thru a request
+  return (((int64_t)(key_expiry_time - now)) > (60 * 2));
+}
+
+void 
+SkysightAPIQueue::DoClearingQueue() {
+  for (auto &&i = request_queue.begin(); i < request_queue.end(); /* ++i */) {
+    if ((*i)->GetStatus() != SkysightRequest::Status::Busy) {
+      (*i)->Done();
+      request_queue.erase(i);
+      i = request_queue.begin(); // don't iterate or increment an erased iter
+    }
+  }
+  timer.Cancel();
+  is_clearing = false;
+}
+
+void 
 SkysightAPIQueue::AddRequest(std::unique_ptr<SkysightAsyncRequest> request,
            bool append_end)
 {
@@ -99,21 +121,6 @@ void SkysightAPIQueue::Process()
 }
 
 void
-SkysightAPIQueue::Clear(const tstring msg)
-{
-  LogFormat("SkysightAPIQueue::Clear %s", msg.c_str());
-  is_clearing = true;
-}
-
-void
-SkysightAPIQueue::SetCredentials(const tstring _email,
-         const tstring _pass)
-{
-  password = _pass;
-  email = _email;
-}
-
-void
 SkysightAPIQueue::SetKey(const tstring _key,
        const uint64_t _key_expiry_time)
 {
@@ -121,25 +128,17 @@ SkysightAPIQueue::SetKey(const tstring _key,
   key_expiry_time = _key_expiry_time;
 }
 
-bool
-SkysightAPIQueue::IsLoggedIn()
+void
+SkysightAPIQueue::SetCredentials(const std::string _email,
+         const std::string _pass)
 {
-  uint64_t now = (uint64_t) std::chrono::system_clock::to_time_t(
-    BrokenDateTime::NowUTC().ToTimePoint());
-
-  //Add a 2-minute padding so that token doesn't expire mid-way thru a request
-  return (((int64_t)(key_expiry_time - now)) > (60*2));
+  password = _pass;
+  email = _email;
 }
 
 void
-SkysightAPIQueue::DoClearingQueue()
+SkysightAPIQueue::Clear(const std::string msg)
 {
-  for (auto &&i = request_queue.begin(); i<request_queue.end(); ++i) {
-    if ((*i)->GetStatus() != SkysightRequest::Status::Busy) {
-      (*i)->Done();
-      request_queue.erase(i);
-    }
-  }
-  timer.Cancel();
-  is_clearing = false;
+  LogFormat("SkysightAPIQueue::Clear %s", msg.c_str());
+  is_clearing = true;
 }
