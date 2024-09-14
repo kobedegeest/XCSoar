@@ -3,27 +3,32 @@
 
 #include "Request.hpp"
 #include "APIGlue.hpp"
-#include "SkysightAPI.hpp"
-#include "thread/StandbyThread.hpp"
-#include "system/Path.hpp"
-#include "system/FileUtil.hpp"
-#include "net/http/Init.hpp"
-#include "lib/curl/Request.hxx"
-#include "lib/curl/Handler.hxx"
-#include "io/FileLineReader.hpp"
 #include "LogFile.hpp"
-#include "util/StaticString.hxx"
-#include "lib/curl/Slist.hxx"
+#include "SkysightAPI.hpp"
 #include "Version.hpp"
+#include "io/FileLineReader.hpp"
+#include "lib/curl/Handler.hxx"
+#include "lib/curl/Request.hxx"
+#include "lib/curl/Slist.hxx"
+#include "net/http/Init.hpp"
+#include "system/FileUtil.hpp"
+#include "system/Path.hpp"
+#include "thread/StandbyThread.hpp"
+#include "util/StaticString.hxx"
 
-#define SKYSIGHT_REQUEST_LOG
-// #define SKYSIGHT_HTTP_LOG
+#if defined(SKYSIGHT_FILE_DEBUG)
+# include <chrono>
+# include <filesystem>
+# include <iomanip> // for put_time
+# include <regex>
+# include <fmt/format.h>
+#endif
 
 void
 SkysightRequest::FileHandler::OnData(std::span<const std::byte> data)
 {
   size_t written = fwrite(data.data(), 1, data.size(), file);
-  if (written != (size_t)data.size())
+  if (written != data.size())
     throw SkysightRequestError();
 
   received += data.size();
@@ -102,7 +107,7 @@ SkysightRequest::BufferHandler::OnError(std::exception_ptr e) noexcept {
 void
 SkysightRequest::BufferHandler::Wait() {
   std::unique_lock<Mutex> lock(mutex);
-  cond.wait(lock, [this]{ return done; });
+  cond.wait(lock, [this] { return done; });
 
   if (error)
     std::rethrow_exception(error);
@@ -281,6 +286,26 @@ SkysightRequest::RequestToFile()
       return false;
     }
     std::rename(temp_path.c_str(), args.path.c_str());
+#if defined(SKYSIGHT_FILE_DEBUG)
+    std::stringstream filename;
+
+    auto tp = std::chrono::system_clock::now();
+    auto tx = std::chrono::system_clock::to_time_t(tp);
+    auto ts = std::put_time(std::localtime(&tx), "%Y%m%d_%H%M%S");
+
+    std::string name = temp_path.GetBase().c_str();
+    name = std::regex_replace(name, std::regex("\""), "");
+
+    filename << "skysight/" << ts << '-'
+             << name
+             << ".tmp";
+    AllocatedPath debug_path = LocalPath(filename.str().c_str());
+    if (std::filesystem::exists(debug_path.c_str())) {
+      LogFormat("file %s exists!", debug_path.c_str());
+    } else {
+      std::filesystem::copy_file(args.path.c_str(), debug_path.c_str());
+    }
+#endif
   }
 
   return success;
@@ -289,11 +314,12 @@ SkysightRequest::RequestToFile()
 bool
 SkysightRequest::RequestToBuffer(tstring &response)
 {
+  bool success = false;
+  if (args.url.empty())
+  {
 #ifdef SKYSIGHT_REQUEST_LOG
   LogFormat("Connecting to %s for %s with key:%s user-agent:%s", args.url.c_str(), args.path.c_str(), key.c_str(), XCSoar_ProductToken);
 #endif
-
-  bool success = true;
 
   char buffer[10240];
   BufferHandler handler(buffer, sizeof(buffer));
@@ -331,5 +357,65 @@ SkysightRequest::RequestToBuffer(tstring &response)
 
   response = tstring(buffer,
          buffer + handler.GetReceived() / sizeof(buffer[0]));
+    request.GetEasy().SetRequestHeaders(request_headers.Get());
+    request.GetEasy().SetVerifyPeer(false);
+
+    try
+    {
+      request.StartIndirect();
+      handler.Wait();
+      success = true;
+    }
+    catch (const std::exception &exc)
+    {
+      success = false;
+    }
+
+    response = std::string(buffer,
+                           buffer + handler.GetReceived() / sizeof(buffer[0]));
+#if defined(SKYSIGHT_FILE_DEBUG)
+    std::stringstream filename;
+    std::stringstream s;
+    auto time = BrokenDateTime::NowLocal();
+    filename.fill('0');
+    filename.precision(2);
+
+    auto tp = std::chrono::system_clock::now();
+    auto tx = std::chrono::system_clock::to_time_t(tp);
+    auto ts = std::put_time(std::localtime(&tx), "%Y%m%d_%H%M%S");
+
+    std::string name = AllocatedPath(args.path.c_str()).GetBase().c_str();
+
+    filename << "skysight/" << ts << ' ' << name << ".txt";
+
+    AllocatedPath debug_path = LocalPath(filename.str().c_str());
+
+    s << "url:      " << args.url << std::endl;
+    s << "path:     " << args.path << std::endl;
+    s << "key:      " << key << std::endl;
+    s << "token:    " << XCSoar_ProductToken << std::endl;
+    s << "calldate: " << ts << " - "
+      << std::chrono::duration_cast<std::chrono::seconds>(
+             tp.time_since_epoch())
+             .count()
+      << std::endl;
+    if (args.url.find("from_time") != std::string::npos)
+    {
+      std::string from_time = args.url.substr(args.url.length() - 10);
+      BrokenDateTime from =
+          BrokenDateTime::FromUnixTimeUTC(std::stoi(from_time));
+      s << "from:     "
+        << std::put_time(std::localtime(&tx /*from_time*/), "%Y%m%d_%H%M%S")
+        << std::endl;
+    }
+    s << "==================================== " << std::endl;
+    s << response;
+
+    auto file = fopen(debug_path.c_str(), "wb");
+    fwrite(s.str().c_str(), 1, s.str().length(), file);
+    fclose(file);
+#endif
+  }
+
   return success;
 }

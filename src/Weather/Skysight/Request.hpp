@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright The XCSoar Project
 
-#ifndef WEATHER_SKYSIGHTREQUEST_HPP
-#define WEATHER_SKYSIGHTREQUEST_HPP
+#pragma once
+
+#define SKYSIGHT_REQUEST_LOG
+// #define SKYSIGHT_HTTP_LOG
+#define SKYSIGHT_FILE_DEBUG
 
 #include "APIGlue.hpp"
 #include "thread/StandbyThread.hpp"
@@ -109,5 +112,3 @@ protected:
   Status status;
   void Tick() noexcept override;
 };
-
-#endif
