@@ -7,14 +7,12 @@
 #if defined(WIN_SKYSIGHT) || !defined(_WIN32)
 
 #ifdef ANDROID
-#include <netcdfcpp.h>
+# include <netcdfcpp.h>
+#else
+# include <netcdf>
+#endif
 #include <geotiffio.h>
 #include <xtiffio.h>
-#else
-#include <netcdf>
-#include <geotiff/geotiffio.h>
-#include <geotiff/xtiffio.h>
-#endif
 
 #include "SkysightAPI.hpp"
 #include "system/FileUtil.hpp"
