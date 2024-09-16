@@ -355,7 +355,7 @@ Skysight::GetActiveMetricState(tstring metric_name, SkysightActiveMetric &m)
 std::vector<SkysightImageFile>
 Skysight::ScanFolder(tstring search_string = "*.tif")
 {
-  //start by checking for output files
+  // start by checking for output files
   std::vector<SkysightImageFile> file_list;
 
   struct SkysightFileVisitor: public File::Visitor {
@@ -364,7 +364,7 @@ Skysight::ScanFolder(tstring search_string = "*.tif")
       file_list(_file_list) {}
 
     void Visit(Path path, Path filename) override {
-      //is this a tif filename
+      // is this a tif filename
       if (filename.EndsWithIgnoreCase(".tif")) {
         SkysightImageFile img_file = SkysightImageFile(filename, path);
         if (img_file.is_valid)
@@ -409,18 +409,18 @@ void
 Skysight::Render(bool force_update)
 {
   if (displayed_metric.metric) {
-    //set by dl callback
+    // set by dl callback
     if (update_flag) {
-      //TODO: use const char in metric rather than string/cstr
+      // TODO: use const char in metric rather than string/cstr
       DisplayActiveMetric(displayed_metric.metric->id.c_str());
     }
 
-    //Request next images
+    // Request next images
     BrokenDateTime now = Skysight::GetNow(force_update);
     if (force_update || !displayed_metric.forecast_time.IsPlausible() ||
        (!update_flag && displayed_metric < GetForecastTime(now))) {
       force_update = false;
-      //TODO: use const char in metric rather than string/cstr
+      // TODO: use const char in metric rather than string/cstr
       api->GetImageAt(displayed_metric.metric->id.c_str(), now, now + std::chrono::seconds(60*60),
          DownloadComplete);
     }
@@ -542,9 +542,9 @@ Skysight::DisplayActiveMetric(const TCHAR *const id)
   BrokenDateTime bdt;
   int max_offset = (60*60);
 
-  //TODO: We're only searching w a max offset of 1 hr, simplify this!
+  // TODO: We're only searching w a max offset of 1 hr, simplify this!
   while (!found) {
-    //look back for closest forecast first, then look forward
+    // look back for closest forecast first, then look forward
     for (int j=0; j <= 1; ++j) {
       test_time = n + ( offset * ((2*j)-1) );
 
