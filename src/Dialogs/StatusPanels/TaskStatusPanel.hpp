@@ -15,7 +15,6 @@ enum Controls {
   RemainingDistance,
   EstimatedSpeed,
   AverageSpeed,
-
   MC,
   RANGE,
   SPEED_REMAINING,
