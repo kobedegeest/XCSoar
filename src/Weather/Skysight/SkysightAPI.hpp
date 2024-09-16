@@ -17,6 +17,10 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 
+#ifdef __MSVC__
+// #define USE_STD_FORMAT
+#endif
+#define SKYSIGHT_DEBUG 1
 //maintain two-hour local data cache
 #define SKYSIGHTAPI_LOCAL_CACHE 7200 
 
