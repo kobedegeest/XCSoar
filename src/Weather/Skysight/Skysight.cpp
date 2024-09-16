@@ -28,19 +28,16 @@
 #include <vector>
 #include <memory>
 #include <ctime>
-
-// #if defined(_DEBUG) && defined(WIN_SKYSIGHT)
-#define SKYSIGHT_DEBUG  1
 #include <chrono>
+
 #if defined(SKYSIGHT_DEBUG)
 # include <filesystem>
 # include <regex>
 # include <iomanip>  // put_time
 # include <thread>
 # include <fmt/format.h>
-# ifdef __MSVC__
+# ifdef USE_STD_FORMAT
 #   include <format>
-#   define USE_STD_FORMAT 1
 # endif
 #endif
 
@@ -319,6 +316,12 @@ Skysight::Skysight(CurlGlobal &_curl)
 void
 Skysight::Init()
 {
+  if (api) {
+    delete api;
+    api = nullptr;
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  }
+
   const auto settings = CommonInterface::GetComputerSettings().weather.skysight;
   region = settings.region.c_str();
   email = settings.email.c_str();
