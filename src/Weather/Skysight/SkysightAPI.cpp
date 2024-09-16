@@ -27,6 +27,9 @@
 
 #include "Operation/Operation.hpp"
 
+#ifdef USE_STD_FORMAT
+# include <format>
+#endif // USE_STD_FORMAT
 SkysightAPI *SkysightAPI::self;
 
 SkysightAPI::~SkysightAPI() {
