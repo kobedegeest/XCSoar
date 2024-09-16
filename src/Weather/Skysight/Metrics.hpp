@@ -26,6 +26,11 @@ public:
   SkysightMetric(const SkysightMetric &m):
     id(m.id), name(m.name), desc(m.desc), last_update(m.last_update),
     legend(m.legend) {}
+  bool operator==(tstring _id) {
+    if (_id.empty()) return false;
+
+    return (id == _id);
+  };
 };
 
 /*
@@ -45,6 +50,14 @@ public:
   SkysightActiveMetric(const SkysightActiveMetric &m):
     metric(m.metric), from(m.from), to(m.to), mtime(m.mtime),
     updating(m.updating) {}
+  bool operator==(const TCHAR *const id)
+  {
+    if (!this || !metric || !id)
+      return false;
+
+    return (*metric == id);
+  };
+
 };
 
 struct DisplayedMetric {
@@ -62,7 +75,7 @@ struct DisplayedMetric {
     if (!metric || !id)
       return false;
 
-    return (metric->id.compare(id) == 0);
+    return (*metric == id);
   };
 
   bool operator < (const BrokenDateTime &t) {
