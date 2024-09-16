@@ -144,10 +144,10 @@ SkysightAPI::GetPath(SkysightCallType type, const char *const layer,
     break;
   case SkysightCallType::DataDetails:
     fc = FromUnixTime(fctime);
-    filename.Format("%s-datafiles-%s-%04d%02d%02d%02d%02d.json",
-        region.c_str(), layer, fc.year, fc.month, fc.day,
-        fc.hour, fc.minute);
-      break;
+    filename.Format("%s-datafiles-%s-%02d-%02d%02d.json",
+                    region.c_str(), layer,
+                    fc.day, fc.hour, fc.minute);
+    break;
   case SkysightCallType::Data:
     fc = FromUnixTime(fctime);
     filename.Format("%s-%s-%04d%02d%02d%02d%02d.nc", region.c_str(), layer, 
