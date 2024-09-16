@@ -21,6 +21,7 @@ TaskStatusPanel::OnModified(DataField &df) noexcept
     auto mc = Units::ToSysVSpeed(dff.GetValue());
     ActionInterface::SetManualMacCready(mc);
     Refresh();
+    Refresh();
   }
 }
 
