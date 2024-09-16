@@ -7,6 +7,22 @@
 #include "Form/DataField/Listener.hpp"
 
 class TaskStatusPanel : public StatusPanel, DataFieldListener {
+enum Controls {
+  TaskTime,
+  ETETime,
+  RemainingTime,
+  TaskDistance,
+  RemainingDistance,
+  EstimatedSpeed,
+  AverageSpeed,
+
+  MC,
+  RANGE,
+  SPEED_REMAINING,
+  EFFECTIVE_MC,
+  SPEED_ACHIEVED,
+  CRUISE_EFFICIENCY,
+};
 public:
   explicit TaskStatusPanel(const DialogLook &look) noexcept
     :StatusPanel(look) {}

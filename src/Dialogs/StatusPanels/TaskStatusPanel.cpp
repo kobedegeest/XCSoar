@@ -12,22 +12,6 @@
 #include "Components.hpp"
 #include "BackendComponents.hpp"
 
-enum Controls {
-  TaskTime,
-  ETETime,
-  RemainingTime,
-  TaskDistance,
-  RemainingDistance,
-  EstimatedSpeed,
-  AverageSpeed,
-
-  MC,
-  RANGE,
-  SPEED_REMAINING,
-  EFFECTIVE_MC,
-  SPEED_ACHIEVED,
-  CRUISE_EFFICIENCY,
-};
 
 void
 TaskStatusPanel::OnModified(DataField &df) noexcept
