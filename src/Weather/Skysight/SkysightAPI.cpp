@@ -84,8 +84,8 @@ SkysightAPI::GetMetric(const TCHAR *const id)
 bool SkysightAPI::MetricExists(const tstring id) {
 
   std::vector<SkysightMetric>::iterator i;
-  for(i = metrics.begin(); i<metrics.end();++i)
-    if(!i->id.compare(id)) {
+  for (i = metrics.begin(); i < metrics.end(); ++i)
+    if (!i->id.compare(id)) {
       return true;
     }
   return false;
@@ -160,12 +160,11 @@ SkysightAPI::GetPath(SkysightCallType type, const char *const layer,
           std::chrono::system_clock::from_time_t(fctime);
 #ifdef USE_STD_FORMAT
       filename.Format(
-          //"%s-%s-%s_%02d-%02d%02d.nc", region.c_str(), layer,
-          "%s-%s-%s_%s.nc", region.c_str(), layer,
-          std::format("{:%d-%H%M}", floor<std::chrono::minutes>(update_time))
-              .c_str(),
-          std::format("{:%d-%H%M}", floor<std::chrono::minutes>(prop_time))
-              .c_str());
+        "%s-%s-%s_%s.nc", region.c_str(), layer,
+        std::format("{:%d-%H%M}", 
+          floor<std::chrono::minutes>(update_time)).c_str(),
+        std::format("{:%d-%H%M}",
+          floor<std::chrono::minutes>(prop_time)).c_str());
 #else  // USE_STD_FORMAT
           std::stringstream s;
           auto tx1 = std::chrono::system_clock::to_time_t(update_time);
@@ -219,6 +218,9 @@ SkysightAPI::SkysightAPI(tstring email, tstring password, tstring _region,
 
   GetData(SkysightCallType::Regions, cb);
 
+  if (timer.IsActive()) {
+    timer.Cancel();
+  }
   // Check for maintenance actions every 15 mins
   timer.Schedule(std::chrono::milliseconds(900000));
 }
@@ -507,19 +509,17 @@ SkysightAPI::GetData(SkysightCallType t, const TCHAR *const layer,
   // const
   auto path = GetPath(t,  layer,  from);
 
-//  bool to_file = !(t == SkysightCallType::DataDetails ||
-//		   t == SkysightCallType::Login ||
-//		   t == SkysightCallType::LastUpdates);
-  if (t == SkysightCallType::DataDetails || t == SkysightCallType::Login ||
-      t == SkysightCallType::LastUpdates)
-    if (!path.empty())
-      LogString(path.c_str());
-    // path..clear() = "";
+#if SKYSIGHT_DEBUG  // log the path in opensoar.log
+  if ((t == SkysightCallType::DataDetails ||
+      t == SkysightCallType::Login ||
+      t == SkysightCallType::LastUpdates) &&
+      !path.empty())
+    LogString(path.c_str());
+#endif
 
   SkysightRequestArgs ra(
     url.c_str(),
     path.c_str(),
-    // to_file,
     t,
     region.c_str(),
     layer ? layer : "",
@@ -549,8 +549,7 @@ SkysightAPI::CacheAvailable(Path path, SkysightCallType calltype,
 {
   time_t layer_updated = 0;
   if (layer) {
-    SkysightMetric *m = GetMetric(layer);
-    layer_updated = m->last_update;
+    layer_updated = GetMetric(layer)->last_update;
   }
 
   if (File::Exists(path)) {
@@ -566,8 +565,7 @@ SkysightAPI::CacheAvailable(Path path, SkysightCallType calltype,
       break;
     case SkysightCallType::Image:
       if (!layer)
-	return false;
-
+	      return false;
       return (layer_updated <= (time_t)std::chrono::system_clock::to_time_t(File::GetLastModification(path)));
       break;
     case SkysightCallType::DataDetails:
@@ -590,7 +588,6 @@ SkysightAPI::GetResult(const SkysightRequestArgs &args, const tstring result,
           boost::property_tree::ptree &output)
 {
   try {
-//    if (args.to_file) {
     if (!args.path.empty()) {
       boost::property_tree::read_json(result.c_str(), output);
     } else {
@@ -602,6 +599,31 @@ SkysightAPI::GetResult(const SkysightRequestArgs &args, const tstring result,
   }
   return true;
 }
+
+#if 0 // TODO(August2111): Variant 1!
+// SkysightAPI::GetImageAt(1) with metric(!), start_time, max_time, update_time and callback
+bool
+SkysightAPI::GetImageAt(SkysightMetric &metric,
+                        BrokenDateTime fctime,
+                        BrokenDateTime maxtime, uint64_t update_time,
+                        SkysightCallback cb)
+{
+  // round time to nearest 30-min forecast slot
+  constexpr uint64_t forecast_diff = 60 * 30; // 30 min in sec
+  fctime.second = 0;
+  //  fctime = fctime + std::chrono::seconds(forecast_diff);
+  if ((fctime.minute >= 15) && (fctime.minute < 45))
+  {
+    fctime.minute = 00;
+    fctime = fctime + std::chrono::hours(1); //  seconds(60 * 60);
+  }
+  else if (fctime.minute >= 45)
+  {
+    return false;
+  }
+  return true;
+}
+#endif
 
 bool
 SkysightAPI::GetImageAt(const TCHAR *const layer, BrokenDateTime fctime,
@@ -674,9 +696,10 @@ SkysightAPI::OnTimer()
   if (File::Exists(p) && (std::chrono::system_clock::to_time_t(File::GetLastModification(p) + std::chrono::hours(24)) < now))
     GetData(SkysightCallType::Layers, nullptr, true);
 
-  //refresh last update times if > 5h (update freq is usually 5 hours)
-  for (auto &m: metrics) {
-    if ((m.last_update + 18000) < now) {
+    // refresh last update times if > 5h (update freq is usually 5 hours)
+  for (auto &m : metrics) {
+    // if ((m.last_update + (5 * 60 * 60)) < (uint64_t)now) {  // = 5h
+    if ((m.last_update + (30 * 60 - 5)) < (uint64_t)now) {  // = 30min!
       GetData(SkysightCallType::LastUpdates);
       break;
     }
