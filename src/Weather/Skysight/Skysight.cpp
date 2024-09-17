@@ -501,8 +501,13 @@ Skysight::DownloadActiveMetric(tstring id = "*")
   if (id == "*") {
     for (auto &i: active_metrics) {
       SetActveMetricUpdateState(i.metric->id, true);
-      api->GetImageAt(i.metric->id.c_str(), now, now + std::chrono::seconds(60*60*24),
-         DownloadComplete);
+#if SKYSIGHT_DEBUG
+      // reduce download request for debug!
+      api->GetImageAt(i.metric->id.c_str(), now, now + std::chrono::hours(3),
+#else // WIN_SKYSIGHT
+      api->GetImageAt(i.metric->id.c_str(), now, now + std::chrono::hours(24),
+#endif
+             DownloadComplete);
     }
   } else {
     SetActveMetricUpdateState(id, true);
