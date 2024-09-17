@@ -7,7 +7,7 @@
 #include "Request.hpp"
 #include "APIGlue.hpp"
 #include "APIQueue.hpp"
-#include "Metrics.hpp"
+#include "Layers.hpp"
 #include "util/tstring.hpp"
 #include <memory>
 #include <map>
@@ -37,18 +37,18 @@ class SkysightAPI final {
 public:
   tstring region;
   std::map<tstring, tstring> regions;
-  std::vector<SkysightMetric> metrics;
+  std::vector<SkysightLayer> layers;
 
   SkysightAPI(tstring email, tstring password, tstring _region,
         SkysightCallback cb);
   ~SkysightAPI();
   
   bool IsInited();
-  SkysightMetric GetMetric(int index);
-  SkysightMetric GetMetric(const tstring id);
-  SkysightMetric *GetMetric(const TCHAR *const id);
-  bool MetricExists(const tstring id);
-  int NumMetrics();
+  SkysightLayer GetLayer(int index);
+  SkysightLayer GetLayer(const tstring id);
+  SkysightLayer *GetLayer(const TCHAR *const id);
+  bool LayerExists(const tstring id);
+  int NumLayers();
 
   bool GetImageAt(const TCHAR *const layer, BrokenDateTime fctime,
       BrokenDateTime maxtime, SkysightCallback cb = nullptr);

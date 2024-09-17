@@ -5,10 +5,11 @@
 
 #include "APIGlue.hpp"
 #include "thread/StandbyThread.hpp"
+#include "Layers.hpp"
 #include "util/tstring.hpp"
-#include <map>
-#include "Metrics.hpp"
 #include "system/Path.hpp"
+
+#include <map>
 
 class CDFDecoder final : public StandbyThread {
 public:

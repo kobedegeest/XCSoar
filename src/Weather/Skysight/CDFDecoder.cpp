@@ -8,6 +8,10 @@
 
 #ifdef ANDROID
 # include <netcdfcpp.h>
+#define NETCDF_CPP
+#elif defined(_WIN32) && !defined(CMAKE_PROJECT) // && !defined(__MSVC__)
+ # include <netcdfcpp.h>
+ #define NETCDF_CPP
 #else
 # include <netcdf>
 #endif
@@ -44,7 +48,17 @@ CDFDecoder::Status CDFDecoder::GetStatus()
   return s;
 }
 
-void CDFDecoder::Tick() noexcept
+void
+CDFDecoder::MakeCallback(bool result)
+{
+  if (callback) {
+    SkysightAPI::MakeCallback(callback, output_path.c_str(), result,
+                              data_varname.c_str(), time_index);
+  }
+}
+
+void
+CDFDecoder::Tick() noexcept
 {
   status = Status::Busy;
   mutex.unlock();
@@ -76,9 +90,10 @@ bool CDFDecoder::DecodeSuccess()
   return true;
 }
 
-bool CDFDecoder::Decode()
-{
-#ifdef ANDROID
+bool CDFDecoder::Decode() {
+
+//  #ifdef ANDROID
+#ifdef NETCDF_CPP
   NcFile data_file(path.c_str(), NcFile::FileMode::ReadOnly);
   if (!data_file.is_valid())
     return DecodeError();
@@ -98,7 +113,8 @@ bool CDFDecoder::Decode()
   AllocatedArray<double>lon_vals(lon_size);
   AllocatedArray<double>var_vals(lat_size * lon_size);
 
-#ifdef ANDROID
+  //  #ifdef ANDROID
+#ifdef NETCDF_CPP
   data_file.get_var("lat")->get(&lat_vals[0], lat_size);
   data_file.get_var("lon")->get(&lon_vals[0], lon_size);
 #else
@@ -113,7 +129,8 @@ bool CDFDecoder::Decode()
   double lon_scale = (lon_max - lon_min) / lon_size;
   double lat_scale = (lat_max - lat_min) / lat_size;
 
-#ifdef ANDROID
+  //  #ifdef ANDROID
+#ifdef NETCDF_CPP
   NcVar *data_var = data_file.get_var(data_varname.c_str());
   if (!data_var->is_valid())
     return DecodeError();
@@ -228,11 +245,4 @@ bool CDFDecoder::Decode()
   return false;
 }
 
-void CDFDecoder::MakeCallback(bool result)
-{
-  if (callback) {
-    SkysightAPI::MakeCallback(callback, output_path.c_str(), result,
-            data_varname.c_str(), time_index);
-  }
-}
 #endif  // defined(WIN_SKYSIGHT) || !defined(_WIN32)

@@ -13,7 +13,7 @@ struct LegendColor {
   unsigned char Blue;
 };
 
-struct SkysightMetric {
+struct SkysightLayer {
   const tstring id;
   const tstring name;
   const tstring desc;
@@ -21,9 +21,9 @@ struct SkysightMetric {
   std::map<float, LegendColor> legend;
 
 public:
-  SkysightMetric(tstring _id, tstring _name, tstring _desc):
+  SkysightLayer(tstring _id, tstring _name, tstring _desc):
     id(_id), name(_name), desc(_desc) {}
-  SkysightMetric(const SkysightMetric &m):
+  SkysightLayer(const SkysightLayer m):
     id(m.id), name(m.name), desc(m.desc), last_update(m.last_update),
     legend(m.legend) {}
   bool operator==(tstring _id) {
@@ -36,46 +36,46 @@ public:
 /*
  * Skysight chart which is overlaid
  */
-struct SkysightActiveMetric {
-  SkysightMetric *metric;
+struct SkysightActiveLayer {
+  SkysightLayer *layer;
   double from = 0;
   double to = 0;
   double mtime = 0;
   bool updating = false;
 
 public:
-  SkysightActiveMetric(SkysightMetric *_metric, uint64_t _from,
-           uint64_t _to, uint64_t _mtime): 
-    metric(_metric), from(_from), to(_to), mtime(_mtime) {}
-  SkysightActiveMetric(const SkysightActiveMetric &m):
-    metric(m.metric), from(m.from), to(m.to), mtime(m.mtime),
+  SkysightActiveLayer(SkysightLayer *_layer, uint64_t _from,
+		       uint64_t _to, uint64_t _mtime): 
+    layer(_layer), from(_from), to(_to), mtime(_mtime) {}
+  SkysightActiveLayer(const SkysightActiveLayer &m):
+    layer(m.layer), from(m.from), to(m.to), mtime(m.mtime),
     updating(m.updating) {}
   bool operator==(const TCHAR *const id)
   {
-    if (!this || !metric || !id)
+    if (!this || !layer || !id)
       return false;
 
-    return (*metric == id);
+    return (*layer == id);
   };
 
 };
 
-struct DisplayedMetric {
-  SkysightMetric *metric;
+struct DisplayedLayer {
+  SkysightLayer *layer;
   BrokenDateTime forecast_time;
 
-  DisplayedMetric() { metric = nullptr; };
+  DisplayedLayer() { layer = nullptr; };
 
-  DisplayedMetric(SkysightMetric *_metric, BrokenDateTime _forecast_time)
-      : metric(_metric), forecast_time(_forecast_time){};
+  DisplayedLayer(SkysightLayer *_layer, BrokenDateTime _forecast_time)
+      : layer(_layer), forecast_time(_forecast_time){};
 
-  void clear() { metric = nullptr; }
+  void clear() { layer = nullptr; }
 
   bool operator == (const TCHAR *const id) {
-    if (!metric || !id)
+    if (!layer || !id)
       return false;
 
-    return (*metric == id);
+    return (*layer == id);
   };
 
   bool operator < (const BrokenDateTime &t) {

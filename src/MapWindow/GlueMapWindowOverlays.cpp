@@ -346,7 +346,7 @@ GlueMapWindow::DrawMapScale(Canvas &canvas, const PixelRect &rc,
       buffer += gettext(label);
     }
   } else if (skysight) {
-    buffer += "SkySight:Metric";
+    buffer += "SkySight: Layer";
   }
 
   if (!buffer.empty()) {
