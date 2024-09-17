@@ -298,7 +298,7 @@ Skysight::LoadActiveMetrics()
 }
 
 bool
-Skysight::IsReady(__attribute__((unused)) bool force_update)
+Skysight::IsReady([[maybe_unused]] bool force_update)
 {
   if (email.empty() || password.empty() || region.empty())
     return false;
@@ -332,8 +332,8 @@ Skysight::Init()
 }
 
 void
-Skysight::APIInited(__attribute__((unused)) const tstring details, __attribute__((unused)) const bool success,
-            __attribute__((unused)) const tstring layer_id, __attribute__((unused)) const uint64_t time_index)
+Skysight::APIInited([[maybe_unused]] const tstring details, [[maybe_unused]] const bool success,
+            [[maybe_unused]] const tstring layer_id, [[maybe_unused]] const uint64_t time_index)
 {
   if (!self)
     return;
@@ -481,8 +481,8 @@ Skysight::SetDisplayedMetric(const TCHAR *const id,
 }
 
 void
-Skysight::DownloadComplete(__attribute__((unused)) const tstring details, const bool success,
-                const tstring layer_id, __attribute__((unused)) const uint64_t time_index)
+Skysight::DownloadComplete([[maybe_unused]] const tstring details, const bool success,
+                const tstring layer_id, [[maybe_unused]] const uint64_t time_index)
 {
   if (!self)
     return;
@@ -513,7 +513,7 @@ Skysight::DownloadActiveMetric(tstring id = "*")
 
 void
 Skysight::OnCalculatedUpdate(const MoreData &basic,
-           __attribute__((unused)) const DerivedInfo &calculated)
+           [[maybe_unused]] const DerivedInfo &calculated)
 {
   // maintain current time -- for use in replays etc.
   // Cannot be accessed directly from chid threads
