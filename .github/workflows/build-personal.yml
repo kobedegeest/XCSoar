@@ -6,7 +6,6 @@ on:
       - 'cloud/**'
       - 'doc/**'
       - 'fuzzer/**'
-      - 'ide/**'
       - 'kobo/**'
       - 'python/**'
       - '.github/workflows/build-container.yml'
