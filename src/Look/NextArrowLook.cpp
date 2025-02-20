@@ -5,6 +5,7 @@
 #include "Screen/Layout.hpp"
 #include "Asset.hpp"
 #include "Look/Colors.hpp"
+#include "ui/canvas/Color.hpp"
 
 void
 NextArrowLook::Initialise(const Font &_font, bool use_colors, bool inverse)
