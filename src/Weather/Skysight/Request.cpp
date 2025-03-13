@@ -22,6 +22,7 @@
 # include <filesystem>
 # include <fstream>
 # include <regex>
+# include <string_view>
 # ifdef USE_STD_FORMAT
 #   include <format>
 # else
@@ -133,13 +134,13 @@ SkysightRequest::GetType()
 }
 
 void
-SkysightRequest::SetCredentials(const char *_key, const char *_username,
-                                const char *_password)
+SkysightRequest::SetCredentials(const std::string_view _key, const std::string_view _username,
+                                const std::string_view _password)
 {
   key = _key;
-  if(_username != nullptr)
+  if(!_username.empty())
     username = _username;
-  if(_password)
+  if(!_password.empty())
     password = _password;
 }
 
@@ -152,9 +153,9 @@ SkysightAsyncRequest::GetType()
 }
 
 void
-SkysightAsyncRequest::SetCredentials(const char *_key,
-				     const char *_username,
-				     const char *_password)
+SkysightAsyncRequest::SetCredentials(const std::string_view _key,
+				     const std::string_view _username,
+				     const std::string_view _password)
 {
   std::lock_guard<Mutex> lock(mutex);
   SkysightRequest::SetCredentials(_key, _username, _password);
@@ -262,8 +263,8 @@ SkysightRequest::RequestToFile()
       if (username.length() && password.length()) {
         request_headers.AppendFormat("%s: %s", "Content-Type", "application/json");
         StaticString<1024> creds;
-        creds.Format("{\"username\":\"%s\",\"password\":\"%s\"}", username.c_str(),
-          password.c_str());
+        creds.Format("{\"username\":\"%s\",\"password\":\"%s\"}", username.data(),
+          password.data());
         pBody = creds.c_str();
         request.GetEasy().SetRequestBody(pBody.c_str(), pBody.length());
         request.GetEasy().SetFailOnError(false);
@@ -336,7 +337,7 @@ SkysightRequest::RequestToBuffer(std::string &response)
     CurlRequest request(*Net::curl, args.url.c_str(), handler);
     CurlSlist request_headers;
 
-    request_headers.AppendFormat("%s: %s", "X-API-Key", key.c_str());
+    request_headers.AppendFormat("%s: %s", "X-API-Key", key.data());
     request_headers.AppendFormat("%s: %s", "User-Agent",
                                  OpenSoar_ProductToken);
 
@@ -347,7 +348,7 @@ SkysightRequest::RequestToBuffer(std::string &response)
                                    "application/json");
       StaticString<1024> creds;
       creds.Format("{\"username\":\"%s\",\"password\":\"%s\"}",
-                   username.c_str(), password.c_str());
+                   username.data(), password.data());
       pBody = creds.c_str();
       request.GetEasy().SetRequestBody(pBody.c_str(), pBody.length());
       request.GetEasy().SetFailOnError(false);
