@@ -57,6 +57,13 @@ ShowWeatherDialog(const TCHAR *page)
 
   /* setup tabs */
 
+#ifdef HAVE_SKYSIGHT
+  if (page != nullptr && StringIsEqual(page, "Skysight"))
+    start_page = widget.GetSize();
+
+  widget.AddTab(CreateSkysightWidget(), "SkySight");
+#endif
+
 #ifdef HAVE_NOAA
   if (page != nullptr && StringIsEqual(page, _T("list")))
     start_page = widget.GetSize();
@@ -68,13 +75,6 @@ ShowWeatherDialog(const TCHAR *page)
     start_page = widget.GetSize();
 
   widget.AddTab(CreateRaspWidget(), _T("RASP"));
-
-#ifdef HAVE_SKYSIGHT
-  if (page != nullptr && StringIsEqual(page, "Skysight"))
-    start_page = widget.GetSize();
-
-  widget.AddTab(CreateSkysightWidget(), "Skysight");
-#endif
 
 #ifdef HAVE_PCMET
   if (page != nullptr && StringIsEqual(page, _T("pc_met")))
