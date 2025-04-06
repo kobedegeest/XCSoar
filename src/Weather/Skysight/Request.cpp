@@ -44,7 +44,7 @@ void
 SkysightRequest::FileHandler::OnHeaders([[maybe_unused]] unsigned status,
     [[maybe_unused]]  Curl::Headers &&headers) {
 #ifdef SKYSIGHT_HTTP_LOG
-  LogFormat("FileHandler::OnHeaders %d", status);
+  LogFmt("FileHandler::OnHeaders {}", status);
 #endif
 }
 
@@ -90,7 +90,7 @@ void
 SkysightRequest::BufferHandler::OnHeaders([[maybe_unused]] unsigned status,
     [[maybe_unused]]  Curl::Headers &&headers) {
 #ifdef SKYSIGHT_HTTP_LOG
-  LogFormat("BufferHandler::OnHeaders %d", status);
+  LogFmt("BufferHandler::OnHeaders {}", status);
 #endif
 }
 
@@ -317,8 +317,9 @@ SkysightRequest::RequestToFile()
     filename << "skysight/" << name << '-' << 
       DateTime::str_now("%Y%m%d_%H%M%S") << ".tmp";
     AllocatedPath debug_path = LocalPath(filename.str());
-    if (std::filesystem::exists(debug_path.c_str())) {
-      LogFormat("file %s exists!", debug_path.c_str());
+
+    if (File::Exists(debug_path)) {
+      LogFmt("file {} exists!", debug_path.c_str());
     } else {
       std::filesystem::copy_file(args.path.c_str(), debug_path.c_str());
     }
