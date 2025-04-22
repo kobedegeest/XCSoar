@@ -45,7 +45,7 @@ SkysightAPI::GetMetric(int index)
 }
 
 SkysightMetric *
-SkysightAPI::GetMetric(const TCHAR *const id)
+SkysightAPI::GetMetric(const tstring id)
 {
   std::vector<SkysightMetric>::iterator i;
   for (i = metrics.begin(); i < metrics.end(); ++i)
