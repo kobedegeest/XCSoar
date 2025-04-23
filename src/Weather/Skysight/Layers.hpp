@@ -23,7 +23,7 @@ struct SkysightLayer {
 public:
   SkysightLayer(tstring _id, tstring _name, tstring _desc):
     id(_id), name(_name), desc(_desc) {}
-  SkysightLayer(const SkysightLayer m):
+  SkysightLayer(const SkysightLayer &m):
     id(m.id), name(m.name), desc(m.desc), last_update(m.last_update),
     legend(m.legend) {}
   bool operator==(tstring _id) {
