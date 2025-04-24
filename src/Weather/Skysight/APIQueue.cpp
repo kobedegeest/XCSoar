@@ -32,10 +32,9 @@ SkysightAPIQueue::DoClearingQueue() {
   for (auto &&i = request_queue.begin(); i < request_queue.end(); /* ++i */) {
     if ((*i)->GetStatus() != SkysightRequest::Status::Busy) {
       (*i)->Done();
-      request_queue.erase(i);
-      i = request_queue.begin(); // don't iterate or increment an erased iter
+      i = request_queue.erase(i);; // don't iterate or increment an erased iter
     } else {
-      i = i++;
+      ++i;
     }
   }
   timer.Cancel();
