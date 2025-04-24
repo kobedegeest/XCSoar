@@ -64,7 +64,7 @@
 * Use static_cast<> instead of c casts
  */
 
-Skysight *Skysight::self = nullptr;
+Skysight *Skysight::self;
 
 /*
  *
@@ -466,7 +466,7 @@ Skysight::Render(bool force_update)
       // TODO: use const char in layer rather than string/cstr
       DisplayActiveLayer(displayed_layer.layer->id.c_str());
     }
-#if 0
+
     // Request next images
     BrokenDateTime now = Skysight::GetNow(force_update);
     if (force_update || !displayed_layer.forecast_time.IsPlausible() ||
@@ -476,7 +476,6 @@ Skysight::Render(bool force_update)
       api->GetImageAt(displayed_layer.layer->id.c_str(), now, now + std::chrono::seconds(60*60),
          DownloadComplete);
     }
-#endif
   }
 }
 
