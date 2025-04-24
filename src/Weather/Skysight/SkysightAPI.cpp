@@ -165,7 +165,7 @@ SkysightAPI::GetPath(SkysightCallType type, const char *const _layer,
           std::chrono::system_clock::from_time_t(fctime);
 #ifdef USE_STD_FORMAT
       filename.Format(
-        "%s-%s-%s_%s.nc", region.c_str(), layer,
+        "%s-%s-%s_%s.nc", region.c_str(), layer.c_str(),
         std::format("{:%d-%H%M}", 
           floor<std::chrono::minutes>(update_time)).c_str(),
         std::format("{:%d-%H%M}",
