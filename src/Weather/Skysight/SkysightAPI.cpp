@@ -500,7 +500,7 @@ SkysightAPI::ParseData(const SkysightRequestArgs &args, __attribute__((unused)) 
       GetPath(SkysightCallType::Image, args.layer.c_str(), args.from);
   queue.AddDecodeJob(std::make_unique<CDFDecoder>(
       args.path.c_str(), output_img.c_str(), args.layer.c_str(), args.from,
-      GetLayer(args.layer)->legend, args.cb));
+      GetLayer(args.layer).legend, args.cb));
    return true;
 }
 
