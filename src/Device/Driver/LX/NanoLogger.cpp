@@ -318,8 +318,11 @@ DownloadFlightInner(Port &port, const char *filename, BufferedOutputStream &os,
         LogFormat("Communication with logger timedout, tries: %d, line: %d", request_retry_count, i);
       }
       if (line == nullptr || !HandleFlightLine(line, os, i, row_count)) {
-        if (request_retry_count > 20)
+        if (request_retry_count > 20){
+          port.FullFlush(env, std::chrono::milliseconds(200),
+                       std::chrono::seconds(2));
           return false;
+        }
 
         /* Discard data which might still be in-transit, e.g. buffered
            inside a bluetooth dongle */
