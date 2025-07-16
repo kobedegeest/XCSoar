@@ -357,11 +357,14 @@ Nano::DownloadFlight(Port &port, const RecordedFlightInfo &flight,
 
   FileOutputStream fos(path);
   BufferedOutputStream bos(fos);
+  
+  LogString("Starting Download");
 
   bool success = DownloadFlightInner(port, flight.internal.lx.nano_filename,
                                      bos, env);
 
   if (success) {
+    LogString("Download succesfull");
     bos.Flush();
     fos.Commit();
   }
