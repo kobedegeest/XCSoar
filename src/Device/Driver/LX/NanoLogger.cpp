@@ -316,6 +316,7 @@ DownloadFlightInner(Port &port, const char *filename, BufferedOutputStream &os,
         line = reader.ExpectLine("PLXVC,FLIGHT,A,", timeout);
       } catch (...) {
         LogFormat("Communication with logger timedout, tries: %d, line: %d", request_retry_count, i);
+        LogError(std::current_exception(), "Download failing");
       }
       if (line == nullptr || !HandleFlightLine(line, os, i, row_count)) {
         if (request_retry_count > 20){
