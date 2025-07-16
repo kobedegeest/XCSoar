@@ -315,10 +315,10 @@ DownloadFlightInner(Port &port, const char *filename, BufferedOutputStream &os,
       try {
         line = reader.ExpectLine("PLXVC,FLIGHT,A,", timeout);
       } catch (...) {
-        LogString("Communication with logger timedout");
+        LogFormat("Communication with logger timedout, tries: %d, line: %d", request_retry_count, i);
       }
       if (line == nullptr || !HandleFlightLine(line, os, i, row_count)) {
-        if (request_retry_count > 5)
+        if (request_retry_count > 20)
           return false;
 
         /* Discard data which might still be in-transit, e.g. buffered
