@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright The XCSoar Project
 
+#include "LogFile.hpp"
 #include "NanoLogger.hpp"
 #include "Device/Port/Port.hpp"
 #include "Device/RecordedFlight.hpp"
@@ -310,7 +311,12 @@ DownloadFlightInner(Port &port, const char *filename, BufferedOutputStream &os,
       }
 
       TimeoutClock timeout(std::chrono::seconds(i == 1 ? 20 : 2));
-      const char *line = reader.ExpectLine("PLXVC,FLIGHT,A,", timeout);
+      const char *line = nullptr;
+      try {
+        line = reader.ExpectLine("PLXVC,FLIGHT,A,", timeout);
+      } catch (...) {
+        LogString("Communication with logger timedout");
+      }
       if (line == nullptr || !HandleFlightLine(line, os, i, row_count)) {
         if (request_retry_count > 5)
           return false;
