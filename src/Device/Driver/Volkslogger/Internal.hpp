@@ -4,6 +4,7 @@
 #pragma once
 
 #include "Device/Driver.hpp"
+#include "Device/Descriptor.hpp"
 
 class VolksloggerDevice : public AbstractDevice {
 private:
@@ -20,6 +21,6 @@ public:
                OperationEnvironment &env) override;
   bool ReadFlightList(RecordedFlightList &flight_list,
                       OperationEnvironment &env) override;
-  bool DownloadFlight(const RecordedFlightInfo &flight, Path path,
+  bool DownloadFlight(DeviceDescriptor &device, const RecordedFlightInfo &flight, Path path,
                       OperationEnvironment &env) override;
 };

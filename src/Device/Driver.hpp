@@ -6,6 +6,7 @@
 #include <cstddef>
 #include <span>
 #include <tchar.h>
+#include "Device/Descriptor.hpp"
 
 struct NMEAInfo;
 struct MoreData;
@@ -179,7 +180,7 @@ public:
    * @param path the file name to save to
    * @return true on success
    */
-  virtual bool DownloadFlight(const RecordedFlightInfo &flight,
+  virtual bool DownloadFlight(DeviceDescriptor &device, const RecordedFlightInfo &flight,
                               Path path,
                               OperationEnvironment &env) = 0;
 
@@ -265,7 +266,7 @@ public:
   bool ReadFlightList(RecordedFlightList &flight_list,
                       OperationEnvironment &env) override;
 
-  bool DownloadFlight(const RecordedFlightInfo &flight,
+  bool DownloadFlight(DeviceDescriptor &device, const RecordedFlightInfo &flight,
                       Path path,
                       OperationEnvironment &env) override;
 
@@ -400,7 +401,7 @@ struct DeviceRegister {
 
   /**
    * Does this device store flight logs which can be downloaded?
-   * See Device::ReadFlightList(), Device::DownloadFlight().
+   * See Device::ReadFlightList(), Device::DownloadFlight(DeviceDescriptor &device, DeviceDescriptor &device, ).
    */
   bool IsLogger() const {
     return (flags & LOGGER) != 0;

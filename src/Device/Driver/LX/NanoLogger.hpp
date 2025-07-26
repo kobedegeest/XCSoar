@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include "Device/Descriptor.hpp"
+
 class Path;
 class Port;
 class RecordedFlightList;
@@ -13,6 +15,6 @@ namespace Nano {
   bool ReadFlightList(Port &port, RecordedFlightList &flight_list,
                       OperationEnvironment &env);
 
-  bool DownloadFlight(Port &port, const RecordedFlightInfo &flight,
+  bool DownloadFlight(DeviceDescriptor &device, Port &port, const RecordedFlightInfo &flight,
                       Path path, OperationEnvironment &env);
 }

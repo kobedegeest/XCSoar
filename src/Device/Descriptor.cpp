@@ -1134,7 +1134,7 @@ DeviceDescriptor::ReadFlightList(RecordedFlightList &flight_list,
 }
 
 bool
-DeviceDescriptor::DownloadFlight(const RecordedFlightInfo &flight,
+DeviceDescriptor::DownloadFlight(DeviceDescriptor &devicedescriptor, const RecordedFlightInfo &flight,
                                  Path path,
                                  OperationEnvironment &env)
 {
@@ -1155,13 +1155,13 @@ DeviceDescriptor::DownloadFlight(const RecordedFlightInfo &flight,
     env.SetText(text);
 
     device->EnablePassThrough(env);
-    return second_device->DownloadFlight(flight, path, env);
+    return second_device->DownloadFlight(devicedescriptor, flight, path, env);
   } else {
     text.Format(_T("%s: %s."), _("Downloading flight log"),
                 driver->display_name);
     env.SetText(text);
 
-    return device->DownloadFlight(flight, path, env);
+    return device->DownloadFlight(devicedescriptor, flight, path, env);
   }
 }
 

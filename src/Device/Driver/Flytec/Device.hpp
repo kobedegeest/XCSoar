@@ -6,6 +6,7 @@
 #include "tchar.h"
 #include "Device/Driver.hpp"
 #include "time/Stamp.hpp"
+#include "Device/Descriptor.hpp"
 
 class Port;
 struct NMEAInfo;
@@ -28,7 +29,7 @@ public:
   bool ReadFlightList(RecordedFlightList &flight_list,
                       OperationEnvironment &env) override;
 
-  bool DownloadFlight(const RecordedFlightInfo &flight, Path path,
+  bool DownloadFlight(DeviceDescriptor &device, const RecordedFlightInfo &flight, Path path,
                       OperationEnvironment &env) override;
 
 private:

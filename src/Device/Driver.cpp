@@ -113,7 +113,7 @@ AbstractDevice::ReadFlightList([[maybe_unused]] RecordedFlightList &flight_list,
 }
 
 bool
-AbstractDevice::DownloadFlight([[maybe_unused]] const RecordedFlightInfo &flight,
+AbstractDevice::DownloadFlight([[maybe_unused]] DeviceDescriptor &device, [[maybe_unused]] const RecordedFlightInfo &flight,
                                [[maybe_unused]] Path path, [[maybe_unused]] OperationEnvironment &env)
 {
   return false;

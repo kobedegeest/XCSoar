@@ -9,6 +9,7 @@
 #include "system/Path.hpp"
 #include "io/FileOutputStream.hxx"
 #include "io/BufferedOutputStream.hxx"
+#include "Device/Descriptor.hpp"
 
 #include <memory>
 
@@ -148,7 +149,7 @@ DownloadFlightInner(Port &port, const RecordedFlightInfo &flight,
 }
 
 bool
-CAI302Device::DownloadFlight(const RecordedFlightInfo &flight,
+CAI302Device::DownloadFlight(DeviceDescriptor &device, const RecordedFlightInfo &flight,
                              Path path,
                              OperationEnvironment &env)
 {

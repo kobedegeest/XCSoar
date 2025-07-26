@@ -565,7 +565,7 @@ public:
   /**
    * Caller is responsible for calling Borrow() and Return().
    */
-  bool DownloadFlight(const RecordedFlightInfo &flight, Path path,
+  bool DownloadFlight(DeviceDescriptor &devicedescriptor, const RecordedFlightInfo &flight, Path path,
                       OperationEnvironment &env);
 
   void OnSysTicker() noexcept;

@@ -19,6 +19,7 @@
 #include "util/PackedBigEndian.hxx"
 #include "util/PackedFloat.hxx"
 #include "util/PackedLittleEndian.hxx"
+#include "Device/Descriptor.hpp"
 
 struct EosDeclarationStruct {
   const uint8_t syn = 0x02;
@@ -385,7 +386,7 @@ public:
                OperationEnvironment &env) override;
   bool ReadFlightList(RecordedFlightList& flight_list,
                       OperationEnvironment& env) override;
-  bool DownloadFlight(const RecordedFlightInfo& flight,
+  bool DownloadFlight(DeviceDescriptor &device, const RecordedFlightInfo& flight,
                       Path path,
                       OperationEnvironment& env) override;
 };

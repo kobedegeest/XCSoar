@@ -6,6 +6,7 @@
 #include "Device/Port/Port.hpp"
 #include "Operation/Operation.hpp"
 #include "system/Path.hpp"
+#include "Device/Descriptor.hpp"
 
 bool
 IMIDevice::ReadFlightList(RecordedFlightList &flight_list,
@@ -20,7 +21,7 @@ IMIDevice::ReadFlightList(RecordedFlightList &flight_list,
 }
 
 bool
-IMIDevice::DownloadFlight(const RecordedFlightInfo &flight, Path path,
+IMIDevice::DownloadFlight(DeviceDescriptor &device, const RecordedFlightInfo &flight, Path path,
                           OperationEnvironment &env)
 {
   port.StopRxThread();

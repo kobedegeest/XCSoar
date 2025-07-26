@@ -4,6 +4,7 @@
 #pragma once
 
 #include "Device/Driver.hpp"
+#include "Device/Descriptor.hpp"
 
 /**
  * Device driver for IMI ERIXX
@@ -19,7 +20,7 @@ public:
   bool EnableNMEA(OperationEnvironment &env) override;
   bool ReadFlightList(RecordedFlightList &flight_list,
                       OperationEnvironment &env) override;
-  bool DownloadFlight(const RecordedFlightInfo &flight,
+  bool DownloadFlight(DeviceDescriptor &device, const RecordedFlightInfo &flight,
                       Path path, OperationEnvironment &env) override;
 
   bool Declare(const Declaration &declaration, const Waypoint *home,

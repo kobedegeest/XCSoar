@@ -13,6 +13,7 @@
 #include "util/ByteOrder.hxx"
 #include "util/CRC8.hpp"
 #include "util/ScopeExit.hxx"
+#include "Device/Descriptor.hpp"
 
 bool
 LXEosDevice::ReadFlightList(RecordedFlightList& flight_list,
@@ -58,7 +59,7 @@ LXEosDevice::ReadFlightList(RecordedFlightList& flight_list,
 }
 
 bool
-LXEosDevice::DownloadFlight(const RecordedFlightInfo& flight,
+LXEosDevice::DownloadFlight(DeviceDescriptor &device, const RecordedFlightInfo& flight,
                             Path path,
                             OperationEnvironment& env)
 {

@@ -10,6 +10,7 @@
 #include "util/StaticString.hxx"
 #include "NMEA/InputLine.hpp"
 #include "NMEA/Info.hpp"
+#include "Device/Descriptor.hpp"
 
 #include <atomic>
 #include <cstdint>
@@ -271,7 +272,7 @@ public:
 
   bool ReadFlightList(RecordedFlightList &flight_list,
                       OperationEnvironment &env) override;
-  bool DownloadFlight(const RecordedFlightInfo &flight,
+  bool DownloadFlight(DeviceDescriptor &device, const RecordedFlightInfo &flight,
                       Path path,
                       OperationEnvironment &env) override;
 };

@@ -8,6 +8,7 @@
 #include "io/BufferedOutputStream.hxx"
 #include "system/Path.hpp"
 #include "Operation/Operation.hpp"
+#include "Device/Descriptor.hpp"
 
 #include <cstdlib>
 #include <cstring>
@@ -336,7 +337,7 @@ FlarmDevice::DownloadFlight(Path path, OperationEnvironment &env)
 
 
 bool
-FlarmDevice::DownloadFlight(const RecordedFlightInfo &flight,
+FlarmDevice::DownloadFlight(DeviceDescriptor &device, const RecordedFlightInfo &flight,
                             Path path, OperationEnvironment &env)
 {
   if (!BinaryMode(env))

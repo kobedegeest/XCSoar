@@ -8,6 +8,7 @@
 #include "tchar.h"
 #include "Device/Driver.hpp"
 #include "Device/SettingsMap.hpp"
+#include "Device/Descriptor.hpp"
 
 #include <cstdint>
 #include <optional>
@@ -306,6 +307,6 @@ public:
    * @param path Path to the IGC file to write into
    * @return True if received and written successfully, otherwise False
    */
-  bool DownloadFlight(const RecordedFlightInfo &flight, Path path,
+  bool DownloadFlight(DeviceDescriptor &device, const RecordedFlightInfo &flight, Path path,
                       OperationEnvironment &env) override;
 };

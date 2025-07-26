@@ -15,6 +15,7 @@
 #include "NMEA/InputLine.hpp"
 #include "util/SpanCast.hxx"
 #include "util/StringCompare.hxx"
+#include "Device/Descriptor.hpp"
 
 #include <algorithm>
 #include <stdio.h>
@@ -280,7 +281,7 @@ HandleFlightLine(const char *_line, BufferedOutputStream &os,
 }
 
 static bool
-DownloadFlightInner(Port &port, const char *filename, BufferedOutputStream &os,
+DownloadFlightInner(DeviceDescriptor &device, Port &port, const char *filename, BufferedOutputStream &os,
                     OperationEnvironment &env)
 {
   PortNMEAReader reader(port, env);
@@ -320,6 +321,9 @@ DownloadFlightInner(Port &port, const char *filename, BufferedOutputStream &os,
         port.StopRxThread();
         port.FullFlush(env, std::chrono::milliseconds(200),
                        std::chrono::seconds(2));
+        device.Close();
+        env.Sleep(std::chrono::seconds(5));
+        device.Open(env);
       }
       if (line == nullptr || !HandleFlightLine(line, os, i, row_count)) {
         if (request_retry_count > 20){
@@ -357,7 +361,7 @@ DownloadFlightInner(Port &port, const char *filename, BufferedOutputStream &os,
 }
 
 bool
-Nano::DownloadFlight(Port &port, const RecordedFlightInfo &flight,
+Nano::DownloadFlight(DeviceDescriptor &device, Port &port, const RecordedFlightInfo &flight,
                      Path path, OperationEnvironment &env)
 {
   port.StopRxThread();
@@ -368,7 +372,7 @@ Nano::DownloadFlight(Port &port, const RecordedFlightInfo &flight,
   
   LogString("Starting Download");
 
-  bool success = DownloadFlightInner(port, flight.internal.lx.nano_filename,
+  bool success = DownloadFlightInner(device, port, flight.internal.lx.nano_filename,
                                      bos, env);
 
   if (success) {

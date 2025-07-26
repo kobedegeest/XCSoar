@@ -5,6 +5,7 @@
 
 #include "Device/Driver.hpp"
 #include "Protocol.hpp"
+#include "Device/Descriptor.hpp"
 
 #include <vector>
 #include <cstdint>
@@ -53,7 +54,7 @@ public:
 
   virtual bool ReadFlightList(RecordedFlightList &flight_list,
                               OperationEnvironment &env) override;
-  virtual bool DownloadFlight(const RecordedFlightInfo &flight,
+  virtual bool DownloadFlight(DeviceDescriptor &device, const RecordedFlightInfo &flight,
                               Path path,
                               OperationEnvironment &env) override;
 

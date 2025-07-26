@@ -9,6 +9,7 @@
 #include "Operation/Operation.hpp"
 #include "vlconv.h"
 #include "grecord.h"
+#include "Device/Descriptor.hpp"
 
 /**
  * Sizes of VL memory regions
@@ -131,7 +132,7 @@ VolksloggerDevice::ReadFlightList(RecordedFlightList &flight_list,
 }
 
 bool
-VolksloggerDevice::DownloadFlight(const RecordedFlightInfo &flight,
+VolksloggerDevice::DownloadFlight(DeviceDescriptor &device, const RecordedFlightInfo &flight,
                                   Path path,
                                   OperationEnvironment &env)
 {

@@ -28,6 +28,7 @@
 #include "Interface.hpp"
 #include "net/client/WeGlide/UploadIGCFile.hpp"
 #include "LogFile.hpp"
+#include "Device/Descriptor.hpp"
 
 
 class DeclareJob {
@@ -158,7 +159,7 @@ public:
     :device(_device), flight(_flight), path(_path) {}
 
   bool Run(OperationEnvironment &env) {
-    return device.DownloadFlight(flight, path, env);
+    return device.DownloadFlight(device, flight, path, env);
   }
 };
 

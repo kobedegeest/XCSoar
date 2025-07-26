@@ -14,6 +14,7 @@
 #include "io/FileOutputStream.hxx"
 #include "util/ScopeExit.hxx"
 #include "util/SpanCast.hxx"
+#include "Device/Descriptor.hpp"
 
 #include <memory>
 
@@ -204,7 +205,7 @@ DownloadFlightInner(Port &port, const RecordedFlightInfo &flight,
 }
 
 bool
-LXDevice::DownloadFlight(const RecordedFlightInfo &flight,
+LXDevice::DownloadFlight(DeviceDescriptor &device, const RecordedFlightInfo &flight,
                          Path path,
                          OperationEnvironment &env)
 {
@@ -213,7 +214,7 @@ LXDevice::DownloadFlight(const RecordedFlightInfo &flight,
     busy = true;
     AtScopeExit(this) { busy = false; };
 
-    return Nano::DownloadFlight(port, flight, path, env);
+    return Nano::DownloadFlight(device, port, flight, path, env);
   }
 
   if (!EnableCommandMode(env))

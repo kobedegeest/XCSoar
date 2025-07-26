@@ -14,6 +14,7 @@
 #include "Operation/Operation.hpp"
 #include "IGC/IGCParser.hpp"
 #include "util/StringCompare.hxx"
+#include "Device/Descriptor.hpp"
 
 #include <stdlib.h>
 #include <string.h>
@@ -225,7 +226,7 @@ FlytecDevice::ReadFlightList(RecordedFlightList &flight_list,
 }
 
 bool
-FlytecDevice::DownloadFlight(const RecordedFlightInfo &flight,
+FlytecDevice::DownloadFlight(DeviceDescriptor &device, const RecordedFlightInfo &flight,
                              Path path, OperationEnvironment &env)
 {
   port.StopRxThread();
