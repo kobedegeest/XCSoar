@@ -538,6 +538,7 @@ DeviceDescriptor::Reopen(OperationEnvironment &env)
   assert(!IsBorrowed());
 
   Close();
+  env.Sleep(std::chrono::seconds(5));
   Open(env);
 }
 
