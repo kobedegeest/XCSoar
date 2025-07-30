@@ -324,6 +324,8 @@ DownloadFlightInner(DeviceDescriptor &device, Port &port, const char *filename, 
         device.Close();
         env.Sleep(std::chrono::seconds(5));
         device.Open(env);
+        env.Sleep(std::chrono::seconds(1));
+        port.StopRxThread();
       }
       if (line == nullptr || !HandleFlightLine(line, os, i, row_count)) {
         if (request_retry_count > 20){
