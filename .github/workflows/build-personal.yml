@@ -18,11 +18,11 @@ on:
 
 env:
   DEBUG: n
-  BOOST: boost_1_87_0
+  BOOST: boost_1_85_0
   
 jobs:
   build-android:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
 
     env:
       TARGET: ANDROIDAARCH64
