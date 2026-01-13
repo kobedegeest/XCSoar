@@ -18,11 +18,11 @@ on:
 
 env:
   DEBUG: n
-  BOOST: boost_1_85_0
+  BOOST: boost_1_90_0
   
 jobs:
   build-android:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     env:
       TARGET: ANDROIDAARCH64
@@ -39,12 +39,12 @@ jobs:
           echo "TARGET_FINAL=XCSoar" >> $GITHUB_ENV
 
       - id: checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           submodules: true
 
       - id: cache-ccache
-        uses: hendrikmuhs/ccache-action@v1
+        uses: hendrikmuhs/ccache-action@v1.2
         with:
           key: ${{ env.TARGET }}
 
@@ -102,7 +102,7 @@ jobs:
             V=2
 
       - name: upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ env.TARGET_FINAL }}-${{ env.git_hash }}.${{ env.TARGET_EXT }}
           path: output/ANDROID/bin/${{ env.TARGET_BIN }}.${{ env.TARGET_EXT }}
