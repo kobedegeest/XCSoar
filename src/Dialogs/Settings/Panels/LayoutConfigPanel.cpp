@@ -119,8 +119,8 @@ static constexpr StaticEnumChoice tabdialog_style_list[] = {
 static constexpr StaticEnumChoice popup_msg_position_list[] = {
   { UISettings::PopupMessagePosition::CENTER, N_("Center"),
     N_("Center the status message boxes.") },
-  { UISettings::PopupMessagePosition::TOP_LEFT, N_("Top left"),
-    N_("Show status message boxes in the top left corner.") },
+  { UISettings::PopupMessagePosition::TOP, N_("Top"),
+    N_("Show status message boxes on the top.") },
   nullptr
 };
 

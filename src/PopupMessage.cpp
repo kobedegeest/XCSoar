@@ -126,7 +126,7 @@ PopupMessage::OnPaint(Canvas &canvas) noexcept
 inline unsigned
 PopupMessage::CalculateWidth() const noexcept
 {
-  if (settings.popup_message_position == UISettings::PopupMessagePosition::TOP_LEFT)
+  if (settings.popup_message_position == UISettings::PopupMessagePosition::TOP)
     // TODO code: this shouldn't be hard-coded
     return rc.GetWidth();
   else
@@ -136,7 +136,7 @@ PopupMessage::CalculateWidth() const noexcept
 PixelRect
 PopupMessage::GetRect(PixelSize size) const noexcept
 {
-  if (settings.popup_message_position == UISettings::PopupMessagePosition::TOP_LEFT) {
+  if (settings.popup_message_position == UISettings::PopupMessagePosition::TOP) {
     return PixelRect{rc.left, rc.top,
                      static_cast<int>(rc.left) + static_cast<int>(size.width),
                      static_cast<int>(rc.top) + static_cast<int>(size.height)};
