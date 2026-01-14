@@ -16,6 +16,7 @@
 #include "NMEA/MoreData.hpp"
 #include "Computer/Settings.hpp"
 #include "Engine/Navigation/Aircraft.hpp"
+#include "Engine/Task/TaskManager.hpp"
 
 /**
  * Forces the protected task manager to recalculate task statistics
