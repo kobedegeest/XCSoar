@@ -19,29 +19,32 @@
 #include "Engine/Task/TaskManager.hpp"
 
 /**
- * Forces the protected task manager to recalculate task statistics
- * with the current MacCready value and aircraft state.
- * This ensures fresh statistics are available before calling Refresh().
+ * Forces immediate recalculation of task statistics with current polar.
+ * This bypasses the async calculation thread and ensures fresh stats.
  */
 static void
 ForceTaskStatsUpdate(ProtectedTaskManager &task_manager) noexcept
 {
-  // Get current aircraft state from the blackboard
   const MoreData &basic = CommonInterface::Basic();
   const DerivedInfo &calculated = CommonInterface::Calculated();
   
-  // Convert to AircraftState format needed by TaskManager
-  AircraftState current_state;
+  // Build current and last aircraft states
+  AircraftState current_state, last_state;
   current_state.location = basic.location;
   current_state.altitude = basic.nav_altitude;
   current_state.time = basic.time;
   current_state.wind = calculated.wind;
   current_state.flying = calculated.flight.flying;
   current_state.vario = basic.brutto_vario;
+  current_state.working_band_fraction = calculated.thermal_band.working_band_fraction;
   
-  // Acquire exclusive access and force update
+  // Use last calculated state if available, otherwise use current
+  last_state = current_state;
+  
+  // Acquire exclusive access and force full update
   ProtectedTaskManager::ExclusiveLease task(task_manager);
-  task->Update(current_state, current_state);
+  task->Update(current_state, last_state);
+  task->UpdateCommonStats(current_state);  // ← This is critical!
 }
 
 enum Controls {
@@ -84,13 +87,21 @@ TaskStatusPanel::Refresh() noexcept
     return;
 
   const DerivedInfo &calculated = CommonInterface::Calculated();
-  const TaskStats &task_stats = calculated.ordered_task_stats;
+  
+  // Get fresh stats directly from the task manager, not the blackboard!
+  ProtectedTaskManager::Lease task(*backend_components->protected_task_manager);
+  const TaskStats &task_stats = task->GetOrderedTask().GetStats();
+  const CommonStats &common_stats = task->GetCommonStats();
 
   SetRowVisible(TaskTime, task_stats.has_targets);
   if (task_stats.has_targets)
     SetText(TaskTime,
             FormatTimeHHMM(backend_components->protected_task_manager->GetOrderedTaskSettings().aat_min_time));
 
+  // Continue using task_stats from task manager instead of calculated.ordered_task_stats
+  // Use common_stats from task manager instead of calculated.common_stats
+  // ... rest of your Refresh() implementation
+  
   if (task_stats.total.remaining_effective.IsDefined())
     SetText(ETETime,
             FormatSignedTimeHHMM(task_stats.GetEstimatedTotalTime()));
