@@ -64,10 +64,6 @@ public:
   void SetOnModified(ModifiedCallback &&_callback) noexcept {
     on_modified = std::move(_callback);
   }
-  
-  void NotifyModified() noexcept {
-    Modified();
-  }
 
   // deprecated
   void SetListener(DataFieldListener *_listener) noexcept {

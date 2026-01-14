@@ -150,7 +150,7 @@ WndProperty::BeginEditing() noexcept
     if (!edit_callback(GetCaption(), *data_field, GetHelpText()))
       return false;
 
-    data_field->NotifyModified();
+    data_field->Modified();
     RefreshDisplay();
     return true;
   }
