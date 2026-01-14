@@ -12,6 +12,11 @@
 #include "Components.hpp"
 #include "BackendComponents.hpp"
 
+#include "NMEA/Derived.hpp"
+#include "NMEA/MoreData.hpp"
+#include "Computer/Settings.hpp"
+#include "Engine/Navigation/Aircraft.hpp"
+
 enum Controls {
   TaskTime,
   ETETime,
@@ -36,6 +41,11 @@ TaskStatusPanel::OnModified(DataField &df) noexcept
     const DataFieldFloat &dff = (const DataFieldFloat &)df;
     auto mc = Units::ToSysVSpeed(dff.GetValue());
     ActionInterface::SetManualMacCready(mc);
+    
+     // Force task statistics to be recalculated with new MC value
+    if (backend_components->protected_task_manager)
+      ForceTaskStatsUpdate(*backend_components->protected_task_manager);
+    
     Refresh();
   }
 }
@@ -165,4 +175,30 @@ TaskStatusPanel::Prepare([[maybe_unused]] ContainerWindow &parent, [[maybe_unuse
               _("Efficiency of cruise. 100 indicates perfect MacCready performance; greater than 100 indicates better than MacCready performance is achieved through flying in streets. Less than 100 is appropriate if you fly considerably off-track. This value estimates your cruise efficiency according to the current flight history with the set MC value. Calculation begins after task is started."),
               _T("%.0f %%"),
               0);
+}
+
+/**
+ * Forces the protected task manager to recalculate task statistics
+ * with the current MacCready value and aircraft state.
+ * This ensures fresh statistics are available before calling Refresh().
+ */
+static void
+ForceTaskStatsUpdate(ProtectedTaskManager &task_manager) noexcept
+{
+  // Get current aircraft state from the blackboard
+  const MoreData &basic = CommonInterface::Basic();
+  const DerivedInfo &calculated = CommonInterface::Calculated();
+  
+  // Convert to AircraftState format needed by TaskManager
+  AircraftState current_state;
+  current_state.location = basic.location;
+  current_state.altitude = basic.nav_altitude;
+  current_state.time = basic.time;
+  current_state.wind = calculated.wind;
+  current_state.flying = calculated.flight.flying;
+  current_state.vario = basic.brutto_vario;
+  
+  // Acquire exclusive access and force update
+  ProtectedTaskManager::ExclusiveLease task(task_manager);
+  task->Update(current_state, current_state);
 }
