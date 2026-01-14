@@ -418,7 +418,11 @@ LookupMacro(tstring_view name, bool &invalid) noexcept
       CommonInterface::GetUISettings().pages.pages[PageActions::NextIndex()];
     return page.MakeTitle(CommonInterface::GetUISettings().info_boxes,
                           std::span{label}, true);
-  } else
+  }  else if (name == _T("CheckWeGlide")) {
+    invalid |= !CommonInterface::GetComputerSettings().weglide.enabled;
+    return nullptr;
+  }
+  else
     return nullptr;
 }
 
