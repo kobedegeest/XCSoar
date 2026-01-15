@@ -83,7 +83,7 @@ jobs:
       matrix:
         include:
           - os: ubuntu-24.04
-            target: ANDROIDAARCH64
+            target: ANDROID
             target_bin: XCSoar
             target_bin_path: bin
             target_final: XCSoar
@@ -126,7 +126,7 @@ jobs:
           key: ${{ matrix.target }}-ccache
 
       - name: Configure ccache for cross-compilation
-        if: ${{ matrix.target == 'KOBO' || matrix.target == 'ANDROIDAARCH64' || matrix.target == 'ANDROID_BUNDLE' }}
+        if: ${{ matrix.target == 'KOBO' || matrix.target == 'ANDROID' || matrix.target == 'ANDROID_BUNDLE' }}
         run: |
           # Configure ccache to ignore compiler path for cross-compilation
           # This is important because cross-compilers have different paths
@@ -195,7 +195,7 @@ jobs:
             ${{ github.workspace }}/output/src/${{ env.BOOST }}/boost
 
       - name: "Cache Android SDK/NDK"
-        if: ${{ matrix.target == 'ANDROIDAARCH64' || matrix.target == 'ANDROID_BUNDLE' }}
+        if: ${{ matrix.target == 'ANDROID' || matrix.target == 'ANDROID_BUNDLE' }}
         uses: actions/cache@v5
         with:
           key: android-tools-${{ matrix.ndk }}-${{ hashFiles('ide/provisioning/install-android-tools.sh', 'build/android.mk', 'build/android_bundle.mk', 'build/targets.mk') }}
@@ -208,7 +208,7 @@ jobs:
             ~/opt/bundletool
 
       - name: "Cache third-party libraries"
-        if: ${{ matrix.target == 'ANDROIDAARCH64' || matrix.target == 'ANDROID_BUNDLE' || matrix.target == 'KOBO' }}
+        if: ${{ matrix.target == 'ANDROID' || matrix.target == 'ANDROID_BUNDLE' || matrix.target == 'KOBO' }}
         uses: actions/cache@v5
         with:
           key: thirdparty-${{ matrix.target }}-${{ hashFiles('build/thirdparty.py', 'build/python/build/libs.py', 'build/python/build/project.py', 'build/thirdparty.mk') }}
@@ -240,7 +240,7 @@ jobs:
               ./ide/provisioning/install-debian-packages.sh LINUX
               ./ide/provisioning/install-debian-packages.sh WIN
             fi
-            if [ ${{ matrix.target }} = 'ANDROIDAARCH64' ] || [ ${{ matrix.target}} = 'ANDROID_BUNDLE' ]; then
+            if [ ${{ matrix.target }} = 'ANDROID' ] || [ ${{ matrix.target}} = 'ANDROID_BUNDLE' ]; then
               ./ide/provisioning/install-debian-packages.sh LINUX
               ./ide/provisioning/install-debian-packages.sh ARM
               ./ide/provisioning/install-debian-packages.sh LLVM
@@ -268,7 +268,7 @@ jobs:
 
       - name: Prepare signing key
         shell: bash
-        if: ${{ (matrix.target == 'ANDROIDAARCH64' || matrix.target == 'ANDROID_BUNDLE') && startsWith(github.ref, 'refs/tags/v') }}
+        if: ${{ (matrix.target == 'ANDROID' || matrix.target == 'ANDROID_BUNDLE') && startsWith(github.ref, 'refs/tags/v') }}
         run: |
           if [ -n "${{ secrets.XCSOAR_UPLOAD_KEY_JKS_BASE64 }}" ]; then
             mkdir -p ~/.android/
@@ -353,7 +353,7 @@ jobs:
             export MACOS_APP_BUILD_NUMBER="${{ vars.MACOS_APP_BUILD_NUMBER || github.run_number }}"
             export MACOS_PATCH_VERSION="${{ vars.MACOS_PATCH_VERSION || 0 }}"
           fi
-          if [ ${{ matrix.target }} = 'ANDROIDAARCH64' ] || [ ${{ matrix.target }} = "ANDROID_BUNDLE" ]; then
+          if [ ${{ matrix.target }} = 'ANDROID' ] || [ ${{ matrix.target }} = "ANDROID_BUNDLE" ]; then
             if [ "${{ matrix.target }}" = "ANDROID_BUNDLE" ]; then BUNDLE=y ; fi
             make -j$(nproc) ANDROID_BUNDLE_BUILD="$BUNDLE" TARGET=ANDROIDFAT DEBUG=${{ env.DEBUG }} USE_CCACHE=y V=2 \
             output/${{ matrix.target }}/bin/${{ matrix.target_bin }}-debug${{ matrix.target_ext }}
@@ -402,7 +402,7 @@ jobs:
             export MACOS_APP_BUILD_NUMBER="${{ vars.MACOS_APP_BUILD_NUMBER || github.run_number }}"
             export MACOS_PATCH_VERSION="${{ vars.MACOS_PATCH_VERSION || 0 }}"
           fi
-          if [ ${{ matrix.target }} = 'ANDROIDAARCH64' ] || [ ${{ matrix.target }} = "ANDROID_BUNDLE" ]; then
+          if [ ${{ matrix.target }} = 'ANDROID' ] || [ ${{ matrix.target }} = "ANDROID_BUNDLE" ]; then
             if [ "${{ matrix.target }}" = "ANDROID_BUNDLE" ]; then BUNDLE=y ; fi
             if [ -n "${{ secrets.XCSOAR_UPLOAD_KEY_JKS_PASSWORD }}" ] && [ -n "${{ secrets.XCSOAR_UPLOAD_KEY_JKS_KEY_ALIAS }}" ]; then
               ANDROID_KEYSTORE_PASS=${{ secrets.XCSOAR_UPLOAD_KEY_JKS_PASSWORD }} \
