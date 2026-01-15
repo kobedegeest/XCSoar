@@ -17,6 +17,8 @@
 #include "Computer/Settings.hpp"
 #include "Engine/Navigation/Aircraft.hpp"
 #include "Engine/Task/TaskManager.hpp"
+#include "Engine/Task/Stats/TaskStats.hpp"
+#include "Engine/Task/Ordered/OrderedTask.hpp"
 
 /**
  * Forces immediate recalculation of task statistics with current polar.
