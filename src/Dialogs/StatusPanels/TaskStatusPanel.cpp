@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright The XCSoar Project
 
+#include "LogFile.hpp"
 #include "TaskStatusPanel.hpp"
 #include "Form/DataField/Float.hpp"
 #include "ActionInterface.hpp"
@@ -64,15 +65,19 @@ enum Controls {
 void
 TaskStatusPanel::OnModified(DataField &df) noexcept
 {
+  LogString("OnModified is called");
   if (IsDataField(MC, df)) {
     const DataFieldFloat &dff = (const DataFieldFloat &)df;
     auto mc = Units::ToSysVSpeed(dff.GetValue());
     ActionInterface::SetManualMacCready(mc);
     
      // Force task statistics to be recalculated with new MC value
-    if (backend_components->protected_task_manager)
+    if (backend_components->protected_task_manager){
+      LogString("Caling ForceTaskStatsUpdate");
       ForceTaskStatsUpdate(*backend_components->protected_task_manager);
+    }
     
+    LogString("Caling Refresh");
     Refresh();
   }
 }
@@ -80,8 +85,10 @@ TaskStatusPanel::OnModified(DataField &df) noexcept
 void
 TaskStatusPanel::Refresh() noexcept
 {
-  if (!backend_components->protected_task_manager)
+  if (!backend_components->protected_task_manager){
+    LogString("Imeadiatly exiting Refresh");
     return;
+  }
 
   const DerivedInfo &calculated = CommonInterface::Calculated();
   const TaskStats &task_stats = calculated.ordered_task_stats;
@@ -115,10 +122,11 @@ TaskStatusPanel::Refresh() noexcept
   else
     ClearText(RemainingDistance);
 
-  if (task_stats.total.remaining_effective.IsDefined() && !task_stats.task_finished)
+  if (task_stats.total.remaining_effective.IsDefined() && !task_stats.task_finished){
     SetText(EstimatedSpeed,
             FormatUserTaskSpeed(task_stats.total.planned.GetSpeed()));
-  else
+    LogString("Updating task speed");
+  } else
     ClearText(EstimatedSpeed);
 
   if (task_stats.total.travelled.IsDefined())
