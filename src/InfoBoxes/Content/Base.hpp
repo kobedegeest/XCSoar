@@ -23,6 +23,9 @@ public:
   virtual void Update(InfoBoxData &data) noexcept = 0;
   virtual bool HandleKey(const InfoBoxKeyCodes keycode) noexcept;
   virtual bool HandleClick() noexcept;
+  // Bool to indecate whether clicking the infobox will do something 
+  //(either open panel via GetDialogContent or other via HandleClick)
+  virtual bool HasInteraction() noexcept;
 
   virtual void OnCustomPaint(Canvas &canvas, const PixelRect &rc) noexcept;
 

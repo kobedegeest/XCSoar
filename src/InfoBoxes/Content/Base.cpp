@@ -17,6 +17,13 @@ InfoBoxContent::HandleClick() noexcept
   return false;
 }
 
+// Setting HasInteraction to true for infoboxes that open a panel
+bool
+InfoBoxContent::HasInteraction() noexcept
+{
+  return GetDialogContent() != nullptr;
+}
+
 void
 InfoBoxContent::OnCustomPaint([[maybe_unused]] Canvas &canvas, [[maybe_unused]] const PixelRect &rc) noexcept
 {
