@@ -11,6 +11,9 @@ public:
   void Update(InfoBoxData &data) noexcept override;
   bool HandleKey(const InfoBoxKeyCodes keycode) noexcept override;
   bool HandleClick() noexcept override;
+  bool HasInteraction() noexcept override {
+    return true;
+  }
 };
 
 void

@@ -47,6 +47,9 @@ public:
   void Update(InfoBoxData &data) noexcept override;
   void OnCustomPaint(Canvas &canvas, const PixelRect &rc) noexcept override;
   bool HandleClick() noexcept override;
+  bool HasInteraction() noexcept override {
+    return true;
+  }
 };
 
 class InfoBoxContentThermalBand : public InfoBoxContent

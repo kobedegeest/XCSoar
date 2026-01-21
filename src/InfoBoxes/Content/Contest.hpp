@@ -9,6 +9,9 @@ class InfoBoxContentContest: public InfoBoxContent
 {
 public:
   bool HandleClick() noexcept override;
+  bool HasInteraction() noexcept override {
+    return true;
+  }
   void Update(InfoBoxData &data) noexcept override;
 };
 
@@ -16,5 +19,8 @@ class InfoBoxContentContestSpeed: public InfoBoxContent
 {
 public:
   bool HandleClick() noexcept override;
+  bool HasInteraction() noexcept override {
+    return true;
+  }
   void Update(InfoBoxData &data) noexcept override;
 };

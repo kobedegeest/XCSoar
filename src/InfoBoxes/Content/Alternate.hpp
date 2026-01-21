@@ -13,6 +13,9 @@ public:
 
   void Update(InfoBoxData &data) noexcept override;
   bool HandleClick() noexcept override;
+  bool HasInteraction() noexcept override {
+    return true;
+  }
 
 private:
   unsigned index;
@@ -26,6 +29,9 @@ public:
 
   void Update(InfoBoxData &data) noexcept override;
   bool HandleClick() noexcept override;
+  bool HasInteraction() noexcept override {
+    return true;
+  }
 
 private:
   unsigned index;
@@ -39,6 +45,9 @@ public:
 
   void Update(InfoBoxData &data) noexcept override;
   bool HandleClick() noexcept override;
+  bool HasInteraction() noexcept override {
+    return true;
+  }
 
 private:
   unsigned index;

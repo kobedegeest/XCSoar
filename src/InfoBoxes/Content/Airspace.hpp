@@ -13,6 +13,9 @@ class InfoBoxNearestAirspaceHorizontal : public InfoBoxContent
 public:
   void Update(InfoBoxData &data) noexcept override;
   bool HandleClick() noexcept override;
+  bool HasInteraction() noexcept override {
+    return true;
+  }
 };
 
 class InfoBoxNearestAirspaceVertical : public InfoBoxContent
@@ -20,4 +23,7 @@ class InfoBoxNearestAirspaceVertical : public InfoBoxContent
 public:
   void Update(InfoBoxData &data) noexcept override;
   bool HandleClick() noexcept override;
+  bool HasInteraction() noexcept override {
+    return true;
+  }
 };

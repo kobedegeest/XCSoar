@@ -21,6 +21,9 @@ public:
   bool HandleClick() noexcept override {
     return NextWaypointClick();
   }
+  bool HasInteraction() noexcept override {
+    return true;
+  }
 };
 
 void
@@ -34,6 +37,9 @@ public:
   }
   bool HandleClick() noexcept override {
     return NextWaypointClick();
+  }
+  bool HasInteraction() noexcept override {
+    return true;
   }
 };
 
@@ -49,6 +55,9 @@ public:
   bool HandleClick() noexcept override {
     return NextWaypointClick();
   }
+  bool HasInteraction() noexcept override {
+    return true;
+  }
 };
 
 class InfoBoxContentNextWaypoint : public InfoBoxContent
@@ -57,6 +66,9 @@ public:
   void Update(InfoBoxData &data) noexcept override;
   bool HandleClick() noexcept override {
     return NextWaypointClick();
+  }
+  bool HasInteraction() noexcept override {
+    return true;
   }
 };
 
@@ -72,6 +84,9 @@ public:
   bool HandleClick() noexcept override {
     return NextWaypointClick();
   }
+  bool HasInteraction() noexcept override {
+    return true;
+  }
 };
 
 void
@@ -85,6 +100,9 @@ public:
   }
   bool HandleClick() noexcept override {
     return NextWaypointClick();
+  }
+  bool HasInteraction() noexcept override {
+    return true;
   }
 };
 
@@ -100,6 +118,9 @@ public:
   bool HandleClick() noexcept override {
     return NextWaypointClick();
   }
+  bool HasInteraction() noexcept override {
+    return true;
+  }
 };
 
 void
@@ -113,6 +134,9 @@ public:
   }
   bool HandleClick() noexcept override {
     return NextWaypointClick();
+  }
+  bool HasInteraction() noexcept override {
+    return true;
   }
 };
 
@@ -128,6 +152,9 @@ public:
   bool HandleClick() noexcept override {
     return NextWaypointClick();
   }
+  bool HasInteraction() noexcept override {
+    return true;
+  }
 };
 
 void
@@ -141,6 +168,9 @@ public:
   }
   bool HandleClick() noexcept override {
     return NextWaypointClick();
+  }
+  bool HasInteraction() noexcept override {
+    return true;
   }
 };
 
@@ -156,6 +186,9 @@ public:
   bool HandleClick() noexcept override {
     return NextWaypointClick();
   }
+  bool HasInteraction() noexcept override {
+    return true;
+  }
 };
 
 void
@@ -170,6 +203,9 @@ public:
   bool HandleClick() noexcept override {
     return NextWaypointClick();
   }
+  bool HasInteraction() noexcept override {
+    return true;
+  }
 };
 
 void
@@ -183,6 +219,9 @@ public:
   }
   bool HandleClick() noexcept override {
     return NextWaypointClick();
+  }
+  bool HasInteraction() noexcept override {
+    return true;
   }
 };
 
@@ -264,6 +303,9 @@ public:
   bool HandleClick() noexcept override {
     return NextWaypointClick();
   }
+  bool HasInteraction() noexcept override {
+    return true;
+  }
 };
 
 void
@@ -277,6 +319,9 @@ public:
   }
   bool HandleClick() noexcept override {
     return NextWaypointClick();
+  }
+  bool HasInteraction() noexcept override {
+    return true;
   }
 };
 
@@ -299,6 +344,9 @@ public:
   void OnCustomPaint(Canvas &canvas, const PixelRect &rc) noexcept override;
   bool HandleClick() noexcept override {
     return NextWaypointClick();
+  }
+  bool HasInteraction() noexcept override {
+    return true;
   }
 };
 

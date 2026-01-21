@@ -23,6 +23,9 @@ class InfoBoxContentWindSpeed: public InfoBoxContent
 public:
   void Update(InfoBoxData &data) noexcept override;
   bool HandleClick() noexcept override;
+  bool HasInteraction() noexcept override {
+    return true;
+  }
 };
 
 class InfoBoxContentWindBearing: public InfoBoxContent
@@ -30,6 +33,9 @@ class InfoBoxContentWindBearing: public InfoBoxContent
 public:
   void Update(InfoBoxData &data) noexcept override;
   bool HandleClick() noexcept override;
+  bool HasInteraction() noexcept override {
+    return true;
+  }
 };
 
 class InfoBoxContentHeadWind: public InfoBoxContent
@@ -37,6 +43,9 @@ class InfoBoxContentHeadWind: public InfoBoxContent
 public:
   void Update(InfoBoxData &data) noexcept override;
   bool HandleClick() noexcept override;
+  bool HasInteraction() noexcept override {
+    return true;
+  }
 };
 
 class InfoBoxContentHeadWindSimplified: public InfoBoxContent
@@ -44,6 +53,9 @@ class InfoBoxContentHeadWindSimplified: public InfoBoxContent
 public:
   void Update(InfoBoxData &data) noexcept override;
   bool HandleClick() noexcept override;
+  bool HasInteraction() noexcept override {
+    return true;
+  }
 };
 
 class InfoBoxContentWindArrow: public InfoBoxContent
@@ -52,4 +64,7 @@ public:
   void Update(InfoBoxData &data) noexcept override;
   void OnCustomPaint(Canvas &canvas, const PixelRect &rc) noexcept override;
   bool HandleClick() noexcept override;
+  bool HasInteraction() noexcept override {
+    return true;
+  }
 };
