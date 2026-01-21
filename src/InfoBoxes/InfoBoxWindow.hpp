@@ -88,6 +88,9 @@ class InfoBoxWindow : public LazyPaintWindow
    * Paints the InfoBox with borders, title, comment and value
    */
   void Paint(Canvas &canvas);
+  
+private:
+  void PaintConfigIndicator(Canvas &canvas);
 
 public:
   void PaintInto(Canvas &dest, int xoff, int yoff,

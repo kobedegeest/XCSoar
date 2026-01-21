@@ -187,6 +187,7 @@ InfoBoxWindow::Paint(Canvas &canvas)
   PaintTitle(canvas);
   PaintComment(canvas);
   PaintValue(canvas, background_color);
+  PaintConfigIndicator(canvas);
 
   if (border_kind != 0) {
     canvas.Select(look.border_pen);
@@ -508,4 +509,36 @@ InfoBoxWindow::OnDialogTimer() noexcept
     if (GetDialogContent() != nullptr)
       ShowDialog();
   }
+}
+
+void 
+InfoBoxWindow::PaintConfigIndicator(Canvas &canvas)
+{
+  if (!content || !content->HasInteraction())
+    return;
+  
+  if (look.inverse) {
+    canvas.SelectWhiteBrush();
+  } else {
+    canvas.SelectBlackBrush();
+  }
+  
+  if (settings.border_style == InfoBoxSettings::BorderStyle::SHADED){
+    Brush brush;
+    Pen pen;
+    brush.Create(look.caption_background_color);
+    pen.Create(1, look.caption_background_color);
+    canvas.Select(pen);
+    canvas.Select(brush);
+  }
+  
+  BulkPixelPoint config_marker[3];
+  config_marker[0].x = (title_rect.left + title_rect.right) / 2 - look.title_font.GetCapitalHeight();
+  config_marker[1].x = (title_rect.left + title_rect.right) / 2 + look.title_font.GetCapitalHeight();
+  config_marker[2].x = (title_rect.left + title_rect.right) / 2;
+  config_marker[0].y = title_rect.bottom;
+  config_marker[1].y = title_rect.bottom ;
+  config_marker[2].y = title_rect.bottom + look.title_font.GetCapitalHeight() / 3;
+  
+  canvas.DrawPolygon(config_marker, 3);
 }
