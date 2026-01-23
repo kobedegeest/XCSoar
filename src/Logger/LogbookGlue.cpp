@@ -3,6 +3,7 @@
 
 #include "LogbookGlue.hpp"
 #include "FlightParser.hpp"
+#include "FlightInfo.hpp"
 #include "LogbookEntry.hpp"
 #include "io/FileLineReader.hpp"
 #include "LocalPath.hpp"
@@ -28,7 +29,7 @@ EnumerateFlights() noexcept
       LogbookEntry entry;
       entry.flight = flight;
       entry.comment = flight.comment;
-      entry.igc_file = AllocatedPath::Null();
+      entry.igc_file = nullptr;
 
       result.push_back(entry);
     }

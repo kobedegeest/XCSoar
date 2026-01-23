@@ -41,6 +41,6 @@ struct LogbookEntry {
    * @return true if igc_file is valid (non-empty)
    */
   bool HasIGCFile() const noexcept {
-    return !igc_file.IsNull();
+    return igc_file != nullptr;
   }
 };

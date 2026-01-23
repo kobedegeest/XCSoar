@@ -4,6 +4,8 @@
 #include "IGCFileMatcher.hpp"
 #include "IGCParser.hpp"
 #include "FlightInfo.hpp"
+#include "time/BrokenDate.hpp"
+#include "time/BrokenTime.hpp"
 #include "time/BrokenDateTime.hpp"
 #include "io/FileLineReader.hpp"
 #include "LocalPath.hpp"
@@ -12,6 +14,7 @@
 
 #include <algorithm>
 #include <cstring>
+#include <vector>
 
 /**
  * Visitor for collecting IGC files during directory traversal
@@ -118,10 +121,16 @@ FindMatchingIGCFiles(const FlightInfo &flight) noexcept
     }
 
     // Sort XCSoar files by filename
-    std::sort(xcsoar_files.begin(), xcsoar_files.end());
+    std::sort(xcsoar_files.begin(), xcsoar_files.end(),
+              [](const AllocatedPath &a, const AllocatedPath &b) {
+                return _tcscmp(a.c_str(), b.c_str()) < 0;
+              });
 
     // Sort other files by filename
-    std::sort(other_files.begin(), other_files.end());
+    std::sort(other_files.begin(), other_files.end(),
+              [](const AllocatedPath &a, const AllocatedPath &b) {
+                return _tcscmp(a.c_str(), b.c_str()) < 0;
+              });
 
     // Combine: XCSoar files first, then others
     matching_files.insert(matching_files.end(),
