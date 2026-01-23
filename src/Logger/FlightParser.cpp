@@ -15,6 +15,7 @@ FlightParser::Read(FlightInfo &flight)
   flight.date = BrokenDate::Invalid();
   flight.start_time = BrokenTime::Invalid();
   flight.end_time = BrokenTime::Invalid();
+  flight.comment.clear();
 
   while (true) {
     BrokenDateTime dt;
@@ -48,6 +49,11 @@ FlightParser::Read(FlightInfo &flight)
 
       flight.end_time = dt;
       return true;
+    } else if (StringIsEqual(line, "comment")) {
+      // Parse comment record if we have a valid flight start
+      if (flight.start_time.IsPlausible()) {
+        flight.comment = line;
+      }
     }
   }
 }
