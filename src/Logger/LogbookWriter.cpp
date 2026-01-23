@@ -28,7 +28,7 @@ LogbookWriter::WriteComment(Path logbook_path,
     if (len < 0 || len >= (int)sizeof(buffer))
       return false;
 
-    file.Write(buffer, len);
+    file.Write(buffer);
     file.Commit();
     return true;
   } catch (...) {
