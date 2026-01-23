@@ -28,7 +28,7 @@ LogbookWriter::WriteComment(Path logbook_path,
     if (len < 0 || len >= (int)sizeof(buffer))
       return false;
 
-    file.Write(buffer);
+    file.Write(std::span<const std::byte>((const std::byte*)buffer, len));
     file.Commit();
     return true;
   } catch (...) {
