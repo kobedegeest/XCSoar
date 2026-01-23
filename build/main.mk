@@ -237,10 +237,13 @@ XCSOAR_SOURCES := \
 	$(SRC)/Logger/GRecord.cpp \
 	$(SRC)/Logger/LoggerEPE.cpp \
 	$(SRC)/Logger/LoggerImpl.cpp \
+	$(SRC)/Logger/LogbookWriter.cpp \
+	$(SRC)/Logger/LogbookGlue.cpp \
 	$(SRC)/IGC/IGCFix.cpp \
 	$(SRC)/IGC/IGCWriter.cpp \
 	$(SRC)/IGC/IGCString.cpp \
 	$(SRC)/IGC/Generator.cpp \
+	$(SRC)/IGC/IGCFileMatcher.cpp \
 	$(SRC)/util/MD5.cpp \
 	$(SRC)/Logger/NMEALogger.cpp \
 	$(SRC)/Logger/ExternalLogger.cpp \
@@ -397,6 +400,7 @@ XCSOAR_SOURCES := \
 	\
 	$(SRC)/FlightStatistics.cpp \
 	$(SRC)/FlightInfo.cpp \
+	$(SRC)/LogbookEntry.cpp \
 	$(SRC)/Renderer/FlightStatisticsRenderer.cpp \
 	$(SRC)/Renderer/BarographRenderer.cpp \
 	$(SRC)/Renderer/ClimbChartRenderer.cpp \
