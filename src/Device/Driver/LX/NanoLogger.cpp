@@ -282,10 +282,10 @@ HandleFlightLine(const char *_line, BufferedOutputStream &os,
 
 static bool
 DownloadFlightInner(Port &port, const char *filename, BufferedOutputStream &os,
-                    OperationEnvironment &env)
+                    OperationEnvironment &env, unsigned *resume_row = nullptr)
 {
   PortNMEAReader reader(port, env);
-  unsigned row_count = 0, i = 1;
+  unsigned row_count = 0, i = (resume_row && *resume_row > 0) ? *resume_row : 1;
 
   while (true) {
     /* read up to 50 lines at a time */
@@ -321,6 +321,9 @@ DownloadFlightInner(Port &port, const char *filename, BufferedOutputStream &os,
       }
       if (line == nullptr || !HandleFlightLine(line, os, i, row_count)) {
         if (request_retry_count > 5) {
+          /* Update resume point before throwing */
+          if (resume_row)
+            *resume_row = i;
           throw std::runtime_error("Flight download failed: maximum retries exceeded");
         }
 
@@ -353,7 +356,8 @@ DownloadFlightInner(Port &port, const char *filename, BufferedOutputStream &os,
 
 bool
 Nano::DownloadFlight(Port &port, const RecordedFlightInfo &flight,
-                     Path path, OperationEnvironment &env)
+                     Path path, OperationEnvironment &env,
+                     unsigned *resume_row)
 {
   port.StopRxThread();
   port.FullFlush(env, std::chrono::milliseconds(200), std::chrono::seconds(2));
@@ -363,7 +367,7 @@ Nano::DownloadFlight(Port &port, const RecordedFlightInfo &flight,
 
   try {
     bool success = DownloadFlightInner(port, flight.internal.lx.nano_filename,
-                                       bos, env);
+                                       bos, env, resume_row);
 
     if (success) {
       bos.Flush();

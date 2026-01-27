@@ -1181,36 +1181,61 @@ DeviceDescriptor::DownloadFlight(const RecordedFlightInfo &flight,
     return false;
 
   StaticString<60> text;
+  unsigned resume_row = 0;
+  unsigned retry_count = 0;
+  constexpr unsigned MAX_RETRIES = 2;
 
-  try {
-    if (driver->HasPassThrough() && (second_device != nullptr)) {
-      text.Format(_T("%s: %s."), _("Downloading flight log"),
-                  second_driver->display_name);
-      env.SetText(text);
-
-      device->EnablePassThrough(env);
-      return second_device->DownloadFlight(flight, path, env);
-    } else {
-      text.Format(_T("%s: %s."), _("Downloading flight log"),
-                  driver->display_name);
-      env.SetText(text);
-
-      return device->DownloadFlight(flight, path, env);
-    }
-  } catch (OperationCancelled) {
-    return false;
-  } catch (...) {
-    LogError(std::current_exception(), "DownloadFlight() failed");
-    
-    /* attempt to reopen the device after communication failure */
+  while (retry_count <= MAX_RETRIES) {
     try {
-      SlowReopen(env);
+      if (driver->HasPassThrough() && (second_device != nullptr)) {
+        text.Format(_T("%s: %s."), _("Downloading flight log"),
+                    second_driver->display_name);
+        env.SetText(text);
+
+        device->EnablePassThrough(env);
+        return second_device->DownloadFlight(flight, path, env, &resume_row);
+      } else {
+        text.Format(_T("%s: %s."), _("Downloading flight log"),
+                    driver->display_name);
+        env.SetText(text);
+
+        return device->DownloadFlight(flight, path, env, &resume_row);
+      }
+    } catch (OperationCancelled) {
+      return false;
+    } catch (const std::runtime_error &e) {
+      LogError(std::current_exception(), "DownloadFlight() failed");
+      ++retry_count;
+
+      if (retry_count > MAX_RETRIES) {
+        LogFormat(_T("Flight download failed after %u retries"), MAX_RETRIES);
+        return false;
+      }
+
+      /* attempt to reopen the device and retry from resume point */
+      LogFormat(_T("Retrying flight download from row %u (attempt %u/%u)..."),
+                resume_row, retry_count, MAX_RETRIES);
+      try {
+        SlowReopen(env);
+      } catch (...) {
+        LogError(std::current_exception(), "Device reopen failed");
+        return false;
+      }
     } catch (...) {
-      LogError(std::current_exception(), "Device reopen failed");
+      LogError(std::current_exception(), "DownloadFlight() failed");
+      
+      /* attempt to reopen the device after communication failure */
+      try {
+        SlowReopen(env);
+      } catch (...) {
+        LogError(std::current_exception(), "Device reopen failed");
+      }
+      
+      return false;
     }
-    
-    return false;
   }
+
+  return false;
 }
 
 void
