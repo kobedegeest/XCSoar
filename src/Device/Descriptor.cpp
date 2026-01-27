@@ -27,6 +27,7 @@
 #include "Input/InputQueue.hpp"
 #include "LogFile.hpp"
 #include "Job/Job.hpp"
+#include "system/FileUtil.hpp"
 
 #ifdef ANDROID
 #include "java/Closeable.hxx"
@@ -1184,6 +1185,7 @@ DeviceDescriptor::DownloadFlight(const RecordedFlightInfo &flight,
   unsigned resume_row = 0;
   unsigned retry_count = 0;
   constexpr unsigned MAX_RETRIES = 2;
+  Path partial_path = MakePartialPath(path);
 
   while (retry_count <= MAX_RETRIES) {
     try {
@@ -1202,13 +1204,19 @@ DeviceDescriptor::DownloadFlight(const RecordedFlightInfo &flight,
         return device->DownloadFlight(flight, path, env, &resume_row);
       }
     } catch (OperationCancelled) {
+      // Clean up partial file
+      if (File::Exists(partial_path))
+        File::Delete(partial_path);
       return false;
-    } catch (const std::runtime_error &e) {
+    } catch (const std::runtime_error &e) { // on runtime error we will try to resume download
       LogError(std::current_exception(), "DownloadFlight() failed");
       ++retry_count;
 
       if (retry_count > MAX_RETRIES) {
         LogFormat(_T("Flight download failed after %u retries"), MAX_RETRIES);
+        // Clean up partial file
+        if (File::Exists(partial_path))
+          File::Delete(partial_path);
         return false;
       }
 
@@ -1219,9 +1227,12 @@ DeviceDescriptor::DownloadFlight(const RecordedFlightInfo &flight,
         SlowReopen(env);
       } catch (...) {
         LogError(std::current_exception(), "Device reopen failed");
+        // Clean up partial file
+        if (File::Exists(partial_path))
+          File::Delete(partial_path);
         return false;
       }
-    } catch (...) {
+    } catch (...) { // extra catch-all for other exceptions reconnect device and leave DownloadFlight
       LogError(std::current_exception(), "DownloadFlight() failed");
       
       /* attempt to reopen the device after communication failure */
@@ -1230,11 +1241,16 @@ DeviceDescriptor::DownloadFlight(const RecordedFlightInfo &flight,
       } catch (...) {
         LogError(std::current_exception(), "Device reopen failed");
       }
-      
+      // Clean up partial file
+      if (File::Exists(partial_path))
+        File::Delete(partial_path);
       return false;
     }
   }
 
+  // Clean up partial file
+  if (File::Exists(partial_path))
+    File::Delete(partial_path);
   return false;
 }
 
