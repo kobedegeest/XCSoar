@@ -542,6 +542,17 @@ DeviceDescriptor::Reopen(OperationEnvironment &env)
 }
 
 void
+DeviceDescriptor::SlowReopen(OperationEnvironment &env)
+{
+  assert(InMainThread());
+  assert(!IsBorrowed());
+
+  Close();
+  env.Sleep(std::chrono::seconds(5));
+  Open(env);
+}
+
+void
 DeviceDescriptor::AutoReopen(OperationEnvironment &env)
 {
   assert(InMainThread());
@@ -1171,20 +1182,34 @@ DeviceDescriptor::DownloadFlight(const RecordedFlightInfo &flight,
 
   StaticString<60> text;
 
+  try {
+    if (driver->HasPassThrough() && (second_device != nullptr)) {
+      text.Format(_T("%s: %s."), _("Downloading flight log"),
+                  second_driver->display_name);
+      env.SetText(text);
 
-  if (driver->HasPassThrough() && (second_device != nullptr)) {
-    text.Format(_T("%s: %s."), _("Downloading flight log"),
-                second_driver->display_name);
-    env.SetText(text);
+      device->EnablePassThrough(env);
+      return second_device->DownloadFlight(flight, path, env);
+    } else {
+      text.Format(_T("%s: %s."), _("Downloading flight log"),
+                  driver->display_name);
+      env.SetText(text);
 
-    device->EnablePassThrough(env);
-    return second_device->DownloadFlight(flight, path, env);
-  } else {
-    text.Format(_T("%s: %s."), _("Downloading flight log"),
-                driver->display_name);
-    env.SetText(text);
-
-    return device->DownloadFlight(flight, path, env);
+      return device->DownloadFlight(flight, path, env);
+    }
+  } catch (OperationCancelled) {
+    return false;
+  } catch (...) {
+    LogError(std::current_exception(), "DownloadFlight() failed");
+    
+    /* attempt to reopen the device after communication failure */
+    try {
+      SlowReopen(env);
+    } catch (...) {
+      LogError(std::current_exception(), "Device reopen failed");
+    }
+    
+    return false;
   }
 }
 
