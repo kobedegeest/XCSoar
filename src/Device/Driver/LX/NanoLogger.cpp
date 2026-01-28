@@ -17,12 +17,32 @@
 #include "util/SpanCast.hxx"
 #include "util/StringCompare.hxx"
 #include "system/FileUtil.hpp"
+#include "util/TextFile.hxx"
+#include "io/FileLineReader.hpp"
 
 #include <algorithm>
 #include <stdio.h>
 #include <stdlib.h>
+#include <fstream>
 
 using std::string_view_literals::operator""sv;
+
+static unsigned
+CountLinesInFile(Path path)
+{
+  std::ifstream file(path.c_str());
+  if (!file.is_open())
+    return 1;
+
+  unsigned line_count = 0;
+  std::string line;
+  while (std::getline(file, line)) {
+    line_count++;
+  }
+
+  // Return next line number to download (1-indexed)
+  return line_count + 1;
+}
 
 static void
 RequestLogbookInfo(Port &port, OperationEnvironment &env)
@@ -287,7 +307,7 @@ DownloadFlightInner(Port &port, const char *filename, BufferedOutputStream &os,
 {
   PortNMEAReader reader(port, env);
   unsigned row_count = 0, i = (resume_row && *resume_row > 0) ? *resume_row : 1;
-  const unsigned FLUSH_INTERVAL = 50;  // Flush to disk every 50 lines
+  const unsigned FLUSH_INTERVAL = 500;  // Flush to disk every 500 lines
   unsigned lines_since_last_flush = 0;
 
   while (true) {
@@ -303,7 +323,7 @@ DownloadFlightInner(Port &port, const char *filename, BufferedOutputStream &os,
     const unsigned start = i;
     const unsigned end = start + nrequest;
     unsigned request_retry_count = 0;
-    constexpr unsigned MAX_request_retry_count = 5;
+    constexpr unsigned MAX_request_retry_count = 2; // based on testing retrying on this lvl has little to no effect
 
     /* read the requested lines and save to file */
 
@@ -391,61 +411,54 @@ DownloadFlightInner(Port &port, const char *filename, BufferedOutputStream &os,
 bool
 Nano::DownloadFlight(Port &port, const RecordedFlightInfo &flight,
                      Path path, OperationEnvironment &env,
-                     unsigned *resume_row)
+                     [[maybe_unused]] unsigned *resume_row)
 {
   port.StopRxThread();
   port.FullFlush(env, std::chrono::milliseconds(200), std::chrono::seconds(2));
 
-  // Create paths for partial and final files
-  Path partial_path = MakePartialPath(path);  // e.g., "flight.igc.partial"
+  const auto partial_path = MakePartialPath(path);
 
-  bool resuming = false;
-
-  // Check if we're resuming from a previous attempt
-  if (resume_row && *resume_row > 0 && File::Exists(partial_path)) {
-    resuming = true;
+  // Check if partial file exists and count lines to determine resume point
+  unsigned calculated_resume_row = 1;
+  if (File::Exists(partial_path)) {
+    try {
+      // Count lines in existing partial file
+      calculated_resume_row = CountLinesInFile(partial_path);
+      if (calculated_resume_row > 1) {
+        LogFormat(_T("Resuming download from line %u"), calculated_resume_row);
+      }
+    } catch (...) {
+      LogError(std::current_exception(), "Failed to count lines in partial file");
+      // If we can't count, delete partial and start fresh
+      File::Delete(partial_path);
+      calculated_resume_row = 1;
+    }
   }
+
   // Open file in appropriate mode
-  FileOutputStream::Mode mode = FileOutputStream::Mode::CREATE;
-  if (resuming) {
-    // Append mode for resume
-    mode = FileOutputStream::Mode::APPEND_OR_CREATE;
-  }
-
-  FileOutputStream fos(partial_path, mode);
+  FileOutputStream fos(partial_path, 
+                      calculated_resume_row > 1 
+                        ? FileOutputStream::Mode::APPEND_OR_CREATE
+                        : FileOutputStream::Mode::CREATE);
   BufferedOutputStream bos(fos);
-  try {
-    // Download with periodic flushing
-    bool success = DownloadFlightInner(port, flight.internal.lx.nano_filename,
-                                      bos, env, resume_row);
 
-    if (success) {
-      // Flush and close the partial file
+  bool success = DownloadFlightInner(port, flight.internal.lx.nano_filename,
+                                     bos, env, &calculated_resume_row);
+
+  if (success) {
+    bos.Flush();
+    fos.Commit();
+    File::Rename(partial_path, path);
+    return true;
+  } else {
+    // Flush partial data for resume
+    try {
       bos.Flush();
       fos.Commit();
-
-      // Atomically rename partial file to final filename
-      File::Rename(partial_path, path);
-
-      // Clear resume state
-      if (resume_row)
-        *resume_row = 0;
-
-      return true;
+    } catch (...) {
+      // If we can't save partial data, delete it
+      File::Delete(partial_path);
     }
-
-    // On failure, keep partial file for next retry
-    bos.Flush();
-    fos.Commit();
-
-    return false;
-
-  } catch (...) {
-    LogError(std::current_exception(), "Flight download failed");
-    // On exception, keep partial file for next retry
-    bos.Flush();
-    fos.Commit();
-    // throw error to Descriptor level for handling
-    throw;
+    throw std::runtime_error("Download incomplete");
   }
 }

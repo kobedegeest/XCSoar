@@ -1183,11 +1183,9 @@ DeviceDescriptor::DownloadFlight(const RecordedFlightInfo &flight,
 
   StaticString<60> text;
   unsigned resume_row = 0;
-  unsigned retry_count = 0;
-  constexpr unsigned MAX_RETRIES = 2;
   Path partial_path = MakePartialPath(path);
 
-  while (retry_count <= MAX_RETRIES) {
+  
     try {
       if (driver->HasPassThrough() && (second_device != nullptr)) {
         text.Format(_T("%s: %s."), _("Downloading flight log"),
@@ -1208,45 +1206,13 @@ DeviceDescriptor::DownloadFlight(const RecordedFlightInfo &flight,
       if (File::Exists(partial_path))
         File::Delete(partial_path);
       return false;
-    } catch (const std::runtime_error &e) { // on runtime error we will try to resume download
+    } catch (...) {
+      // Any failure - log it and return false
+      // Don't call SlowReopen here - we're in worker thread!
       LogError(std::current_exception(), "DownloadFlight() failed");
-      ++retry_count;
-
-      if (retry_count > MAX_RETRIES) {
-        LogFormat(_T("Flight download failed after %u retries"), MAX_RETRIES);
-        // Clean up partial file
-        if (File::Exists(partial_path))
-          File::Delete(partial_path);
-        return false;
-      }
-
-      /* attempt to reopen the device and retry from resume point */
-      LogFormat(_T("Retrying flight download from row %u (attempt %u/%u)..."),
-                resume_row, retry_count, MAX_RETRIES);
-      try {
-        SlowReopen(env);
-      } catch (...) {
-        LogError(std::current_exception(), "Device reopen failed");
-        // Clean up partial file
-        if (File::Exists(partial_path))
-          File::Delete(partial_path);
-        return false;
-      }
-    } catch (...) { // extra catch-all for other exceptions reconnect device and leave DownloadFlight
-      LogError(std::current_exception(), "DownloadFlight() failed");
-      
-      /* attempt to reopen the device after communication failure */
-      try {
-        SlowReopen(env);
-      } catch (...) {
-        LogError(std::current_exception(), "Device reopen failed");
-      }
-      // Clean up partial file
-      if (File::Exists(partial_path))
-        File::Delete(partial_path);
-      return false;
+      return false;  // ← Just return false, let main thread handle reopen
     }
-  }
+
 
   // Clean up partial file
   if (File::Exists(partial_path))
