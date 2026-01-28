@@ -19,6 +19,7 @@
 #include "system/FileUtil.hpp"
 #include "util/TextFile.hxx"
 #include "io/FileLineReader.hpp"
+#include "util/StaticString.hxx"
 
 #include <algorithm>
 #include <stdio.h>
@@ -309,6 +310,14 @@ DownloadFlightInner(Port &port, const char *filename, BufferedOutputStream &os,
   unsigned row_count = 0, i = (resume_row && *resume_row > 0) ? *resume_row : 1;
   const unsigned FLUSH_INTERVAL = 500;  // Flush to disk every 500 lines
   unsigned lines_since_last_flush = 0;
+  bool range_set = false;
+
+  StaticString<60> text;
+  if (resume_row && *resume_row > 1) {
+    text.Format(_T("%s: %s."), "Resumed Download flight log",
+                    "LXNAV Nano");
+    env.SetText(text);
+  }
 
   while (true) {
     /* read up to 50 lines at a time */
@@ -335,7 +344,7 @@ DownloadFlightInner(Port &port, const char *filename, BufferedOutputStream &os,
         request_retry_count++;
       }
 
-      TimeoutClock timeout(std::chrono::seconds(i == 1 ? 20 : 2));
+      TimeoutClock timeout(std::chrono::seconds(row_count == 0 ? 20 : 2)); // using row_count to detect first request
       const char *line = nullptr;
       try {
         line = reader.ExpectLine("PLXVC,FLIGHT,A,", timeout);
@@ -399,10 +408,12 @@ DownloadFlightInner(Port &port, const char *filename, BufferedOutputStream &os,
       return true;
     }
 
-    if (start == 1)
+    if (!range_set){
       /* configure the range in the first iteration, now that we know
          the length of the file */
       env.SetProgressRange(row_count);
+      range_set = true;
+    }
 
     env.SetProgressPosition(i - 1);
   }
@@ -410,13 +421,25 @@ DownloadFlightInner(Port &port, const char *filename, BufferedOutputStream &os,
 
 bool
 Nano::DownloadFlight(Port &port, const RecordedFlightInfo &flight,
-                     Path path, OperationEnvironment &env,
-                     [[maybe_unused]] unsigned *resume_row)
+                     Path path, OperationEnvironment &env)
 {
   port.StopRxThread();
   port.FullFlush(env, std::chrono::milliseconds(200), std::chrono::seconds(2));
 
-  const auto partial_path = MakePartialPath(path);
+  const char *filename = flight.internal.lx.nano_filename;
+  /*
+  LXNANO filename length limit nano_filename uses a size 16 buffer
+  but actual are only 12 characters long and i do not know if it is /0 terminated
+  so to be safe we limit to 12 characters since we want to have predictable filenames
+  */ 
+  constexpr int NANO_FILENAME_LEN = 12; 
+
+  TCHAR partial_filename[64];
+  _stprintf(partial_filename,
+            _T("%.*s.partial"), 
+            NANO_FILENAME_LEN, flight.internal.lx.nano_filename);
+  
+  const auto partial_path = AllocatedPath::Build(path.GetParent(), partial_filename);
 
   // Check if partial file exists and count lines to determine resume point
   unsigned calculated_resume_row = 1;
@@ -442,12 +465,13 @@ Nano::DownloadFlight(Port &port, const RecordedFlightInfo &flight,
                         : FileOutputStream::Mode::CREATE);
   BufferedOutputStream bos(fos);
   try {
-    bool success = DownloadFlightInner(port, flight.internal.lx.nano_filename,
+    bool success = DownloadFlightInner(port, filename,
                                       bos, env, &calculated_resume_row);
 
     if (success) {
       bos.Flush();
       fos.Commit();
+      LogFormat(_T("Download complete, renaming to final filename"));
       File::Rename(partial_path, path);
       return true;
     } else {
@@ -458,7 +482,7 @@ Nano::DownloadFlight(Port &port, const RecordedFlightInfo &flight,
         return false;
       } catch (...) {
         // If we can't save partial data, delete it
-        File::Delete(partial_path);
+        // File::Delete(partial_path);
       }
       throw std::runtime_error("Download incomplete");
     }

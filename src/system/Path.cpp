@@ -48,12 +48,6 @@ Path::operator+(const_pointer other) const noexcept
   return AllocatedPath::Donate(result);
 }
 
-AllocatedPath
-MakePartialPath(Path path) noexcept
-{
-  return path + _T(".partial");
-}
-
 #ifdef _WIN32
 
 [[gnu::pure]] [[gnu::nonnull]]

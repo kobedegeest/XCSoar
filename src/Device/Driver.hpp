@@ -185,13 +185,11 @@ public:
    *
    * @param flight the flight that shall be downloaded
    * @param path the file name to save to
-   * @param resume_row optional pointer to track resume position for retries
    * @return true on success
    */
   virtual bool DownloadFlight(const RecordedFlightInfo &flight,
                               Path path,
-                              OperationEnvironment &env,
-                              unsigned *resume_row = nullptr) = 0;
+                              OperationEnvironment &env) = 0;
 
   /**
    * Called periodically each second
@@ -279,8 +277,7 @@ public:
 
   bool DownloadFlight(const RecordedFlightInfo &flight,
                       Path path,
-                      OperationEnvironment &env,
-                      unsigned *resume_row = nullptr) override;
+                      OperationEnvironment &env) override;
 
   void OnSysTicker() override;
 

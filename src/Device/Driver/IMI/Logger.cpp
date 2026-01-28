@@ -21,7 +21,7 @@ IMIDevice::ReadFlightList(RecordedFlightList &flight_list,
 
 bool
 IMIDevice::DownloadFlight(const RecordedFlightInfo &flight, Path path,
-                          OperationEnvironment &env, [[maybe_unused]] unsigned *resume_row)
+                          OperationEnvironment &env)
 {
   port.StopRxThread();
 

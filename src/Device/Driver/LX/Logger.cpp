@@ -206,15 +206,14 @@ DownloadFlightInner(Port &port, const RecordedFlightInfo &flight,
 bool
 LXDevice::DownloadFlight(const RecordedFlightInfo &flight,
                          Path path,
-                         OperationEnvironment &env,
-                         unsigned *resume_row)
+                         OperationEnvironment &env)
 {
   if (flight.internal.lx.nano_filename[0] != 0) {
     assert(!busy);
     busy = true;
     AtScopeExit(this) { busy = false; };
 
-    return Nano::DownloadFlight(port, flight, path, env, resume_row);
+    return Nano::DownloadFlight(port, flight, path, env);
   }
 
   if (!EnableCommandMode(env))

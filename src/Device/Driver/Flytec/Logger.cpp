@@ -226,8 +226,7 @@ FlytecDevice::ReadFlightList(RecordedFlightList &flight_list,
 
 bool
 FlytecDevice::DownloadFlight(const RecordedFlightInfo &flight,
-                             Path path, OperationEnvironment &env,
-                             [[maybe_unused]] unsigned *resume_row)
+                             Path path, OperationEnvironment &env)
 {
   port.StopRxThread();
 

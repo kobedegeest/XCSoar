@@ -55,8 +55,7 @@ public:
                               OperationEnvironment &env) override;
   virtual bool DownloadFlight(const RecordedFlightInfo &flight,
                               Path path,
-                              OperationEnvironment &env,
-                              unsigned *resume_row = nullptr) override;
+                              OperationEnvironment &env) override;
 
 public:
   bool EnableBulkMode(OperationEnvironment &env);
