@@ -441,24 +441,30 @@ Nano::DownloadFlight(Port &port, const RecordedFlightInfo &flight,
                         ? FileOutputStream::Mode::APPEND_OR_CREATE
                         : FileOutputStream::Mode::CREATE);
   BufferedOutputStream bos(fos);
+  try {
+    bool success = DownloadFlightInner(port, flight.internal.lx.nano_filename,
+                                      bos, env, &calculated_resume_row);
 
-  bool success = DownloadFlightInner(port, flight.internal.lx.nano_filename,
-                                     bos, env, &calculated_resume_row);
-
-  if (success) {
-    bos.Flush();
-    fos.Commit();
-    File::Rename(partial_path, path);
-    return true;
-  } else {
-    // Flush partial data for resume
-    try {
+    if (success) {
       bos.Flush();
       fos.Commit();
-    } catch (...) {
-      // If we can't save partial data, delete it
-      File::Delete(partial_path);
+      File::Rename(partial_path, path);
+      return true;
+    } else {
+      // Flush partial data for resume
+      try {
+        bos.Flush();
+        fos.Commit();
+        return false;
+      } catch (...) {
+        // If we can't save partial data, delete it
+        File::Delete(partial_path);
+      }
+      throw std::runtime_error("Download incomplete");
     }
-    throw std::runtime_error("Download incomplete");
+  } catch (...) {
+    bos.Flush();
+    fos.Commit();
+    throw;
   }
 }
