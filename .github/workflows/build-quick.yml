@@ -14,7 +14,7 @@ on:
       - '.readthedocs.yaml'
     branches:
       - master
-      - 'dev_off'
+      - 'dev'
 
   pull_request:
     paths-ignore:

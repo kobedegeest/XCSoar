@@ -14,7 +14,7 @@ on:
       - '.readthedocs.yaml'
     branches:
       - master
-      - 'dev'
+      - 'dev_off'
 
 env:
   DEBUG: n
