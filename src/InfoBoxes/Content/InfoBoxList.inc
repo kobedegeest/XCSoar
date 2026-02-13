@@ -729,7 +729,7 @@ INFOBOX_ENTRY(e_Alternate_1_Name,
               N_("Alternate 1"),
               N_("Altn 1"),
               N_("Name and bearing to the best alternate landing location."),
-              IBFHelperInt<InfoBoxContentAlternateName, 0>::Create,
+              CYCLE_CREATE(InfoBoxContentAlternateName, 0),
               nullptr,
               nullptr)
 
@@ -739,7 +739,7 @@ INFOBOX_ENTRY(e_Alternate_2_Name,
               N_("Altn 2"),
               N_("Name and bearing to the second-best alternate landing "
                  "location."),
-              IBFHelperInt<InfoBoxContentAlternateName, 1>::Create,
+              CYCLE_CREATE(InfoBoxContentAlternateName, 1),
               nullptr,
               nullptr)
 
@@ -750,7 +750,7 @@ INFOBOX_ENTRY(e_Alternate_1_GR,
               N_("Geometric gradient to the arrival height above the best "
                  "alternate landing location. This is not adjusted for total "
                  "energy."),
-              IBFHelperInt<InfoBoxContentAlternateGR, 0>::Create,
+              CYCLE_CREATE(InfoBoxContentAlternateGR, 0),
               nullptr,
               nullptr)
 
@@ -1264,7 +1264,7 @@ INFOBOX_ENTRY(e_Alternate_2_GR,
               N_("Geometric gradient to the arrival height above the "
                  "second-best alternate landing location. This is not "
                  "adjusted for total energy."),
-              IBFHelperInt<InfoBoxContentAlternateGR, 1>::Create,
+              CYCLE_CREATE(InfoBoxContentAlternateGR, 1),
               nullptr,
               nullptr)
 
@@ -1360,7 +1360,7 @@ INFOBOX_ENTRY(e_Alternate_1_AltDiff,
               N_("Altn 1 AltD"),
               N_("Arrival altitude at the best alternate landing location "
                  "relative to the safety arrival height."),
-              IBFHelperInt<InfoBoxContentAlternateAltDiff, 0>::Create,
+              CYCLE_CREATE(InfoBoxContentAlternateAltDiff, 0),
               nullptr,
               nullptr)
 
@@ -1370,7 +1370,7 @@ INFOBOX_ENTRY(e_Alternate_2_AltDiff,
               N_("Altn 2 AltD"),
               N_("Arrival altitude at the second-best alternate landing "
                  "location relative to the safety arrival height."),
-              IBFHelperInt<InfoBoxContentAlternateAltDiff, 1>::Create,
+              CYCLE_CREATE(InfoBoxContentAlternateAltDiff, 1),
               nullptr,
               nullptr)
 

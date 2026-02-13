@@ -114,11 +114,14 @@ struct MetaData {
 #define INFOBOX_ENTRY(id, name, caption, description, create, update, panels) \
   { name, caption, description, create, update, panels },
 
+#define CYCLE_CREATE(name, idx) IBFHelperInt<name, idx>::Create
+
 static constexpr MetaData meta_data[] = {
 #include "InfoBoxes/Content/InfoBoxList.inc"
 };
 
 #undef INFOBOX_ENTRY
+#undef CYCLE_CREATE
 
 static_assert(ARRAY_SIZE(meta_data) == NUM_TYPES,
               "Wrong InfoBox factory size");
