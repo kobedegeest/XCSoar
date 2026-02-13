@@ -111,8 +111,22 @@ struct MetaData {
  * in this array. This will break existing infobox configurations of all users!
  */
 
+ constexpr MetaData MakeMetaData(const TCHAR *name,
+  const TCHAR *caption,
+  const TCHAR *description,
+  InfoBoxContent *(*create)() noexcept,
+  void (*update)(InfoBoxData &data) noexcept,
+  const InfoBoxPanel *panels) noexcept {
+if (create != nullptr)
+return MetaData(name, caption, description, create);
+else if (panels != nullptr)
+return MetaData(name, caption, description, update, panels);
+else
+return MetaData(name, caption, description, update);
+}
+
 #define INFOBOX_ENTRY(id, name, caption, description, create, update, panels) \
-  { name, caption, description, create, update, panels },
+MakeMetaData(name, caption, description, create, update, panels),
 
 #define CYCLE_CREATE(name, idx) IBFHelperInt<name, idx>::Create
 
