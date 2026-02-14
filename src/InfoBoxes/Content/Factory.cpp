@@ -25,10 +25,12 @@
 #include "InfoBoxes/Content/Engine.hpp"
 
 #include "util/Macros.hpp"
+#include "util/StringAPI.hxx"
 #include "Language/Language.hpp"
 
 #include <cstddef>
 #include <cassert>
+#include <optional>
 
 /**
  * An #InfoBoxContent implementation that invokes a callback.  This is
@@ -70,6 +72,8 @@ struct IBFHelperInt {
 using namespace InfoBoxFactory;
 
 struct MetaData {
+  /** Stable identifier for name-based storage (e.g. "e_HeightGPS"). */
+  const char *id;
   const char *name;
   const char *caption;
   const char *description;
@@ -84,26 +88,29 @@ struct MetaData {
    */
   MetaData() = delete;
 
-  constexpr MetaData(const char *_name,
+  constexpr MetaData(const char *_id,
+                     const char *_name,
                      const char *_caption,
                      const char *_description,
                      InfoBoxContent *(*_create)() noexcept) noexcept
-    :name(_name), caption(_caption), description(_description),
+    :id(_id), name(_name), caption(_caption), description(_description),
      create(_create), update(nullptr), panels(nullptr) {}
 
-  constexpr MetaData(const char *_name,
+  constexpr MetaData(const char *_id,
+                     const char *_name,
                      const char *_caption,
                      const char *_description,
                      void (*_update)(InfoBoxData &data) noexcept) noexcept
-    :name(_name), caption(_caption), description(_description),
+    :id(_id), name(_name), caption(_caption), description(_description),
      create(nullptr), update(_update), panels(nullptr) {}
 
-  constexpr MetaData(const char *_name,
+  constexpr MetaData(const char *_id,
+                     const char *_name,
                      const char *_caption,
                      const char *_description,
                      void (*_update)(InfoBoxData &data) noexcept,
                      const InfoBoxPanel _panels[]) noexcept
-    :name(_name), caption(_caption), description(_description),
+    :id(_id), name(_name), caption(_caption), description(_description),
      create(nullptr), update(_update), panels(_panels) {}
 };
 
@@ -111,22 +118,25 @@ struct MetaData {
  * in this array. This will break existing infobox configurations of all users!
  */
 
- constexpr MetaData MakeMetaData(const TCHAR *name,
-  const TCHAR *caption,
-  const TCHAR *description,
-  InfoBoxContent *(*create)() noexcept,
-  void (*update)(InfoBoxData &data) noexcept,
-  const InfoBoxPanel *panels) noexcept {
-if (create != nullptr)
-return MetaData(name, caption, description, create);
-else if (panels != nullptr)
-return MetaData(name, caption, description, update, panels);
-else
-return MetaData(name, caption, description, update);
+constexpr MetaData MakeMetaData(const char *id,
+                                const char *name,
+                                const char *caption,
+                                const char *description,
+                                InfoBoxContent *(*create)() noexcept,
+                                void (*update)(InfoBoxData &data) noexcept,
+                                const InfoBoxPanel *panels) noexcept
+{
+  if (create != nullptr)
+    return MetaData(id, name, caption, description, create);
+  else if (panels != nullptr)
+    return MetaData(id, name, caption, description, update, panels);
+  else
+    return MetaData(id, name, caption, description, update);
 }
 
+/** Stringify enum id for stable name-based storage (e.g. e_HeightGPS -> "e_HeightGPS"). */
 #define INFOBOX_ENTRY(id, name, caption, description, create, update, panels) \
-MakeMetaData(name, caption, description, create, update, panels),
+  MakeMetaData(_T(#id), name, caption, description, create, update, panels),
 
 #define CYCLE_CREATE(name, idx) IBFHelperInt<name, idx>::Create
 
@@ -180,4 +190,17 @@ InfoBoxFactory::Create(Type type) noexcept
     return std::unique_ptr<InfoBoxContent>(m.create());
   else
     return std::make_unique<InfoBoxContentCallback>(m.update, m.panels);
+}
+
+std::optional<InfoBoxFactory::Type>
+InfoBoxFactory::FindTypeByName(const char *name) noexcept
+{
+  if (name == nullptr)
+    return std::nullopt;
+
+  for (unsigned i = 0; i < NUM_TYPES; ++i) {
+    if (StringIsEqual(meta_data[i].id, name))
+      return static_cast<Type>(i);
+  }
+  return std::nullopt;
 }
