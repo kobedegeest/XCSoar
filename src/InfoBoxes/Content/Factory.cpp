@@ -177,6 +177,14 @@ InfoBoxFactory::GetDescription(Type type) noexcept
   return meta_data[type].description;
 }
 
+const TCHAR *
+InfoBoxFactory::GetId(Type type) noexcept
+{
+  assert(type < NUM_TYPES);
+
+  return meta_data[type].id;
+}
+
 std::unique_ptr<InfoBoxContent>
 InfoBoxFactory::Create(Type type) noexcept
 {

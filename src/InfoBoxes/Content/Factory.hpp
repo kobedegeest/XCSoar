@@ -37,6 +37,14 @@ namespace InfoBoxFactory
   std::unique_ptr<InfoBoxContent> Create(Type infobox_type) noexcept;
 
   /**
+   * Returns the stable identifier string (e.g. "e_HeightGPS") for use in
+   * name-based profile storage.
+   */
+  [[gnu::const]]
+  const TCHAR *
+  GetId(Type type) noexcept;
+
+  /**
    * Look up InfoBox type by its stable identifier string (e.g. "e_HeightGPS").
    * For use by profile loader to convert name-based storage back to enum values.
    */

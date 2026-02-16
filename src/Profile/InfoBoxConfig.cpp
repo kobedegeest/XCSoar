@@ -4,7 +4,11 @@
 #include "InfoBoxConfig.hpp"
 #include "Keys.hpp"
 #include "Map.hpp"
+#include "LogFile.hpp"
 #include "InfoBoxes/InfoBoxSettings.hpp"
+#include "InfoBoxes/Content/Factory.hpp"
+
+#include <cctype>
 
 using namespace InfoBoxFactory;
 
@@ -32,14 +36,32 @@ static bool
 GetIBType(const ProfileMap &map, std::string_view key,
           InfoBoxFactory::Type &val)
 {
+  const char *value = map.Get(key, nullptr);
+  if (value == nullptr)
+    return false;
+
+  if (auto t = InfoBoxFactory::FindTypeByName(value)) {
+    val = *t;
+    return true;
+  }
+
+  /* only warn for name-based values; numeric values are legacy */
+  const unsigned char first = (unsigned char)value[0];
+  if (value[0] != '\0' && !std::isdigit(first)) {
+    LogFormat("Unknown InfoBox id '%s' in key %.*s",
+              value, (int)key.size(), key.data());
+  }
+
   unsigned _val = val;
   bool ret = map.Get(key, _val);
+  if (!ret)
+    return false;
 
   if (_val >= e_NUM_TYPES)
     return false;
 
   val = (InfoBoxFactory::Type)_val;
-  return ret;
+  return true;
 }
 
 void
@@ -150,6 +172,6 @@ Profile::Save(ProfileMap &map,
 
   for (unsigned j = 0; j < panel.MAX_CONTENTS; ++j) {
     sprintf(profileKey, "InfoBoxPanel%uBox%u", index, j);
-    map.Set(profileKey, panel.contents[j]);
+    map.Set(profileKey, InfoBoxFactory::GetId(panel.contents[j]));
   }
 }
