@@ -19,6 +19,7 @@
 #include "io/FileLineReader.hpp"
 #include "util/StaticString.hxx"
 #include "LogFile.hpp"
+#include "Language/Language.hpp"
 
 #include <algorithm>
 #include <stdio.h>
@@ -314,7 +315,7 @@ DownloadFlightInner(Port &port, const char *filename, BufferedOutputStream &os,
 
   StaticString<60> text;
   if (resume_row && *resume_row > 1) {
-    text.Format(_T("%s: %s."), "Resumed Download flight log",
+    text.Format(_T("%s: %s."), _("Resumed Download flight log"),
                     "LXNAV");
     env.SetText(text);
   }
