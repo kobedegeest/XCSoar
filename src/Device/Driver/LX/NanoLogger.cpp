@@ -315,7 +315,7 @@ DownloadFlightInner(Port &port, const char *filename, BufferedOutputStream &os,
 
   StaticString<60> text;
   if (resume_row && *resume_row > 1) {
-    text.Format(_T("%s: %s."), _("Resumed Download flight log"),
+    text.Format("%s: %s.", _("Resumed Download flight log"),
                     "LXNAV");
     env.SetText(text);
   }
@@ -350,7 +350,7 @@ DownloadFlightInner(Port &port, const char *filename, BufferedOutputStream &os,
       try {
         line = reader.ExpectLine("PLXVC,FLIGHT,A,", timeout);
       } catch (...) {
-        LogFormat(_T("Communication with logger timed out, tries: %u, line: %u"), request_retry_count, i);
+        LogFormat("Communication with logger timed out, tries: %u, line: %u", request_retry_count, i);
         LogError(std::current_exception(), "Download failing");
       }
 
@@ -437,7 +437,7 @@ Nano::DownloadFlight(Port &port, const RecordedFlightInfo &flight,
 
   TCHAR partial_filename[64];
   _stprintf(partial_filename,
-            _T("%.*s.partial"), 
+            "%.*s.partial", 
             NANO_FILENAME_LEN, filename);
   
   const auto partial_path = AllocatedPath::Build(path.GetParent(), partial_filename);
@@ -449,7 +449,7 @@ Nano::DownloadFlight(Port &port, const RecordedFlightInfo &flight,
       // Count lines in existing partial file
       calculated_resume_row = CountLinesInFile(partial_path);
       if (calculated_resume_row > 1) {
-        LogFormat(_T("Resuming download from line %u"), calculated_resume_row);
+        LogFormat("Resuming download from line %u", calculated_resume_row);
       }
     } catch (...) {
       LogError(std::current_exception(), "Failed to count lines in partial file, deleting it for clean fresh download.");
@@ -472,7 +472,7 @@ Nano::DownloadFlight(Port &port, const RecordedFlightInfo &flight,
     if (success) {
       bos.Flush();
       fos.Commit();
-      LogFormat(_T("Download complete, renaming to final filename"));
+      LogFormat("Download complete, renaming to final filename");
       File::Rename(partial_path, path);
       return true;
     } else {
@@ -482,7 +482,7 @@ Nano::DownloadFlight(Port &port, const RecordedFlightInfo &flight,
         fos.Commit();
         return false;
       } catch (...) {
-        LogFormat(_T("Failed to flush partial data to disk"));
+        LogFormat("Failed to flush partial data to disk");
       }
       throw std::runtime_error("Download incomplete");
     }
@@ -491,7 +491,7 @@ Nano::DownloadFlight(Port &port, const RecordedFlightInfo &flight,
         bos.Flush();
         fos.Commit();
       } catch (...) {
-        LogFormat(_T("Failed to flush partial data to disk"));
+        LogFormat("Failed to flush partial data to disk");
       }
     throw;
   }
