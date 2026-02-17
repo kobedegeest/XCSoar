@@ -435,7 +435,7 @@ Nano::DownloadFlight(Port &port, const RecordedFlightInfo &flight,
   */ 
   constexpr int NANO_FILENAME_LEN = 12; 
 
-  TCHAR partial_filename[64];
+  char partial_filename[64];
   _stprintf(partial_filename,
             "%.*s.partial", 
             NANO_FILENAME_LEN, filename);
