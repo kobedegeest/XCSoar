@@ -33,7 +33,7 @@ GetV60InfoBoxManagerConfig(const ProfileMap &map, InfoBoxSettings &settings)
 }
 
 static bool
-GetIBType(const ProfileMap &map, std::string_view key,
+GetIBType(ProfileMap &map, std::string_view key,
           InfoBoxFactory::Type &val)
 {
   const char *value = map.Get(key, nullptr);
@@ -61,7 +61,7 @@ GetIBType(const ProfileMap &map, std::string_view key,
 
   // --- NEW: migrate legacy numeric value to string ID ---
   if (is_numeric) {
-    map.SetModified(); // mark profile as modified to trigger saving
+    map.Set(key, InfoBoxFactory::GetId(val));
   } else {
     LogFormat("Unknown InfoBox id '%s' in key %.*s",
               value, (int)key.size(), key.data());
