@@ -33,14 +33,13 @@ GetV60InfoBoxManagerConfig(const ProfileMap &map, InfoBoxSettings &settings)
 }
 
 static bool
-GetIBType(ProfileMap &map, std::string_view key,
+GetIBType(const ProfileMap &map, std::string_view key,
           InfoBoxFactory::Type &val)
 {
   const char *value = map.Get(key, nullptr);
   if (value == nullptr)
     return false;
 
-  // First try modern string-based lookup
   if (auto t = InfoBoxFactory::FindTypeByName(value)) {
     val = *t;
     return true;
@@ -48,25 +47,20 @@ GetIBType(ProfileMap &map, std::string_view key,
 
   /* only warn for name-based values; numeric values are legacy */
   const unsigned char first = (unsigned char)value[0];
-  const bool is_numeric = (value[0] != '\0' && std::isdigit(first));
-
-  unsigned numeric_value = 0;
-  if (!map.Get(key, numeric_value))
-    return false;
-
-  if (numeric_value >= e_NUM_TYPES)
-    return false;
-
-  val = (InfoBoxFactory::Type)numeric_value;
-
-  // --- NEW: migrate legacy numeric value to string ID ---
-  if (is_numeric) {
-    map.Set(key, InfoBoxFactory::GetId(val));
-  } else {
+  if (value[0] != '\0' && !std::isdigit(first)) {
     LogFormat("Unknown InfoBox id '%s' in key %.*s",
               value, (int)key.size(), key.data());
   }
 
+  unsigned _val = val;
+  bool ret = map.Get(key, _val);
+  if (!ret)
+    return false;
+
+  if (_val >= e_NUM_TYPES)
+    return false;
+
+  val = (InfoBoxFactory::Type)_val;
   return true;
 }
 
