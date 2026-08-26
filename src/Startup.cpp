@@ -152,12 +152,22 @@ static AllMonitors *all_monitors;
 static GlideComputerTaskEvents *task_events;
 static DeviceFactory *device_factory;
 
+/** @see WasStartupCancelledByUser() */
+static bool startup_cancelled_by_user = false;
+
+bool
+WasStartupCancelledByUser() noexcept
+{
+  return startup_cancelled_by_user;
+}
+
 static bool
 LoadProfile()
 {
   if (Profile::GetPath() == nullptr &&
       !dlgStartupShowModal()) {
     LogString("LoadProfile: no profile path and startup dialog was cancelled");
+    startup_cancelled_by_user = true;
     return false;
   }
 
@@ -374,6 +384,7 @@ Startup(UI::Display &display)
     SimulatorPromptResult result = dlgSimulatorPromptShowModal();
     switch (result) {
     case SPR_QUIT:
+      startup_cancelled_by_user = true;
       return false;
 
     case SPR_FLY:
@@ -559,8 +570,10 @@ Startup(UI::Display &display)
 #endif
 
   // Show unified Quick Guide dialog (warranty + guide pages)
-  if (!dlgQuickGuideShowModal())
+  if (!dlgQuickGuideShowModal()) {
+    startup_cancelled_by_user = true;
     return false;
+  }
 
   GlidePolar &gp = CommonInterface::SetComputerSettings().polar.glide_polar_task;
   gp = GlidePolar(0);
