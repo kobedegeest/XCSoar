@@ -9,6 +9,18 @@
 
 class LabelBlock;
 
+enum class AirspaceLabelCandidate : unsigned {
+  BELOW,
+  ABOVE,
+  RIGHT,
+  LEFT,
+  LOWER_RIGHT,
+  LOWER_LEFT,
+  UPPER_RIGHT,
+  UPPER_LEFT,
+  COUNT,
+};
+
 /**
  * A location selected for an airspace altitude label.
  *
@@ -18,7 +30,7 @@ class LabelBlock;
  */
 struct AirspaceLabelPlacement {
   PixelRect visual_rect;
-  unsigned candidate_index;
+  AirspaceLabelCandidate candidate_index;
 };
 
 /**
@@ -33,4 +45,17 @@ struct AirspaceLabelPlacement {
 [[nodiscard]] std::optional<AirspaceLabelPlacement>
 PlaceAirspaceLabel(PixelPoint anchor, PixelSize size, unsigned clearance,
                    const PixelRect &map_rect,
-                   LabelBlock *label_block) noexcept;
+                   LabelBlock *label_block,
+                   std::optional<AirspaceLabelCandidate> preferred_candidate =
+                     std::nullopt) noexcept;
+
+/**
+ * Try exactly one candidate.  This is used when re-reserving a cached
+ * placement: reuse mode deliberately omits a blocked label instead of
+ * searching for a new location.
+ */
+[[nodiscard]] std::optional<AirspaceLabelPlacement>
+PlaceAirspaceLabelCandidate(PixelPoint anchor, PixelSize size,
+                            unsigned clearance, const PixelRect &map_rect,
+                            LabelBlock *label_block,
+                            AirspaceLabelCandidate candidate) noexcept;
