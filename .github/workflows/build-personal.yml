@@ -17,7 +17,7 @@ on:
       - 'testing'
 
 env:
-  DEBUG: n
+  DEBUG: y
   BOOST: boost_1_85_0
   
 jobs:
@@ -35,7 +35,7 @@ jobs:
       - name: set vars for push
         if: github.event_name == 'push'
         run: |
-          echo "DEBUG=n" >> $GITHUB_ENV
+          echo "DEBUG=y" >> $GITHUB_ENV
           echo "TARGET_FINAL=XCSoar" >> $GITHUB_ENV
 
       - id: checkout
