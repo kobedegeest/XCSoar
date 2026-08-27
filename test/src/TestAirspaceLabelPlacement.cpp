@@ -3,11 +3,14 @@
 
 #include "Renderer/AirspaceLabelList.hpp"
 #include "Renderer/AirspaceLabelPlacement.hpp"
+#include "Renderer/AirspaceLabelPlacementCache.hpp"
 #include "Renderer/LabelBlock.hpp"
 #include "Engine/Airspace/AirspaceWarningConfig.hpp"
 #include "TestUtil.hpp"
 
 #include <array>
+#include <chrono>
+#include <optional>
 
 static constexpr PixelRect map_rect{0, 0, 1000, 1000};
 static constexpr PixelSize label_size{100, 40};
@@ -54,6 +57,82 @@ TestFallbackPlacement()
   ok1(placement && placement->candidate_index == 1);
   ok1(placement &&
       Equals(placement->visual_rect, {450, 451, 550, 491}));
+}
+
+static void
+TestPreferredCandidate()
+{
+  LabelBlock block;
+  const auto placement =
+    PlaceAirspaceLabel({500, 500}, label_size, clearance, map_rect, &block,
+                       std::optional<unsigned>{4});
+
+  ok1(placement.has_value());
+  ok1(placement && placement->candidate_index == 4);
+  ok1(placement &&
+      Equals(placement->visual_rect, {559, 549, 659, 589}));
+}
+
+static void
+TestCachedCandidateReuse()
+{
+  LabelBlock first_block;
+  const auto first = PlaceAirspaceLabelCandidate({500, 500}, label_size,
+                                                  clearance, map_rect,
+                                                  &first_block, 4);
+  LabelBlock panned_block;
+  const auto panned = PlaceAirspaceLabelCandidate({520, 510}, label_size,
+                                                   clearance, map_rect,
+                                                   &panned_block, 4);
+
+  ok1(first && panned);
+  ok1(first && panned && first->candidate_index == panned->candidate_index);
+  ok1(first && panned &&
+      panned->visual_rect.left == first->visual_rect.left + 20 &&
+      panned->visual_rect.top == first->visual_rect.top + 10);
+
+  LabelBlock blocked_block;
+  ok1(blocked_block.check({446, 496, 554, 544}));
+  const auto blocked = PlaceAirspaceLabelCandidate({500, 500}, label_size,
+                                                    clearance, map_rect,
+                                                    &blocked_block, 0);
+  const auto fallback = PlaceAirspaceLabel({500, 500}, label_size, clearance,
+                                            map_rect, &blocked_block,
+                                            std::optional<unsigned>{0});
+  ok1(!blocked.has_value());
+  ok1(fallback && fallback->candidate_index == 1);
+}
+
+static void
+TestPlacementCacheDecision()
+{
+  using Cache = AirspaceLabelPlacementCache;
+  const Cache::TimePoint start{};
+  Cache cache;
+
+  ok1(cache.IsFreshLayoutDue(start, std::chrono::seconds{3}));
+
+  cache.BeginFreshLayout();
+  cache.Store(42, label_size, clearance, 4);
+  cache.CompleteFreshLayout(start);
+
+  const auto *entry = cache.Find(42);
+  ok1(entry && entry->candidate_index == 4);
+  ok1(entry && Cache::Matches(*entry, label_size, clearance));
+  ok1(!cache.IsFreshLayoutDue(start + std::chrono::seconds{2},
+                              std::chrono::seconds{3}));
+  ok1(cache.IsFreshLayoutDue(start + std::chrono::seconds{3},
+                             std::chrono::seconds{3}));
+
+  cache.BeginFreshLayout();
+  cache.Store(42, label_size, clearance, 1);
+  cache.CompleteFreshLayout(start + std::chrono::seconds{3});
+  entry = cache.Find(42);
+  ok1(entry && entry->candidate_index == 1);
+
+  cache.BeginFreshLayout();
+  cache.CompleteFreshLayout(start + std::chrono::seconds{6});
+  ok1(cache.Find(42) == nullptr);
 }
 
 static void
@@ -208,9 +287,9 @@ TestPlacementPriority()
 
   AirspaceLabelList warning_labels;
   warning_labels.Add(GeoPoint::Zero(), CLASSC, CTR, MakeAltitude(2000),
-                     MakeAltitude(3000));
+                     MakeAltitude(3000), 1);
   warning_labels.Add(GeoPoint::Zero(), CLASSD, MakeAltitude(1000),
-                     MakeAltitude(3000));
+                     MakeAltitude(3000), 2);
   warning_labels.Sort(config);
   ok1(warning_labels[0].cls == CLASSD);
   ok1(warning_labels[1].border_class == CTR);
@@ -227,28 +306,31 @@ TestPlacementPriority()
 
   AirspaceLabelList altitude_labels;
   altitude_labels.Add(GeoPoint::Zero(), CLASSC, MakeAltitude(1000),
-                      MakeAltitude(3000));
+                      MakeAltitude(3000), 3);
   altitude_labels.Add(GeoPoint::Zero(), CLASSC, MakeAltitude(2000),
-                      MakeAltitude(3000));
+                      MakeAltitude(3000), 4);
   altitude_labels.Sort(config);
   ok1(altitude_labels[0].base.altitude == 2000);
 
   AirspaceLabelList equal_labels;
   equal_labels.Add(GeoPoint::Zero(), CLASSC, MakeAltitude(1000),
-                   MakeAltitude(3000));
+                   MakeAltitude(3000), 2);
   equal_labels.Add(GeoPoint::Zero(), CLASSC, MakeAltitude(1000),
-                   MakeAltitude(3000));
+                   MakeAltitude(3000), 1);
   equal_labels.Sort(config);
-  ok1(equal_labels[0].ordinal == 0 && equal_labels[1].ordinal == 1);
+  ok1(equal_labels[0].identity == 1 && equal_labels[1].identity == 2);
 }
 
 int
 main()
 {
-  plan_tests(36);
+  plan_tests(52);
 
   TestPreferredPlacement();
   TestFallbackPlacement();
+  TestPreferredCandidate();
+  TestCachedCandidateReuse();
+  TestPlacementCacheDecision();
   TestSharedAnchorPlacement();
   TestNearbyAnchors();
   TestMapEdges();

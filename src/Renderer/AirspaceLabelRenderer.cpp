@@ -18,6 +18,7 @@
 #include "Geo/GeoBounds.hpp"
 #include "NMEA/Aircraft.hpp"
 #include "ui/canvas/Canvas.hpp"
+#include "ui/canvas/Font.hpp"
 #include "Screen/Layout.hpp"
 #include "LogFile.hpp"
 #include "util/CharUtil.hxx"
@@ -27,6 +28,7 @@
 #include "Sizes.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cstdint>
 #include <cstdlib>
 
@@ -117,6 +119,46 @@ GetAirspaceBorderClass(const AbstractAirspace &airspace,
   return settings.classes[type_or_class].display
     ? type_or_class
     : airspace.GetClass();
+}
+
+static void
+AddPlacementEligibilityValue(std::uint64_t &signature,
+                             const std::uint64_t value) noexcept
+{
+  // FNV-1a: this is only an in-process change detector, not a hash exposed
+  // outside the renderer.
+  signature ^= value;
+  signature *= 1099511628211ULL;
+}
+
+[[gnu::pure]]
+static std::uint64_t
+GetPlacementEligibility(const AirspaceRendererSettings &settings,
+                        const AirspaceWarningConfig &config) noexcept
+{
+  std::uint64_t signature = 1469598103934665603ULL;
+  AddPlacementEligibilityValue(signature, unsigned(settings.enable));
+  AddPlacementEligibilityValue(signature, unsigned(settings.label_selection));
+  AddPlacementEligibilityValue(signature, unsigned(settings.altitude_mode));
+  AddPlacementEligibilityValue(signature, settings.clip_altitude);
+  AddPlacementEligibilityValue(signature, config.altitude_warning_margin);
+
+  for (unsigned i = 0; i < AIRSPACECLASSCOUNT; ++i) {
+    AddPlacementEligibilityValue(signature,
+                                 unsigned(settings.classes[i].display));
+    AddPlacementEligibilityValue(signature,
+                                 unsigned(config.class_warnings[i]));
+  }
+
+  return signature;
+}
+
+[[gnu::pure]]
+static bool
+Equal(const PixelRect a, const PixelRect b) noexcept
+{
+  return a.left == b.left && a.top == b.top &&
+    a.right == b.right && a.bottom == b.bottom;
 }
 
 static StaticString<64>
@@ -249,6 +291,47 @@ DrawNotamCluster(Canvas &canvas,
 }
 
 void
+AirspaceLabelRenderer::InvalidatePlacementCache() noexcept
+{
+  placement_cache.Clear();
+  placement_cache_context_valid = false;
+}
+
+bool
+AirspaceLabelRenderer::IsPlacementCacheCurrent(
+  const PixelRect &screen_rect, const std::uint64_t eligibility) const noexcept
+{
+  return placement_cache_context_valid &&
+    placement_cache_airspaces == airspaces &&
+    placement_cache_serial == airspaces->GetSerial() &&
+    Equal(placement_cache_screen_rect, screen_rect) &&
+    placement_cache_font == look.name_font &&
+    placement_cache_font_height == look.name_font->GetHeight() &&
+    placement_cache_scale == Layout::scale_1024 &&
+    placement_cache_font_scale == Layout::font_scale &&
+    placement_cache_text_padding == Layout::GetTextPadding() &&
+    placement_cache_landscape == Layout::landscape &&
+    placement_cache_eligibility == eligibility;
+}
+
+void
+AirspaceLabelRenderer::UpdatePlacementCacheContext(
+  const PixelRect &screen_rect, const std::uint64_t eligibility) noexcept
+{
+  placement_cache_airspaces = airspaces;
+  placement_cache_serial = airspaces->GetSerial();
+  placement_cache_screen_rect = screen_rect;
+  placement_cache_font = look.name_font;
+  placement_cache_font_height = look.name_font->GetHeight();
+  placement_cache_scale = Layout::scale_1024;
+  placement_cache_font_scale = Layout::font_scale;
+  placement_cache_text_padding = Layout::GetTextPadding();
+  placement_cache_landscape = Layout::landscape;
+  placement_cache_eligibility = eligibility;
+  placement_cache_context_valid = true;
+}
+
+void
 AirspaceLabelRenderer::Draw(Canvas &canvas,
                             const WindowProjection &projection,
                             const MoreData &basic, const DerivedInfo &calculated,
@@ -262,9 +345,15 @@ AirspaceLabelRenderer::Draw(Canvas &canvas,
     settings.show_notam_labels &&
     projection.GetMapScale() <= NOTAM_LABEL_MAX_MAP_SCALE;
 
+  if (!draw_altitude_labels)
+    InvalidatePlacementCache();
+
   if ((!draw_altitude_labels && !draw_notam_labels) ||
-      airspaces == nullptr || airspaces->IsEmpty())
+      airspaces == nullptr || airspaces->IsEmpty()) {
+    if (airspaces == nullptr || airspaces->IsEmpty())
+      InvalidatePlacementCache();
     return;
+  }
 
   AirspaceWarningCopy awc;
   if (warning_manager != nullptr)
@@ -298,7 +387,8 @@ AirspaceLabelRenderer::DrawInternal(Canvas &canvas,
       if (visible(airspace))
         labels.Add(airspace.GetCenter(), airspace.GetClass(),
                    GetAirspaceBorderClass(airspace, settings),
-                   airspace.GetBase(), airspace.GetTop());
+                   airspace.GetBase(), airspace.GetTop(),
+                   reinterpret_cast<AirspaceLabelList::Identity>(&airspace));
     }
 
     labels.Sort(config);
@@ -311,9 +401,59 @@ AirspaceLabelRenderer::DrawInternal(Canvas &canvas,
 
   if (draw_altitude_labels) {
     const PixelRect screen_rect = projection.GetScreenRect();
-    for (const auto &label : labels)
-      DrawLabel(canvas, projection.GeoToScreen(label.pos), screen_rect, label,
-                settings, label_block);
+    const auto eligibility = GetPlacementEligibility(settings, config);
+    const bool cache_current =
+      IsPlacementCacheCurrent(screen_rect, eligibility);
+    if (!cache_current)
+      InvalidatePlacementCache();
+
+    const auto now = AirspaceLabelPlacementCache::Clock::now();
+    const bool fresh_layout = !cache_current ||
+      placement_cache.IsFreshLayoutDue(now, placement_decision_interval);
+    if (fresh_layout)
+      placement_cache.BeginFreshLayout();
+
+    bool geometry_changed = false;
+    for (const auto &label : labels) {
+      auto layout = MakeAirspaceLabelLayout(canvas, label);
+      auto *const cached = placement_cache.Find(label.identity);
+      const bool cached_geometry_matches = cached != nullptr &&
+        AirspaceLabelPlacementCache::Matches(*cached, layout.visual_size,
+                                             layout.padding);
+
+      if (!fresh_layout && !cached_geometry_matches) {
+        // A cache entry with obsolete label geometry must not be used with a
+        // different-sized box.  Defer the fresh layout to the next frame; the
+        // current frame remains collision-safe by omitting only this label.
+        geometry_changed |= cached != nullptr;
+        continue;
+      }
+
+      const std::optional<unsigned> preferred_candidate =
+        cached_geometry_matches
+          ? std::optional<unsigned>{cached->candidate_index}
+          : std::nullopt;
+      unsigned candidate_index = 0;
+      if (!DrawLabel(canvas, projection.GeoToScreen(label.pos), screen_rect,
+                     label, settings, label_block, layout,
+                     preferred_candidate, fresh_layout, candidate_index))
+        continue;
+
+      if (fresh_layout)
+        placement_cache.Store(label.identity, layout.visual_size,
+                              layout.padding, candidate_index);
+      else
+        placement_cache.MarkUsed(*cached);
+    }
+
+    if (fresh_layout) {
+      placement_cache.CompleteFreshLayout(now);
+      UpdatePlacementCacheContext(screen_rect, eligibility);
+    } else if (geometry_changed) {
+      // Invalidate the whole cache before the following render, as a changed
+      // label format can affect placement decisions for its neighbours too.
+      InvalidatePlacementCache();
+    }
   }
 
   if (draw_notam_labels) {
@@ -389,14 +529,27 @@ AirspaceLabelRenderer::DrawLabel(Canvas &canvas, const PixelPoint anchor,
                                  const PixelRect &map_rect,
                                  const AirspaceLabelList::Label &label,
                                  const AirspaceRendererSettings &settings,
-                                 LabelBlock *const label_block) noexcept
+                                 LabelBlock *const label_block,
+                                 AirspaceLabelLayout &layout,
+                                 const std::optional<unsigned>
+                                   preferred_candidate,
+                                 const bool allow_fallback,
+                                 unsigned &candidate_index) noexcept
 {
-  auto layout = MakeAirspaceLabelLayout(canvas, label);
-  const auto placement =
-    PlaceAirspaceLabel(anchor, layout.visual_size, layout.padding, map_rect,
-                       label_block);
+  std::optional<AirspaceLabelPlacement> placement;
+  if (allow_fallback)
+    placement = PlaceAirspaceLabel(anchor, layout.visual_size, layout.padding,
+                                   map_rect, label_block, preferred_candidate);
+  else if (preferred_candidate)
+    placement = PlaceAirspaceLabelCandidate(anchor, layout.visual_size,
+                                            layout.padding, map_rect,
+                                            label_block,
+                                            *preferred_candidate);
+
   if (!placement)
     return false;
+
+  candidate_index = placement->candidate_index;
 
   const Color color = settings.black_outline
     ? COLOR_BLACK

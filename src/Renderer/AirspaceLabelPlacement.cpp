@@ -28,6 +28,8 @@ static constexpr std::array candidates{
   AirspaceLabelCandidate::UPPER_LEFT,
 };
 
+static_assert(candidates.size() == airspace_label_candidate_count);
+
 [[gnu::const]]
 static PixelRect
 MakeCandidateRect(const PixelPoint anchor, const PixelSize size,
@@ -92,25 +94,50 @@ MakeCandidateRect(const PixelPoint anchor, const PixelSize size,
 }
 
 std::optional<AirspaceLabelPlacement>
-PlaceAirspaceLabel(const PixelPoint anchor, const PixelSize size,
-                   const unsigned clearance, const PixelRect &map_rect,
-                   LabelBlock *const label_block) noexcept
+PlaceAirspaceLabelCandidate(const PixelPoint anchor, const PixelSize size,
+                            const unsigned clearance,
+                            const PixelRect &map_rect,
+                            LabelBlock *const label_block,
+                            const unsigned candidate_index) noexcept
 {
-  if (size.width == 0 || size.height == 0)
+  if (size.width == 0 || size.height == 0 ||
+      candidate_index >= candidates.size())
     return std::nullopt;
 
+  const PixelRect visual_rect =
+    MakeCandidateRect(anchor, size, clearance, candidates[candidate_index]);
+  const PixelRect collision_rect = visual_rect.WithMargin(int(clearance));
+
+  if (!map_rect.Contains(collision_rect))
+    return std::nullopt;
+
+  if (label_block != nullptr && !label_block->check(collision_rect))
+    return std::nullopt;
+
+  return AirspaceLabelPlacement{visual_rect, candidate_index};
+}
+
+std::optional<AirspaceLabelPlacement>
+PlaceAirspaceLabel(const PixelPoint anchor, const PixelSize size,
+                   const unsigned clearance, const PixelRect &map_rect,
+                   LabelBlock *const label_block,
+                   const std::optional<unsigned> preferred_candidate) noexcept
+{
+  if (preferred_candidate) {
+    if (const auto placement =
+          PlaceAirspaceLabelCandidate(anchor, size, clearance, map_rect,
+                                      label_block, *preferred_candidate))
+      return placement;
+  }
+
   for (unsigned i = 0; i < candidates.size(); ++i) {
-    const PixelRect visual_rect =
-      MakeCandidateRect(anchor, size, clearance, candidates[i]);
-    const PixelRect collision_rect = visual_rect.WithMargin(int(clearance));
-
-    if (!map_rect.Contains(collision_rect))
+    if (preferred_candidate && i == *preferred_candidate)
       continue;
 
-    if (label_block != nullptr && !label_block->check(collision_rect))
-      continue;
-
-    return AirspaceLabelPlacement{visual_rect, i};
+    if (const auto placement =
+          PlaceAirspaceLabelCandidate(anchor, size, clearance, map_rect,
+                                      label_block, i))
+      return placement;
   }
 
   return std::nullopt;
