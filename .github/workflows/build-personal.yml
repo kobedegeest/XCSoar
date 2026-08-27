@@ -43,6 +43,12 @@ jobs:
         with:
           submodules: true
 
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
       - id: cache-ccache
         uses: hendrikmuhs/ccache-action@v1
         with:
