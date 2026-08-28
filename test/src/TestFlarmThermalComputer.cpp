@@ -4,7 +4,7 @@
 #include "Computer/FlarmThermalComputer.hpp"
 #include "Geo/Math.hpp"
 #include "Geo/SpeedVector.hpp"
-#include "MapWindow/TrafficThermalVisibility.hpp"
+#include "MapWindow/ThermalDisplay.hpp"
 #include "NMEA/ThermalProjection.hpp"
 #include "FakeLogFile.hpp"
 #include "TestUtil.hpp"
@@ -77,10 +77,18 @@ TestThermalProjection()
 
   TrafficThermalSource traffic_source{};
   traffic_source.Clear();
+  traffic_source.thermal.ground_height = 1000;
   traffic_source.reference_location = TEST_CENTRE;
   traffic_source.reference_altitude = 1000;
   traffic_source.drift_per_meter = drift_per_meter;
   ok1(equals(traffic_source.CalculateAdjustedLocation(1200), projected));
+
+  ok1(equals(ThermalDisplay::GetLocation(own_source, 1200, wind),
+              projected));
+  ok1(equals(ThermalDisplay::GetLocation(traffic_source, 1200),
+              projected));
+  ok1(!ThermalDisplay::GetLocation(own_source, 999, wind).IsValid());
+  ok1(!ThermalDisplay::GetLocation(traffic_source, 999).IsValid());
 }
 
 static GeoPoint
@@ -532,18 +540,20 @@ TestStableGeometryAndAltitudeDatum()
 }
 
 static void
-TestTrafficThermalVisibility()
+TestThermalVisibility()
 {
-  ok1(TrafficThermalLayer::IsVisible(true, 4000));
-  ok1(TrafficThermalLayer::IsVisible(true, 3999));
-  ok1(!TrafficThermalLayer::IsVisible(true, 4001));
-  ok1(!TrafficThermalLayer::IsVisible(false, 1000));
+  ok1(ThermalDisplay::IsVisible(4000));
+  ok1(ThermalDisplay::IsVisible(3999));
+  ok1(!ThermalDisplay::IsVisible(4001));
+  ok1(ThermalDisplay::IsTrafficVisible(true, 4000));
+  ok1(!ThermalDisplay::IsTrafficVisible(true, 4001));
+  ok1(!ThermalDisplay::IsTrafficVisible(false, 1000));
 }
 
 int
 main()
 {
-  plan_tests(89);
+  plan_tests(95);
   SetFakeLogFileQuiet(true);
 
   TestThermalProjection();
@@ -556,7 +566,7 @@ main()
   TestMergePreservesAltitudeRange();
   TestStraightDepartureFreezesSource();
   TestStableGeometryAndAltitudeDatum();
-  TestTrafficThermalVisibility();
+  TestThermalVisibility();
 
   return exit_status();
 }
