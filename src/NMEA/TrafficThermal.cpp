@@ -3,9 +3,9 @@
 
 #include "TrafficThermal.hpp"
 #include "ThermalProjection.hpp"
+#include "util/BoundedArray.hxx"
 
-#include <algorithm>
-#include <cassert>
+#include <tuple>
 
 void
 TrafficThermalSource::Clear() noexcept
@@ -51,21 +51,21 @@ TrafficThermalInfo::Clear() noexcept
 TrafficThermalSource *
 TrafficThermalInfo::FindBySerial(std::uint32_t serial) noexcept
 {
-  for (auto &source : sources)
-    if (source.cluster_serial == serial)
-      return &source;
-
-  return nullptr;
+  return BoundedArray::FindByKey(
+    sources, serial,
+    [](const TrafficThermalSource &source) noexcept {
+      return source.cluster_serial;
+    });
 }
 
 const TrafficThermalSource *
 TrafficThermalInfo::FindBySerial(std::uint32_t serial) const noexcept
 {
-  for (const auto &source : sources)
-    if (source.cluster_serial == serial)
-      return &source;
-
-  return nullptr;
+  return BoundedArray::FindByKey(
+    sources, serial,
+    [](const TrafficThermalSource &source) noexcept {
+      return source.cluster_serial;
+    });
 }
 
 bool
@@ -80,32 +80,19 @@ TrafficThermalInfo::RemoveBySerial(std::uint32_t serial) noexcept
   return false;
 }
 
-static bool
-IsOlder(const TrafficThermalSource &a,
-        const TrafficThermalSource &b) noexcept
-{
-  if (a.first_seen != b.first_seen)
-    return a.first_seen < b.first_seen;
-
-  return a.cluster_serial < b.cluster_serial;
-}
-
 TrafficThermalSource &
 TrafficThermalInfo::AllocateSource(std::uint32_t serial) noexcept
 {
   if (auto *source = FindBySerial(serial))
     return *source;
 
-  TrafficThermalSource *source;
-  if (!sources.full())
-    source = &sources.append();
-  else {
-    auto oldest = std::min_element(sources.begin(), sources.end(), IsOlder);
-    assert(oldest != sources.end());
-    source = &*oldest;
-  }
+  auto allocation = BoundedArray::AppendOrReplaceOldest(
+    sources,
+    [](const TrafficThermalSource &source) noexcept {
+      return std::tuple{source.first_seen, source.cluster_serial};
+    });
 
-  source->Clear();
-  source->cluster_serial = serial;
-  return *source;
+  allocation.value.Clear();
+  allocation.value.cluster_serial = serial;
+  return allocation.value;
 }

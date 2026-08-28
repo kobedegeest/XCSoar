@@ -9,9 +9,11 @@
 #include "Geo/Flat/FlatProjection.hpp"
 #include "Geo/SpeedVector.hpp"
 #include "LogFile.hpp"
+#include "util/BoundedArray.hxx"
 
 #include <algorithm>
 #include <cmath>
+#include <tuple>
 
 using namespace FlarmThermalConstants;
 
@@ -56,11 +58,11 @@ FlarmThermalComputer::Reset(TrafficThermalInfo &output) noexcept
 FlarmThermalComputer::TargetState *
 FlarmThermalComputer::FindTarget(FlarmId id) noexcept
 {
-  for (auto &target : targets)
-    if (target.id == id)
-      return &target;
-
-  return nullptr;
+  return BoundedArray::FindByKey(
+    targets, id,
+    [](const TargetState &target) noexcept {
+      return target.id;
+    });
 }
 
 void
@@ -94,25 +96,22 @@ FlarmThermalComputer::AllocateTarget(FlarmId id,
 {
   (void)output;
 
-  TargetState *target;
-  if (!targets.full())
-    target = &targets.append();
-  else {
-    target = &*std::min_element(targets.begin(), targets.end(),
-                                [](const TargetState &a,
-                                   const TargetState &b) {
-                                  return a.last_seen < b.last_seen;
-                                });
-    DeactivateTarget(*target, "target-slot-replaced");
-  }
+  auto allocation = BoundedArray::AppendOrReplaceOldest(
+    targets,
+    [](const TargetState &target) noexcept {
+      return target.last_seen;
+    });
+  auto &target = allocation.value;
+  if (allocation.replaced)
+    DeactivateTarget(target, "target-slot-replaced");
 
-  target->id = id;
-  target->samples.clear();
-  target->assigned_cluster_serial = 0;
-  target->last_update.Clear();
-  target->last_seen = TimeStamp::Undefined();
-  target->qualified = false;
-  return *target;
+  target.id = id;
+  target.samples.clear();
+  target.assigned_cluster_serial = 0;
+  target.last_update.Clear();
+  target.last_seen = TimeStamp::Undefined();
+  target.qualified = false;
+  return target;
 }
 
 FlarmThermalComputer::ClusterState *
@@ -121,11 +120,11 @@ FlarmThermalComputer::FindCluster(std::uint32_t serial) noexcept
   if (serial == 0)
     return nullptr;
 
-  for (auto &cluster : clusters)
-    if (cluster.serial == serial)
-      return &cluster;
-
-  return nullptr;
+  return BoundedArray::FindByKey(
+    clusters, serial,
+    [](const ClusterState &cluster) noexcept {
+      return cluster.serial;
+    });
 }
 
 FlarmThermalComputer::ClusterState &
@@ -133,23 +132,14 @@ FlarmThermalComputer::AllocateCluster(TimeStamp first_seen,
                                       double reference_altitude,
                                       TrafficThermalInfo &output) noexcept
 {
-  ClusterState *cluster;
-  if (!clusters.full())
-    cluster = &clusters.append();
-  else {
-    cluster = &*std::min_element(clusters.begin(), clusters.end(),
-                                [](const ClusterState &a,
-                                   const ClusterState &b) {
-                                  if (a.closed != b.closed)
-                                    return a.closed;
-
-                                  if (a.first_seen != b.first_seen)
-                                    return a.first_seen < b.first_seen;
-
-                                  return a.serial < b.serial;
-                                });
-
-    const auto old_serial = cluster->serial;
+  auto allocation = BoundedArray::AppendOrReplaceOldest(
+    clusters,
+    [](const ClusterState &cluster) noexcept {
+      return std::tuple{!cluster.closed, cluster.first_seen, cluster.serial};
+    });
+  auto &cluster = allocation.value;
+  if (allocation.replaced) {
+    const auto old_serial = cluster.serial;
     for (auto &target : targets)
       if (target.assigned_cluster_serial == old_serial)
         ResetTargetWindow(target);
@@ -158,16 +148,16 @@ FlarmThermalComputer::AllocateCluster(TimeStamp first_seen,
   }
 
   do {
-    cluster->serial = next_cluster_serial++;
-  } while (cluster->serial == 0);
+    cluster.serial = next_cluster_serial++;
+  } while (cluster.serial == 0);
 
-  cluster->contributors.clear();
-  cluster->first_seen = first_seen;
-  cluster->last_seen = first_seen;
-  cluster->reference_altitude = reference_altitude;
-  cluster->recent = false;
-  cluster->closed = false;
-  return *cluster;
+  cluster.contributors.clear();
+  cluster.first_seen = first_seen;
+  cluster.last_seen = first_seen;
+  cluster.reference_altitude = reference_altitude;
+  cluster.recent = false;
+  cluster.closed = false;
+  return cluster;
 }
 
 FlarmThermalComputer::CandidateResult
