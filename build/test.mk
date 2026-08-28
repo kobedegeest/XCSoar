@@ -656,6 +656,7 @@ $(eval $(call link-program,TestClimbAvCalc,TEST_CLIMB_AV_CALC))
 TEST_FLARM_THERMAL_COMPUTER_SOURCES = \
 	$(SRC)/Computer/FlarmThermalComputer.cpp \
 	$(SRC)/Computer/ThermalBase.cpp \
+	$(SRC)/NMEA/ThermalProjection.cpp \
 	$(SRC)/NMEA/ThermalLocator.cpp \
 	$(SRC)/NMEA/TrafficThermal.cpp \
 	$(TEST_SRC_DIR)/FakeLogFile.cpp \

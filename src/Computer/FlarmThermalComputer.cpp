@@ -4,9 +4,9 @@
 #include "FlarmThermalComputer.hpp"
 
 #include "Computer/ThermalBase.hpp"
+#include "NMEA/ThermalProjection.hpp"
 #include "Geo/Flat/FlatPoint.hpp"
 #include "Geo/Flat/FlatProjection.hpp"
-#include "Geo/Math.hpp"
 #include "Geo/SpeedVector.hpp"
 #include "LogFile.hpp"
 
@@ -170,32 +170,6 @@ FlarmThermalComputer::AllocateCluster(TimeStamp first_seen,
   return *cluster;
 }
 
-static SpeedVector
-MakeDriftPerAltitude(const SpeedVector &wind,
-                     double geometry_lift_rate) noexcept
-{
-  return wind.IsNonZero() && geometry_lift_rate > 0
-    ? SpeedVector(wind.bearing, wind.norm / geometry_lift_rate)
-    : SpeedVector::Zero();
-}
-
-static GeoPoint
-AdjustToAltitude(const GeoPoint location, double source_altitude,
-                 double destination_altitude,
-                 const SpeedVector &drift_per_altitude) noexcept
-{
-  const double height_delta = destination_altitude - source_altitude;
-  if (drift_per_altitude.IsZero() || height_delta == 0)
-    return location;
-
-  const Angle bearing = height_delta > 0
-    ? drift_per_altitude.bearing.Reciprocal()
-    : drift_per_altitude.bearing;
-  return FindLatitudeLongitude(location, bearing,
-                               drift_per_altitude.norm *
-                               std::abs(height_delta));
-}
-
 FlarmThermalComputer::CandidateResult
 FlarmThermalComputer::BuildCandidate(const TargetState &target,
                                      const FlarmTraffic &traffic,
@@ -256,23 +230,25 @@ FlarmThermalComputer::BuildCandidate(const TargetState &target,
       return CandidateResult::LEFT_CIRCLE;
   }
 
-  const auto drift_per_altitude =
-    MakeDriftPerAltitude(geometry_wind, geometry_lift_rate);
+  const auto drift_per_meter =
+    CalculateThermalDriftPerMeter(geometry_wind, geometry_lift_rate);
 
   const FlatProjection projection(newest.location);
   FlatPoint mean(0, 0);
   for (const auto &sample : target.samples)
     mean += projection.ProjectFloat(
-      AdjustToAltitude(sample.location, sample.altitude, newest.altitude,
-                       drift_per_altitude));
+      ProjectThermalCore(sample.location,
+                         newest.altitude - sample.altitude,
+                         drift_per_meter));
 
   mean = mean * (1. / target.samples.size());
 
   const double flat_scale = projection.GetApproximateScale();
   for (const auto &sample : target.samples) {
     const auto point = projection.ProjectFloat(
-      AdjustToAltitude(sample.location, sample.altitude, newest.altitude,
-                       drift_per_altitude));
+      ProjectThermalCore(sample.location,
+                         newest.altitude - sample.altitude,
+                         drift_per_meter));
     if (point.Distance(mean) * flat_scale > MAX_DRIFT_CORRECTED_RADIUS)
       return CandidateResult::EXCESSIVE_RADIUS;
   }
@@ -292,7 +268,7 @@ FlarmThermalComputer::BuildCandidate(const TargetState &target,
   candidate.climb_rate = traffic.climb_rate_avg30s;
   candidate.geometry_lift_rate = geometry_lift_rate;
   candidate.geometry_wind = geometry_wind;
-  candidate.drift_per_altitude = drift_per_altitude;
+  candidate.drift_per_meter = drift_per_meter;
   candidate.source.lift_rate = geometry_lift_rate;
   candidate.source.time = newest.time;
   EstimateThermalBase(terrain, candidate.centre, candidate.altitude,
@@ -341,9 +317,9 @@ FlarmThermalComputer::FindCompatibleCluster(
       published->reference_altitude,
     });
     const auto candidate_location =
-      AdjustToAltitude(candidate.centre, candidate.altitude,
-                       comparison_altitude,
-                       candidate.drift_per_altitude);
+      ProjectThermalCore(candidate.centre,
+                         comparison_altitude - candidate.altitude,
+                         candidate.drift_per_meter);
     const auto cluster_location =
       published->CalculateAdjustedLocation(comparison_altitude);
     const double distance = candidate_location.DistanceS(cluster_location);
@@ -388,7 +364,7 @@ FlarmThermalComputer::UpdateContributor(ClusterState &cluster,
     contributor->reference_altitude = candidate.altitude;
     contributor->geometry_lift_rate = candidate.geometry_lift_rate;
     contributor->geometry_wind = candidate.geometry_wind;
-    contributor->drift_per_altitude = candidate.drift_per_altitude;
+    contributor->drift_per_meter = candidate.drift_per_meter;
   } else if (now > contributor->last_value_time) {
     const auto elapsed = now - contributor->last_value_time;
     if (elapsed <= MAX_SAMPLE_GAP) {
@@ -482,9 +458,9 @@ FlarmThermalComputer::RecomputeCluster(ClusterState &cluster,
 
   const auto &first = cluster.contributors.front();
   const GeoPoint projection_centre =
-    AdjustToAltitude(first.centre, first.reference_altitude,
-                     cluster.reference_altitude,
-                     first.drift_per_altitude);
+    ProjectThermalCore(first.centre,
+                       cluster.reference_altitude - first.reference_altitude,
+                       first.drift_per_meter);
   const FlatProjection projection(projection_centre);
   FlatPoint reference_location(0, 0);
 
@@ -499,11 +475,12 @@ FlarmThermalComputer::RecomputeCluster(ClusterState &cluster,
     max_altitude = std::max(max_altitude, contributor.max_altitude);
     geometry_lift += contributor.geometry_lift_rate;
     AddVector(contributor.geometry_wind, wind_east, wind_north);
-    AddVector(contributor.drift_per_altitude, drift_east, drift_north);
+    AddVector(contributor.drift_per_meter, drift_east, drift_north);
     reference_location += projection.ProjectFloat(
-      AdjustToAltitude(contributor.centre, contributor.reference_altitude,
-                       cluster.reference_altitude,
-                       contributor.drift_per_altitude));
+      ProjectThermalCore(
+        contributor.centre,
+        cluster.reference_altitude - contributor.reference_altitude,
+        contributor.drift_per_meter));
     ground_height += contributor.source.ground_height;
   }
 
@@ -524,13 +501,14 @@ FlarmThermalComputer::RecomputeCluster(ClusterState &cluster,
   published.geometry_lift_rate = geometry_lift / count;
   published.geometry_wind =
     AverageVector(wind_east, wind_north, count);
-  published.drift_per_altitude =
+  published.drift_per_meter =
     AverageVector(drift_east, drift_north, count);
 
   published.thermal.ground_height = ground_height / count;
-  published.thermal.location = AdjustToAltitude(
-    published.reference_location, published.reference_altitude,
-    published.thermal.ground_height, published.drift_per_altitude);
+  published.thermal.location = ProjectThermalCore(
+    published.reference_location,
+    published.thermal.ground_height - published.reference_altitude,
+    published.drift_per_meter);
   published.thermal.lift_rate = active_count > 0
     ? active_lift / active_count
     : historical_lift / count;
@@ -656,7 +634,7 @@ FlarmThermalComputer::MergeClusters(unsigned keep_index,
       existing->reference_altitude = incoming.reference_altitude;
       existing->geometry_lift_rate = incoming.geometry_lift_rate;
       existing->geometry_wind = incoming.geometry_wind;
-      existing->drift_per_altitude = incoming.drift_per_altitude;
+      existing->drift_per_meter = incoming.drift_per_meter;
     }
     existing->active = existing->active || incoming.active;
   }

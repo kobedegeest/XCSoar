@@ -28,7 +28,7 @@ struct TrafficThermalSource {
   SpeedVector geometry_wind;
 
   /** Horizontal drift per metre of altitude, averaged per contributor. */
-  SpeedVector drift_per_altitude;
+  SpeedVector drift_per_meter;
 
   /** Stable identity used by the calculation state to update this marker. */
   std::uint32_t cluster_serial;

@@ -5,11 +5,12 @@
 #include "Geo/Math.hpp"
 #include "Geo/SpeedVector.hpp"
 #include "MapWindow/TrafficThermalVisibility.hpp"
+#include "NMEA/ThermalProjection.hpp"
 #include "FakeLogFile.hpp"
 #include "TestUtil.hpp"
 
 #include <chrono>
-#include <cmath>
+#include <limits>
 
 using namespace std::chrono;
 
@@ -18,22 +19,78 @@ static constexpr GeoPoint TEST_CENTRE = {
 };
 static constexpr double TEST_OWNSHIP_ALTITUDE = 900;
 
+static void
+TestThermalProjection()
+{
+  const SpeedVector wind{Angle::Degrees(90), 10};
+  const auto drift_per_meter =
+    CalculateThermalDriftPerMeter(wind, 2);
+  ok1(equals(drift_per_meter.norm, 5));
+  ok1(equals(drift_per_meter.bearing, 90));
+
+  ok1(equals(ProjectThermalCore(TEST_CENTRE, 0, drift_per_meter),
+              TEST_CENTRE));
+
+  const auto expected_upwind =
+    FindLatitudeLongitude(TEST_CENTRE, Angle::Degrees(270), 500);
+  const auto expected_downwind =
+    FindLatitudeLongitude(TEST_CENTRE, Angle::Degrees(90), 500);
+  ok1(equals(ProjectThermalCore(TEST_CENTRE, 100, drift_per_meter),
+              expected_upwind));
+  ok1(equals(ProjectThermalCore(TEST_CENTRE, -100, drift_per_meter),
+              expected_downwind));
+
+  ok1(equals(ProjectThermalCore(TEST_CENTRE, 100,
+                                SpeedVector::Zero(), 2),
+              TEST_CENTRE));
+  ok1(equals(ProjectThermalCore(TEST_CENTRE, 100, wind, 0),
+              TEST_CENTRE));
+  ok1(equals(ProjectThermalCore(TEST_CENTRE, 100, wind, -1),
+              TEST_CENTRE));
+
+  const double nan = std::numeric_limits<double>::quiet_NaN();
+  ok1(equals(ProjectThermalCore(TEST_CENTRE, 100, wind, nan),
+              TEST_CENTRE));
+  ok1(equals(ProjectThermalCore(
+                TEST_CENTRE, 100,
+                SpeedVector{Angle::Degrees(90), nan}, 2),
+              TEST_CENTRE));
+  ok1(equals(ProjectThermalCore(
+                TEST_CENTRE, 100,
+                SpeedVector{Angle::Native(nan), 10}, 2),
+              TEST_CENTRE));
+  ok1(equals(ProjectThermalCore(
+                TEST_CENTRE, 100,
+                SpeedVector{Angle::Degrees(90), nan}),
+              TEST_CENTRE));
+  ok1(!ProjectThermalCore(GeoPoint::Invalid(), 100, drift_per_meter)
+        .IsValid());
+
+  const auto projected =
+    ProjectThermalCore(TEST_CENTRE, 200, wind, 2);
+
+  ThermalSource own_source{};
+  own_source.location = TEST_CENTRE;
+  own_source.ground_height = 1000;
+  own_source.lift_rate = 2;
+  ok1(equals(own_source.CalculateAdjustedLocation(1200, wind), projected));
+
+  TrafficThermalSource traffic_source{};
+  traffic_source.Clear();
+  traffic_source.reference_location = TEST_CENTRE;
+  traffic_source.reference_altitude = 1000;
+  traffic_source.drift_per_meter = drift_per_meter;
+  ok1(equals(traffic_source.CalculateAdjustedLocation(1200), projected));
+}
+
 static GeoPoint
 AdjustCoreToAltitude(GeoPoint centre, double altitude,
                      double reference_altitude,
                      double geometry_climb_rate,
                      const SpeedVector &wind)
 {
-  if (wind.IsZero())
-    return centre;
-
-  const double height_delta = altitude - reference_altitude;
-  const Angle bearing = height_delta >= 0
-    ? wind.bearing.Reciprocal()
-    : wind.bearing;
-  return FindLatitudeLongitude(centre, bearing,
-                               wind.norm * std::abs(height_delta) /
-                               geometry_climb_rate);
+  return ProjectThermalCore(centre, altitude - reference_altitude,
+                            wind, geometry_climb_rate);
 }
 
 static void
@@ -486,9 +543,10 @@ TestTrafficThermalVisibility()
 int
 main()
 {
-  plan_tests(72);
+  plan_tests(89);
   SetFakeLogFileQuiet(true);
 
+  TestThermalProjection();
   TestTrafficThermalAllocation();
   TestQualificationAndLifecycle();
   TestRejectedTracks();

@@ -80,7 +80,7 @@ class FlarmThermalComputer {
     double reference_altitude;
     double geometry_lift_rate;
     SpeedVector geometry_wind;
-    SpeedVector drift_per_altitude;
+    SpeedVector drift_per_meter;
     bool active;
   };
 
@@ -111,7 +111,7 @@ class FlarmThermalComputer {
     double climb_rate;
     double geometry_lift_rate;
     SpeedVector geometry_wind;
-    SpeedVector drift_per_altitude;
+    SpeedVector drift_per_meter;
   };
 
   enum class CandidateResult : std::uint8_t {
