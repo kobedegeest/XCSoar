@@ -2,6 +2,7 @@
 // Copyright The XCSoar Project
 
 #include "Computer/FlarmThermalComputer.hpp"
+#include "FLARM/Calculations.hpp"
 #include "Geo/Math.hpp"
 #include "Geo/SpeedVector.hpp"
 #include "MapWindow/ThermalDisplay.hpp"
@@ -9,6 +10,7 @@
 #include "FakeLogFile.hpp"
 #include "TestUtil.hpp"
 
+#include <algorithm>
 #include <chrono>
 #include <limits>
 
@@ -155,7 +157,13 @@ AppendTraffic(TrafficList &list, FlarmId id, TimeStamp time,
   traffic.relative_altitude =
     double(traffic.altitude) - TEST_OWNSHIP_ALTITUDE;
   traffic.climb_rate_avg30s = climb_rate;
-  traffic.climb_rate_avg30s_available = elapsed >= 31;
+  traffic.climb_rate_avg30s_time_span =
+    FloatDuration{elapsed >= 31 ? 30 : std::max(0., elapsed - 1)};
+  traffic.climb_rate_avg30s_available =
+    traffic.climb_rate_avg30s_time_span >=
+      FlarmCalculations::AVERAGE_TIME;
+  traffic.climb_rate_avg30s_update =
+    FlarmTraffic::Average30sUpdate::APPENDED;
 
   list.list.append(traffic);
   return list.list.back();
@@ -228,8 +236,11 @@ TestQualificationAndLifecycle()
 
   TrafficList duplicate{};
   duplicate.Clear();
-  AppendTraffic(duplicate, FlarmId::FromValue(1), TimeStamp{seconds{31}},
-                TEST_CENTRE, 1.5);
+  auto &duplicate_traffic =
+    AppendTraffic(duplicate, FlarmId::FromValue(1),
+                  TimeStamp{seconds{31}}, TEST_CENTRE, 1.5);
+  duplicate_traffic.climb_rate_avg30s_update =
+    FlarmTraffic::Average30sUpdate::REPLACED;
   computer.Process(duplicate, TimeStamp{seconds{31}},
                    TEST_OWNSHIP_ALTITUDE, SpeedVector::Zero(), nullptr,
                    info);
@@ -550,10 +561,60 @@ TestThermalVisibility()
   ok1(!ThermalDisplay::IsTrafficVisible(false, 1000));
 }
 
+static void
+TestPublishedSamplingPolicy()
+{
+  TrafficThermalInfo info;
+  info.Clear();
+  FlarmThermalComputer computer;
+  computer.Reset(info);
+
+  for (unsigned i = 1; i <= 31; ++i) {
+    TrafficList list{};
+    list.Clear();
+    auto &traffic = AppendTraffic(list, FlarmId::FromValue(32),
+                                  TimeStamp{seconds{i}}, TEST_CENTRE, 1.5);
+    if (i == 31) {
+      traffic.climb_rate_avg30s_available = true;
+      traffic.climb_rate_avg30s_time_span = seconds{29};
+    }
+
+    computer.Process(list, TimeStamp{seconds{i}}, TEST_OWNSHIP_ALTITUDE,
+                     SpeedVector::Zero(), nullptr, info);
+  }
+
+  ok1(info.sources.empty());
+
+  TrafficList complete{};
+  complete.Clear();
+  AppendTraffic(complete, FlarmId::FromValue(32), TimeStamp{seconds{32}},
+                TEST_CENTRE, 1.5);
+  computer.Process(complete, TimeStamp{seconds{32}},
+                   TEST_OWNSHIP_ALTITUDE, SpeedVector::Zero(), nullptr,
+                   info);
+  ok1(info.sources.size() == 1);
+  const auto location = info.sources.front().thermal.location;
+
+  TrafficList ignored{};
+  ignored.Clear();
+  auto &ignored_traffic =
+    AppendTraffic(ignored, FlarmId::FromValue(32),
+                  TimeStamp{FloatDuration{32.1}}, TEST_CENTRE, 1.5, true,
+                  600);
+  ignored_traffic.climb_rate_avg30s_update =
+    FlarmTraffic::Average30sUpdate::IGNORED;
+  computer.Process(ignored, TimeStamp{FloatDuration{32.1}},
+                   TEST_OWNSHIP_ALTITUDE, SpeedVector::Zero(), nullptr,
+                   info);
+
+  ok1(info.sources.front().thermal.location.DistanceS(location) < 0.1);
+  ok1(info.sources.front().aircraft_count == 1);
+}
+
 int
 main()
 {
-  plan_tests(95);
+  plan_tests(99);
   SetFakeLogFileQuiet(true);
 
   TestThermalProjection();
@@ -567,6 +628,7 @@ main()
   TestStraightDepartureFreezesSource();
   TestStableGeometryAndAltitudeDatum();
   TestThermalVisibility();
+  TestPublishedSamplingPolicy();
 
   return exit_status();
 }

@@ -4,6 +4,7 @@
 #include "FlarmThermalComputer.hpp"
 
 #include "Computer/ThermalBase.hpp"
+#include "FLARM/Calculations.hpp"
 #include "NMEA/ThermalProjection.hpp"
 #include "Geo/Flat/FlatPoint.hpp"
 #include "Geo/Flat/FlatProjection.hpp"
@@ -108,7 +109,7 @@ FlarmThermalComputer::AllocateTarget(FlarmId id,
   target.id = id;
   target.samples.clear();
   target.assigned_cluster_serial = 0;
-  target.last_update.Clear();
+  target.last_average_update.Clear();
   target.last_seen = TimeStamp::Undefined();
   target.qualified = false;
   return target;
@@ -170,12 +171,14 @@ FlarmThermalComputer::BuildCandidate(const TargetState &target,
 {
   if (target.samples.size() < 2 ||
       !traffic.climb_rate_avg30s_available ||
+      traffic.climb_rate_avg30s_time_span <
+        FlarmCalculations::AVERAGE_TIME ||
       !std::isfinite(traffic.climb_rate_avg30s))
     return CandidateResult::INCOMPLETE_WINDOW;
 
   const auto &oldest = target.samples.front();
   const auto &newest = target.samples.back();
-  if (newest.time - oldest.time < OBSERVATION_WINDOW)
+  if (newest.time - oldest.time < FlarmCalculations::AVERAGE_TIME)
     return CandidateResult::INCOMPLETE_WINDOW;
 
   const double climb_threshold = target.qualified
@@ -357,7 +360,7 @@ FlarmThermalComputer::UpdateContributor(ClusterState &cluster,
     contributor->drift_per_meter = candidate.drift_per_meter;
   } else if (now > contributor->last_value_time) {
     const auto elapsed = now - contributor->last_value_time;
-    if (elapsed <= MAX_SAMPLE_GAP) {
+    if (elapsed <= FlarmCalculations::SAMPLE_POLICY.maximum_gap) {
       const double dt = elapsed.count();
       contributor->climb_integral +=
         (contributor->last_climb_rate + candidate.climb_rate) * 0.5 * dt;
@@ -732,32 +735,38 @@ FlarmThermalComputer::Process(const TrafficList &traffic, TimeStamp now,
       continue;
     }
 
+    if (item.climb_rate_avg30s_update ==
+          FlarmTraffic::Average30sUpdate::NONE)
+      continue;
+
     if (target == nullptr)
       target = &AllocateTarget(item.id, output);
 
-    if (target->last_update && item.valid == target->last_update)
+    /* The sampling action remains in the copied traffic snapshot until the
+       next FLARM calculation pass.  Consume each published action once. */
+    if (target->last_average_update &&
+        item.valid == target->last_average_update)
       continue;
+    target->last_average_update = item.valid;
 
-    const bool traffic_time_reversal =
-      target->last_update && item.valid < target->last_update;
-    if (traffic_time_reversal ||
-        (target->last_seen.IsDefined() &&
-         now > target->last_seen + MAX_SAMPLE_GAP))
+    if (item.climb_rate_avg30s_reset)
       ResetTargetWindow(*target);
 
-    target->last_update = item.valid;
     target->last_seen = now;
 
-    if (!target->samples.empty() &&
-        now > target->samples.back().time &&
-        now < target->samples.back().time + MIN_SAMPLE_INTERVAL)
+    if (item.climb_rate_avg30s_update ==
+          FlarmTraffic::Average30sUpdate::IGNORED)
       continue;
 
-    if (target->samples.full() && target->samples.back().time != now)
+    const bool replace_sample =
+      item.climb_rate_avg30s_update ==
+        FlarmTraffic::Average30sUpdate::REPLACED &&
+      !target->samples.empty();
+
+    if (target->samples.full() && !replace_sample)
       target->samples.remove(0);
 
-    auto &sample = !target->samples.empty() &&
-      target->samples.back().time == now
+    auto &sample = replace_sample
       ? target->samples.back()
       : target->samples.append();
     sample.time = now;
@@ -778,7 +787,8 @@ FlarmThermalComputer::Process(const TrafficList &traffic, TimeStamp now,
       : 0;
 
     while (target->samples.size() > 1 &&
-           target->samples.front().time < now - OBSERVATION_WINDOW)
+           target->samples.front().time <
+             now - FlarmCalculations::AVERAGE_TIME)
       target->samples.remove(0);
 
     double geometry_lift_rate = item.climb_rate_avg30s;

@@ -5,6 +5,19 @@
 
 #include "time/Stamp.hpp"
 
+#include <cstdint>
+
+enum class ClimbSampleAction : std::uint8_t {
+  IGNORED,
+  APPENDED,
+  REPLACED,
+};
+
+struct ClimbSamplePolicy {
+  FloatDuration minimum_interval;
+  FloatDuration maximum_gap;
+};
+
 struct ClimbAverageResult {
   /** Average climb rate over the selected history window. */
   double average;
@@ -12,20 +25,28 @@ struct ClimbAverageResult {
   /** Actual time span covered by the selected history window. */
   FloatDuration time_span;
 
+  /** How the current sample was applied to the retained history. */
+  ClimbSampleAction sample_action;
+
+  /** Whether a discontinuity cleared the previous history first. */
+  bool reset;
+
   constexpr bool IsComplete(FloatDuration required) const noexcept {
     return time_span >= required;
+  }
+
+  constexpr bool IsSampleAccepted() const noexcept {
+    return sample_action != ClimbSampleAction::IGNORED;
   }
 };
 
 class ClimbAverageCalculator
 {
-  static constexpr FloatDuration MIN_SAMPLE_INTERVAL{0.125};
-
   /**
    * Keep enough samples for a 30 second window at substantially more than
-   * the normal FLARM reporting rate.  Duplicate and very high-rate samples
-   * are coalesced, so this is a hard memory bound rather than an assumption
-   * that updates arrive at one hertz.
+   * the normal FLARM reporting rate.  Callers supply a minimum sample
+   * interval, so this is a hard memory bound rather than an assumption that
+   * updates arrive at one hertz.
    */
   static constexpr int MAX_HISTORY = 256;
   struct HistoryItem
@@ -50,6 +71,7 @@ class ClimbAverageCalculator
 
   HistoryItem history[MAX_HISTORY];
   int newestValIndex;
+  TimeStamp last_update_time;
 
 public:
   /**
@@ -60,7 +82,11 @@ public:
    */
   [[nodiscard]]
   ClimbAverageResult GetAverageWithSpan(TimeStamp time, double altitude,
-                                        FloatDuration average_time) noexcept;
+                                        FloatDuration average_time,
+                                        ClimbSamplePolicy policy={
+                                          FloatDuration{0.125},
+                                          FloatDuration::max(),
+                                        }) noexcept;
 
   double GetAverage(TimeStamp time, double altitude,
                     FloatDuration average_time) noexcept;

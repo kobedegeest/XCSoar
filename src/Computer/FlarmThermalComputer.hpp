@@ -18,9 +18,6 @@ struct SpeedVector;
 
 /** Initial tunable values for the FLARM thermal detector. */
 namespace FlarmThermalConstants {
-static constexpr FloatDuration OBSERVATION_WINDOW{30};
-static constexpr FloatDuration MIN_SAMPLE_INTERVAL{0.25};
-static constexpr FloatDuration MAX_SAMPLE_GAP{5};
 static constexpr FloatDuration CONTRIBUTOR_TIMEOUT{10};
 static constexpr FloatDuration GROUPING_TIME_GAP{120};
 static constexpr FloatDuration EXIT_TURN_WINDOW{5};
@@ -58,7 +55,7 @@ class FlarmThermalComputer {
     FlarmId id;
     TrivialArray<Sample, FlarmThermalConstants::MAX_SAMPLE_COUNT> samples;
     std::uint32_t assigned_cluster_serial;
-    Validity last_update;
+    Validity last_average_update;
     TimeStamp last_seen;
     bool qualified;
   };

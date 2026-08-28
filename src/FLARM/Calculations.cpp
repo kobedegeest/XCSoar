@@ -8,22 +8,12 @@ FlarmCalculations::AverageResult
 FlarmCalculations::Average30sWithSpan(FlarmId id, TimeStamp time,
                                       double altitude) noexcept
 {
-  constexpr FloatDuration MAX_SAMPLE_GAP = std::chrono::seconds{5};
-
   auto [it, inserted] = averageCalculatorMap.try_emplace(id);
-  auto &state = it->second;
-  if (inserted) {
-    state.calculator.Reset();
-    state.last_time = TimeStamp::Undefined();
-  }
+  if (inserted)
+    it->second.Reset();
 
-  if (state.last_time.IsDefined() &&
-      (time < state.last_time || time > state.last_time + MAX_SAMPLE_GAP))
-    state.calculator.Reset();
-
-  state.last_time = time;
-  return state.calculator.GetAverageWithSpan(time, altitude,
-                                              std::chrono::seconds{30});
+  return it->second.GetAverageWithSpan(time, altitude, AVERAGE_TIME,
+                                       SAMPLE_POLICY);
 }
 
 double
@@ -65,7 +55,7 @@ FlarmCalculations::CleanUp(TimeStamp now) noexcept
   // Iterate through ClimbAverageCalculators and remove expired ones
   for (auto it = averageCalculatorMap.begin(),
        it_end = averageCalculatorMap.end(); it != it_end;)
-    if (it->second.calculator.Expired(now, MAX_AGE))
+    if (it->second.Expired(now, MAX_AGE))
       it = averageCalculatorMap.erase(it);
     else
       ++it;

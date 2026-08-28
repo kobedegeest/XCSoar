@@ -14,16 +14,18 @@ struct TrafficList;
 class FlarmCalculations
 {
 private:
-  struct AverageCalculatorState {
-    ClimbAverageCalculator calculator;
-    TimeStamp last_time;
-  };
-
-  typedef std::map<FlarmId, AverageCalculatorState> AverageCalculatorMap;
+  typedef std::map<FlarmId, ClimbAverageCalculator> AverageCalculatorMap;
   AverageCalculatorMap averageCalculatorMap;
 
 public:
   using AverageResult = ClimbAverageResult;
+
+  /** Sampling rules shared by the climb average and thermal geometry. */
+  static constexpr FloatDuration AVERAGE_TIME{30};
+  static constexpr ClimbSamplePolicy SAMPLE_POLICY{
+    FloatDuration{0.25},
+    FloatDuration{5},
+  };
 
   /**
    * Calculates the 30-second average and exposes the actual sample span.
