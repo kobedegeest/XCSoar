@@ -202,15 +202,19 @@ struct TrafficMapItem: public MapItem
 struct ThermalMapItem: public MapItem
 {
   ThermalSource thermal;
+  TimeStamp current_time;
 
-  ThermalMapItem(const ThermalSource &_thermal)
-    :MapItem(Type::THERMAL), thermal(_thermal) {}
+  ThermalMapItem(const ThermalSource &_thermal, TimeStamp _current_time)
+    :MapItem(Type::THERMAL), thermal(_thermal), current_time(_current_time) {}
 };
 
 struct TrafficThermalMapItem: public MapItem
 {
   TrafficThermalSource thermal;
+  TimeStamp current_time;
 
-  explicit TrafficThermalMapItem(const TrafficThermalSource &_thermal)
-    :MapItem(Type::TRAFFIC_THERMAL), thermal(_thermal) {}
+  TrafficThermalMapItem(const TrafficThermalSource &_thermal,
+                        TimeStamp _current_time)
+    :MapItem(Type::TRAFFIC_THERMAL), thermal(_thermal),
+     current_time(_current_time) {}
 };

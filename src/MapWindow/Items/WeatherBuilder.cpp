@@ -46,7 +46,7 @@ MapItemListBuilder::AddThermals(const ThermalLocatorInfo &thermals,
       : t.location;
 
     if (location.DistanceS(loc) < range)
-      list.append(new ThermalMapItem(t));
+      list.append(new ThermalMapItem(t, basic.time));
   }
 }
 
@@ -67,7 +67,7 @@ MapItemListBuilder::AddTrafficThermals(const TrafficThermalInfo &thermals,
       ? thermal.CalculateAdjustedLocation(basic.nav_altitude, calculated.wind)
       : thermal.location;
     if (location.DistanceS(adjusted_location) < range)
-      list.append(new TrafficThermalMapItem(source));
+      list.append(new TrafficThermalMapItem(source, basic.time));
   }
 }
 
@@ -87,6 +87,6 @@ MapItemListBuilder::AddThermals(std::span<const TIM::Thermal> thermals) noexcept
     source.lift_rate = i.climb_rate;
     // TODO source.time = i.time;
 
-    list.append(new ThermalMapItem(source));
+    list.append(new ThermalMapItem(source, TimeStamp::Undefined()));
   }
 }
