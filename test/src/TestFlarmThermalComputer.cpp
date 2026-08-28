@@ -156,6 +156,10 @@ TestQualificationAndLifecycle()
   ok1(info.sources.front().active);
   ok1(equals(info.sources.front().thermal.lift_rate, 1.5));
   ok1(equals(info.sources.front().thermal.ground_height, 0));
+  ok1(equals(info.sources.front().min_observed_altitude, 1002));
+  ok1(equals(info.sources.front().max_observed_altitude, 1047));
+  const double min_altitude = info.sources.front().min_observed_altitude;
+  const double max_altitude = info.sources.front().max_observed_altitude;
 
   TrafficList duplicate{};
   duplicate.Clear();
@@ -174,6 +178,8 @@ TestQualificationAndLifecycle()
   ok1(!info.sources.front().active);
   ok1(info.sources.front().active_aircraft_count == 0);
   ok1(equals(info.sources.front().thermal.lift_rate, 1.5));
+  ok1(equals(info.sources.front().min_observed_altitude, min_altitude));
+  ok1(equals(info.sources.front().max_observed_altitude, max_altitude));
 
   computer.Process(empty, TimeStamp{seconds{20}}, TEST_OWNSHIP_ALTITUDE,
                    SpeedVector::Zero(), nullptr, info);
@@ -230,8 +236,10 @@ TestGrouping()
     list.Clear();
     AppendTraffic(list, FlarmId::FromValue(10), TimeStamp{seconds{i}},
                   TEST_CENTRE, 1);
-    AppendTraffic(list, FlarmId::FromValue(11), TimeStamp{seconds{i}},
-                  second_centre, 2);
+    auto &second = AppendTraffic(list, FlarmId::FromValue(11),
+                                 TimeStamp{seconds{i}}, second_centre, 2);
+    second.altitude = double(second.altitude) + 300;
+    second.relative_altitude = double(second.relative_altitude) + 300;
     computer.Process(list, TimeStamp{seconds{i}}, TEST_OWNSHIP_ALTITUDE,
                      SpeedVector::Zero(), nullptr, info);
   }
@@ -240,12 +248,16 @@ TestGrouping()
   ok1(info.sources.front().aircraft_count == 2);
   ok1(info.sources.front().active_aircraft_count == 2);
   ok1(equals(info.sources.front().thermal.lift_rate, 1.5));
+  ok1(info.sources.front().min_observed_altitude < 1100);
+  ok1(info.sources.front().max_observed_altitude > 1350);
 
   for (unsigned i = 32; i <= 42; ++i) {
     TrafficList only_second{};
     only_second.Clear();
-    AppendTraffic(only_second, FlarmId::FromValue(11),
-                  TimeStamp{seconds{i}}, second_centre, 2);
+    auto &second = AppendTraffic(only_second, FlarmId::FromValue(11),
+                                 TimeStamp{seconds{i}}, second_centre, 2);
+    second.altitude = double(second.altitude) + 300;
+    second.relative_altitude = double(second.relative_altitude) + 300;
     computer.Process(only_second, TimeStamp{seconds{i}},
                      TEST_OWNSHIP_ALTITUDE, SpeedVector::Zero(), nullptr,
                      info);
@@ -277,6 +289,80 @@ TestSeparateThermals()
   }
 
   ok1(info.sources.size() == 2);
+}
+
+static void
+TestInvalidAltitudePreservesRange()
+{
+  TrafficThermalInfo info;
+  info.Clear();
+  FlarmThermalComputer computer;
+  computer.Reset(info);
+
+  RunSingleSequence(computer, info, FlarmId::FromValue(22), 1.5);
+  const double minimum = info.sources.front().min_observed_altitude;
+  const double maximum = info.sources.front().max_observed_altitude;
+
+  TrafficList invalid{};
+  invalid.Clear();
+  auto &traffic = AppendTraffic(invalid, FlarmId::FromValue(22),
+                                TimeStamp{seconds{32}}, TEST_CENTRE, 1.5);
+  traffic.altitude_available = false;
+  computer.Process(invalid, TimeStamp{seconds{32}}, TEST_OWNSHIP_ALTITUDE,
+                   SpeedVector::Zero(), nullptr, info);
+
+  ok1(equals(info.sources.front().min_observed_altitude, minimum));
+  ok1(equals(info.sources.front().max_observed_altitude, maximum));
+  ok1(!info.sources.front().active);
+}
+
+static void
+TestMergePreservesAltitudeRange()
+{
+  TrafficThermalInfo info;
+  info.Clear();
+  FlarmThermalComputer computer;
+  computer.Reset(info);
+
+  for (unsigned i = 1; i <= 31; ++i) {
+    TrafficList list{};
+    list.Clear();
+    AppendTraffic(list, FlarmId::FromValue(23), TimeStamp{seconds{i}},
+                  TEST_CENTRE, 1.5);
+    const GeoPoint distant = FindLatitudeLongitude(
+      TEST_CENTRE, Angle::Degrees(90), 900);
+    auto &second = AppendTraffic(list, FlarmId::FromValue(24),
+                                 TimeStamp{seconds{i}}, distant, 1.5);
+    second.altitude = double(second.altitude) + 300;
+    second.relative_altitude = double(second.relative_altitude) + 300;
+    computer.Process(list, TimeStamp{seconds{i}}, TEST_OWNSHIP_ALTITUDE,
+                     SpeedVector::Zero(), nullptr, info);
+  }
+  ok1(info.sources.size() == 2);
+
+  for (unsigned i = 32; i <= 95; ++i) {
+    const double distance = i <= 62
+      ? 900 - (i - 31) * (600. / 31.)
+      : 300;
+    const GeoPoint converging = FindLatitudeLongitude(
+      TEST_CENTRE, Angle::Degrees(90), distance);
+
+    TrafficList list{};
+    list.Clear();
+    AppendTraffic(list, FlarmId::FromValue(23), TimeStamp{seconds{i}},
+                  TEST_CENTRE, 1.5);
+    auto &second = AppendTraffic(list, FlarmId::FromValue(24),
+                                 TimeStamp{seconds{i}}, converging, 1.5);
+    second.altitude = double(second.altitude) + 300;
+    second.relative_altitude = double(second.relative_altitude) + 300;
+    computer.Process(list, TimeStamp{seconds{i}}, TEST_OWNSHIP_ALTITUDE,
+                     SpeedVector::Zero(), nullptr, info);
+  }
+
+  ok1(info.sources.size() == 1);
+  ok1(info.sources.front().aircraft_count == 2);
+  ok1(info.sources.front().min_observed_altitude < 1100 &&
+      info.sources.front().max_observed_altitude > 1400);
 }
 
 static void
@@ -339,7 +425,7 @@ TestStableGeometryAndAltitudeDatum()
   }
 
   ok1(info.sources.size() == 1);
-  ok1(info.sources.front().mean_observed_altitude < 1200);
+  ok1(info.sources.front().max_observed_altitude < 1200);
   ok1(equals(info.sources.front().geometry_lift_rate, 1.5));
   ok1(equals(info.sources.front().geometry_wind.norm, 10));
 
@@ -400,7 +486,7 @@ TestTrafficThermalVisibility()
 int
 main()
 {
-  plan_tests(59);
+  plan_tests(72);
   SetFakeLogFileQuiet(true);
 
   TestTrafficThermalAllocation();
@@ -408,6 +494,8 @@ main()
   TestRejectedTracks();
   TestGrouping();
   TestSeparateThermals();
+  TestInvalidAltitudePreservesRange();
+  TestMergePreservesAltitudeRange();
   TestStraightDepartureFreezesSource();
   TestStableGeometryAndAltitudeDatum();
   TestTrafficThermalVisibility();

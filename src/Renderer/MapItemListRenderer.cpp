@@ -314,25 +314,25 @@ Draw(Canvas &canvas, PixelRect rc,
   row_renderer.DrawFirstRow(canvas, rc, title);
 
   StaticString<256> buffer;
+  const auto altitude_range = FormatUserAltitudeRange(
+    thermal.min_observed_altitude, thermal.max_observed_altitude);
   if (thermal.active) {
-    buffer.Format(_("%s: %s - %s: %u - %s - %s: %s"),
+    buffer.Format(_("%s: %s - %s: %u - %s - %s: %s MSL"),
                   _("Avg. lift"),
                   FormatUserVerticalSpeed(thermal.thermal.lift_rate).c_str(),
                   _("Active"), thermal.active_aircraft_count,
                   FormatLocalTimeHHMM(thermal.last_seen, utc_offset).c_str(),
-                  _("Altitude"),
-                  FormatUserAltitude(thermal.mean_observed_altitude).c_str());
+                  _("Observed altitude"), altitude_range.c_str());
   } else {
     const auto age = ElapsedTimeOrZero(item.current_time,
                                        thermal.last_seen);
 
-    buffer.Format(_("%s: %s - last seen %s ago (%s) - %s: %s"),
+    buffer.Format(_("%s: %s - last seen %s ago (%s) - %s: %s MSL"),
                   _("Avg. lift"),
                   FormatUserVerticalSpeed(thermal.thermal.lift_rate).c_str(),
                   FormatTimespanSmart(age).c_str(),
                   FormatLocalTimeHHMM(thermal.last_seen, utc_offset).c_str(),
-                  _("Altitude"),
-                  FormatUserAltitude(thermal.mean_observed_altitude).c_str());
+                  _("Observed altitude"), altitude_range.c_str());
   }
 
   row_renderer.DrawSecondRow(canvas, rc, buffer);

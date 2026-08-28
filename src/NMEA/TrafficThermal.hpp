@@ -39,8 +39,9 @@ struct TrafficThermalSource {
   /** Number of contributors that are currently qualified and active. */
   unsigned active_aircraft_count;
 
-  /** Mean observed altitude across the contributing aircraft. */
-  double mean_observed_altitude;
+  /** Complete observed navigation-altitude (MSL) range of the encounter. */
+  double min_observed_altitude;
+  double max_observed_altitude;
 
   /** First and most recent observation in the cluster encounter. */
   TimeStamp first_seen;

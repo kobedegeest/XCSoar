@@ -75,10 +75,8 @@ class FlarmThermalComputer {
     double climb_integral;
     double encounter_duration;
     double encounter_average;
-    double last_altitude;
-    double altitude_integral;
-    double altitude_duration;
-    double mean_altitude;
+    double min_altitude;
+    double max_altitude;
     double reference_altitude;
     double geometry_lift_rate;
     SpeedVector geometry_wind;
@@ -108,6 +106,8 @@ class FlarmThermalComputer {
     ThermalSource source;
     TimeStamp first_seen;
     double altitude;
+    double min_altitude;
+    double max_altitude;
     double climb_rate;
     double geometry_lift_rate;
     SpeedVector geometry_wind;

@@ -281,6 +281,14 @@ FlarmThermalComputer::BuildCandidate(const TargetState &target,
   candidate.centre = projection.Unproject(mean);
   candidate.first_seen = oldest.time;
   candidate.altitude = newest.altitude;
+  candidate.min_altitude = oldest.altitude;
+  candidate.max_altitude = oldest.altitude;
+  for (const auto &sample : target.samples) {
+    candidate.min_altitude = std::min(candidate.min_altitude,
+                                      sample.altitude);
+    candidate.max_altitude = std::max(candidate.max_altitude,
+                                      sample.altitude);
+  }
   candidate.climb_rate = traffic.climb_rate_avg30s;
   candidate.geometry_lift_rate = geometry_lift_rate;
   candidate.geometry_wind = geometry_wind;
@@ -329,7 +337,7 @@ FlarmThermalComputer::FindCompatibleCluster(
       candidate.altitude,
       candidate.source.ground_height,
       published->thermal.ground_height,
-      published->mean_observed_altitude,
+      published->max_observed_altitude,
       published->reference_altitude,
     });
     const auto candidate_location =
@@ -375,10 +383,8 @@ FlarmThermalComputer::UpdateContributor(ClusterState &cluster,
     contributor->climb_integral = 0;
     contributor->encounter_duration = 0;
     contributor->encounter_average = candidate.climb_rate;
-    contributor->last_altitude = candidate.altitude;
-    contributor->altitude_integral = 0;
-    contributor->altitude_duration = 0;
-    contributor->mean_altitude = candidate.altitude;
+    contributor->min_altitude = candidate.min_altitude;
+    contributor->max_altitude = candidate.max_altitude;
     contributor->reference_altitude = candidate.altitude;
     contributor->geometry_lift_rate = candidate.geometry_lift_rate;
     contributor->geometry_wind = candidate.geometry_wind;
@@ -390,25 +396,15 @@ FlarmThermalComputer::UpdateContributor(ClusterState &cluster,
       contributor->climb_integral +=
         (contributor->last_climb_rate + candidate.climb_rate) * 0.5 * dt;
       contributor->encounter_duration += dt;
-      contributor->altitude_integral +=
-        (contributor->last_altitude + candidate.altitude) * 0.5 * dt;
-      contributor->altitude_duration += dt;
     }
 
     contributor->last_value_time = now;
     contributor->last_climb_rate = candidate.climb_rate;
-    contributor->last_altitude = candidate.altitude;
     if (contributor->encounter_duration > 0)
       contributor->encounter_average =
         contributor->climb_integral / contributor->encounter_duration;
     else
       contributor->encounter_average = candidate.climb_rate;
-
-    if (contributor->altitude_duration > 0)
-      contributor->mean_altitude =
-        contributor->altitude_integral / contributor->altitude_duration;
-    else
-      contributor->mean_altitude = candidate.altitude;
   }
 
   contributor->last_seen = now;
@@ -418,6 +414,10 @@ FlarmThermalComputer::UpdateContributor(ClusterState &cluster,
   contributor->source = candidate.source;
   contributor->centre = candidate.centre;
   contributor->reference_altitude = candidate.altitude;
+  contributor->min_altitude = std::min(contributor->min_altitude,
+                                       candidate.min_altitude);
+  contributor->max_altitude = std::max(contributor->max_altitude,
+                                       candidate.max_altitude);
 
   LogDebug("FLARM thermal cluster={} target={:06X} state={} "
            "rolling={:.6f},{:.6f} contributor_ground={:.6f},{:.6f} "
@@ -466,7 +466,8 @@ FlarmThermalComputer::RecomputeCluster(ClusterState &cluster,
   unsigned active_count = 0;
   double active_lift = 0;
   double historical_lift = 0;
-  double mean_altitude = 0;
+  double min_altitude = cluster.contributors.front().min_altitude;
+  double max_altitude = cluster.contributors.front().max_altitude;
   double geometry_lift = 0;
   double wind_east = 0;
   double wind_north = 0;
@@ -494,7 +495,8 @@ FlarmThermalComputer::RecomputeCluster(ClusterState &cluster,
     }
 
     historical_lift += contributor.encounter_average;
-    mean_altitude += contributor.mean_altitude;
+    min_altitude = std::min(min_altitude, contributor.min_altitude);
+    max_altitude = std::max(max_altitude, contributor.max_altitude);
     geometry_lift += contributor.geometry_lift_rate;
     AddVector(contributor.geometry_wind, wind_east, wind_north);
     AddVector(contributor.drift_per_altitude, drift_east, drift_north);
@@ -510,7 +512,8 @@ FlarmThermalComputer::RecomputeCluster(ClusterState &cluster,
   published.cluster_serial = cluster.serial;
   published.aircraft_count = cluster.contributors.size();
   published.active_aircraft_count = active_count;
-  published.mean_observed_altitude = mean_altitude / count;
+  published.min_observed_altitude = min_altitude;
+  published.max_observed_altitude = max_altitude;
   published.first_seen = cluster.first_seen;
   published.last_seen = cluster.last_seen;
   published.active = active_count > 0;
@@ -636,17 +639,10 @@ FlarmThermalComputer::MergeClusters(unsigned keep_index,
         (existing->encounter_average + incoming.encounter_average) * 0.5;
     }
 
-    const double combined_altitude_duration =
-      existing->altitude_duration + incoming.altitude_duration;
-    if (combined_altitude_duration > 0) {
-      existing->altitude_integral += incoming.altitude_integral;
-      existing->altitude_duration = combined_altitude_duration;
-      existing->mean_altitude =
-        existing->altitude_integral / combined_altitude_duration;
-    } else {
-      existing->mean_altitude =
-        (existing->mean_altitude + incoming.mean_altitude) * 0.5;
-    }
+    existing->min_altitude = std::min(existing->min_altitude,
+                                      incoming.min_altitude);
+    existing->max_altitude = std::max(existing->max_altitude,
+                                      incoming.max_altitude);
 
     existing->first_seen = std::min(existing->first_seen,
                                     incoming.first_seen);
@@ -655,7 +651,6 @@ FlarmThermalComputer::MergeClusters(unsigned keep_index,
       existing->last_value_time = incoming.last_value_time;
       existing->latest_climb_rate = incoming.latest_climb_rate;
       existing->last_climb_rate = incoming.last_climb_rate;
-      existing->last_altitude = incoming.last_altitude;
       existing->centre = incoming.centre;
       existing->source = incoming.source;
       existing->reference_altitude = incoming.reference_altitude;
@@ -715,8 +710,8 @@ FlarmThermalComputer::MergeCompatibleClusters(
         const double comparison_altitude = std::max({
           a->thermal.ground_height,
           b->thermal.ground_height,
-          a->mean_observed_altitude,
-          b->mean_observed_altitude,
+          a->max_observed_altitude,
+          b->max_observed_altitude,
           a->reference_altitude,
           b->reference_altitude,
         });

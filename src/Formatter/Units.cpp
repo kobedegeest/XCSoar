@@ -8,6 +8,8 @@
 #include "Math/Util.hpp"
 #include "util/StringFormat.hpp"
 
+#include <cstring>
+
 static void
 FormatInteger(char *buffer,
               const double value, const Unit unit, bool include_unit,
@@ -52,6 +54,30 @@ FormatAltitude(char *buffer, double value, Unit unit,
                bool include_unit)
 {
   FormatInteger(buffer, value, unit, include_unit, false);
+}
+
+void
+FormatAltitudeRange(char *buffer, size_t buffer_size,
+                    double minimum, double maximum, Unit unit,
+                    bool include_unit)
+{
+  char minimum_text[32], maximum_text[32];
+  FormatAltitude(minimum_text, minimum, unit, false);
+  FormatAltitude(maximum_text, maximum, unit, false);
+
+  if (std::strcmp(minimum_text, maximum_text) == 0) {
+    char value[32];
+    FormatAltitude(value, minimum, unit, include_unit);
+    StringFormat(buffer, buffer_size, "%s", value);
+    return;
+  }
+
+  if (include_unit)
+    StringFormat(buffer, buffer_size, "%s–%s %s",
+                 minimum_text, maximum_text, Units::GetUnitName(unit));
+  else
+    StringFormat(buffer, buffer_size, "%s–%s",
+                 minimum_text, maximum_text);
 }
 
 void

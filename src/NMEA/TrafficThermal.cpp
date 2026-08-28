@@ -25,7 +25,8 @@ TrafficThermalSource::Clear() noexcept
   cluster_serial = 0;
   aircraft_count = 0;
   active_aircraft_count = 0;
-  mean_observed_altitude = 0;
+  min_observed_altitude = 0;
+  max_observed_altitude = 0;
   first_seen = TimeStamp::Undefined();
   last_seen = TimeStamp::Undefined();
   active = false;
