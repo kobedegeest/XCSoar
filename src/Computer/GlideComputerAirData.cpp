@@ -93,8 +93,10 @@ GlideComputerAirData::ProcessVertical(const MoreData &basic,
   wind_computer.Select(settings.wind, basic, calculated);
   wind_computer.ComputeHeadWind(basic, calculated);
 
-  if (basic.time_available && basic.location_available)
+  if (basic.time_available && basic.location_available &&
+      basic.NavAltitudeAvailable())
     flarm_thermal_computer.Process(basic.flarm.traffic, basic.time,
+                                   basic.nav_altitude,
                                    calculated.GetWindOrZero(), terrain,
                                    calculated.traffic_thermals);
   else

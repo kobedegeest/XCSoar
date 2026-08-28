@@ -4,6 +4,7 @@
 #include "MapWindow.hpp"
 #include "TrafficThermalVisibility.hpp"
 #include "Look/MapLook.hpp"
+#include "LogFile.hpp"
 #include "ui/canvas/Icon.hpp"
 #ifdef HAVE_SKYLINES_TRACKING
 #include "Tracking/SkyLines/Data.hpp"
@@ -86,7 +87,7 @@ MapWindow::DrawFlarmThermals(Canvas &canvas) const noexcept
 
   const MoreData &basic = Basic();
   const DerivedInfo &calculated = Calculated();
-  const auto wind = calculated.wind_available
+  const auto selected_wind = calculated.wind_available
     ? calculated.wind
     : SpeedVector::Zero();
 
@@ -94,9 +95,22 @@ MapWindow::DrawFlarmThermals(Canvas &canvas) const noexcept
     if (basic.nav_altitude < source.thermal.ground_height)
       continue;
 
-    const GeoPoint location = wind.IsNonZero()
-      ? source.thermal.CalculateAdjustedLocation(basic.nav_altitude, wind)
-      : source.thermal.location;
+    const GeoPoint location =
+      source.CalculateAdjustedLocation(basic.nav_altitude);
+    if (!location.IsValid())
+      continue;
+
+    LogDebug("FLARM thermal cluster={} display={:.6f},{:.6f} "
+             "ownship_altitude={:.1f} reporting_lift={:.2f} "
+             "geometry_lift={:.2f} stored_wind={:.1f}@{:.1f} "
+             "selected_wind={:.1f}@{:.1f}",
+             source.cluster_serial,
+             location.latitude.Degrees(), location.longitude.Degrees(),
+             basic.nav_altitude, source.thermal.lift_rate,
+             source.geometry_lift_rate,
+             source.geometry_wind.norm,
+             source.geometry_wind.bearing.Degrees(),
+             selected_wind.norm, selected_wind.bearing.Degrees());
     if (auto p = render_projection.GeoToScreenIfVisible(location))
       look.flarm_thermal_source_icon.Draw(canvas, *p);
   }

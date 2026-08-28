@@ -2,9 +2,11 @@
 // Copyright The XCSoar Project
 
 #include "TrafficThermal.hpp"
+#include "Geo/Math.hpp"
 
 #include <algorithm>
 #include <cassert>
+#include <cmath>
 
 void
 TrafficThermalSource::Clear() noexcept
@@ -14,6 +16,12 @@ TrafficThermalSource::Clear() noexcept
   thermal.lift_rate = 0;
   thermal.time = TimeStamp::Undefined();
 
+  reference_location = GeoPoint::Invalid();
+  reference_altitude = 0;
+  geometry_lift_rate = 0;
+  geometry_wind = SpeedVector::Zero();
+  drift_per_altitude = SpeedVector::Zero();
+
   cluster_serial = 0;
   aircraft_count = 0;
   active_aircraft_count = 0;
@@ -21,6 +29,24 @@ TrafficThermalSource::Clear() noexcept
   first_seen = TimeStamp::Undefined();
   last_seen = TimeStamp::Undefined();
   active = false;
+}
+
+GeoPoint
+TrafficThermalSource::CalculateAdjustedLocation(double altitude) const noexcept
+{
+  if (!reference_location.IsValid())
+    return GeoPoint::Invalid();
+
+  const double height_delta = altitude - reference_altitude;
+  if (drift_per_altitude.IsZero() || height_delta == 0)
+    return reference_location;
+
+  const Angle bearing = height_delta > 0
+    ? drift_per_altitude.bearing.Reciprocal()
+    : drift_per_altitude.bearing;
+  return FindLatitudeLongitude(reference_location, bearing,
+                               drift_per_altitude.norm *
+                               std::abs(height_delta));
 }
 
 void

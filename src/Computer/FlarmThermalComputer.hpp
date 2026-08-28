@@ -4,6 +4,7 @@
 #pragma once
 
 #include "FLARM/List.hpp"
+#include "Geo/SpeedVector.hpp"
 #include "Math/Angle.hpp"
 #include "NMEA/TrafficThermal.hpp"
 #include "NMEA/Validity.hpp"
@@ -22,12 +23,15 @@ static constexpr FloatDuration MIN_SAMPLE_INTERVAL{0.25};
 static constexpr FloatDuration MAX_SAMPLE_GAP{5};
 static constexpr FloatDuration CONTRIBUTOR_TIMEOUT{10};
 static constexpr FloatDuration GROUPING_TIME_GAP{120};
+static constexpr FloatDuration EXIT_TURN_WINDOW{5};
 
 static constexpr double ENTER_CLIMB_THRESHOLD = 0.5;
 static constexpr double EXIT_CLIMB_THRESHOLD = 0.3;
 static constexpr double MAX_DRIFT_CORRECTED_RADIUS = 500;
 static constexpr double GROUPING_RADIUS = 500;
 static constexpr double MIN_ACCUMULATED_TURN = 270;
+static constexpr double MIN_RECENT_TURN_RATE = 4;
+static constexpr double MIN_CURRENT_TURN_RATE = 3;
 
 /** Enough for the complete window after rate-aware sample coalescing. */
 static constexpr unsigned MAX_SAMPLE_COUNT = 128;
@@ -75,6 +79,10 @@ class FlarmThermalComputer {
     double altitude_integral;
     double altitude_duration;
     double mean_altitude;
+    double reference_altitude;
+    double geometry_lift_rate;
+    SpeedVector geometry_wind;
+    SpeedVector drift_per_altitude;
     bool active;
   };
 
@@ -84,6 +92,7 @@ class FlarmThermalComputer {
       contributors;
     TimeStamp first_seen;
     TimeStamp last_seen;
+    double reference_altitude;
     bool recent;
     bool closed;
   };
@@ -100,37 +109,50 @@ class FlarmThermalComputer {
     TimeStamp first_seen;
     double altitude;
     double climb_rate;
+    double geometry_lift_rate;
+    SpeedVector geometry_wind;
+    SpeedVector drift_per_altitude;
+  };
+
+  enum class CandidateResult : std::uint8_t {
+    QUALIFIED,
+    INCOMPLETE_WINDOW,
+    WEAK_LIFT,
+    INSUFFICIENT_TURN,
+    LEFT_CIRCLE,
+    EXCESSIVE_RADIUS,
+    INVALID_SOURCE,
   };
 
   TargetState *FindTarget(FlarmId id) noexcept;
   TargetState &AllocateTarget(FlarmId id,
                               TrafficThermalInfo &output) noexcept;
   void ResetTargetWindow(TargetState &target) noexcept;
-  void DeactivateTarget(TargetState &target) noexcept;
+  void DeactivateTarget(TargetState &target, const char *reason) noexcept;
 
   ClusterState *FindCluster(std::uint32_t serial) noexcept;
   ClusterState &AllocateCluster(TimeStamp first_seen,
+                                double reference_altitude,
                                 TrafficThermalInfo &output) noexcept;
   ClusterState *FindCompatibleCluster(const Candidate &candidate,
                                       TimeStamp now,
-                                      const SpeedVector &wind,
                                       const TrafficThermalInfo &output)
     noexcept;
 
-  bool BuildCandidate(const TargetState &target,
-                      const FlarmTraffic &traffic,
-                      const SpeedVector &wind,
-                      const RasterTerrain *terrain,
-                      Candidate &candidate) const noexcept;
+  CandidateResult BuildCandidate(const TargetState &target,
+                                 const FlarmTraffic &traffic,
+                                 double geometry_lift_rate,
+                                 const SpeedVector &geometry_wind,
+                                 const RasterTerrain *terrain,
+                                 Candidate &candidate) const noexcept;
   void UpdateContributor(ClusterState &cluster, TargetState &target,
-                         const Candidate &candidate, TimeStamp now,
-                         const SpeedVector &wind,
-                         const RasterTerrain *terrain) noexcept;
+                         const Candidate &candidate,
+                         TimeStamp now) noexcept;
   void UpdateLifecycle(TimeStamp now,
                        TrafficThermalInfo &output) noexcept;
   void RecomputeCluster(ClusterState &cluster,
                         TrafficThermalInfo &output) noexcept;
-  void MergeCompatibleClusters(TimeStamp now, const SpeedVector &wind,
+  void MergeCompatibleClusters(TimeStamp now,
                                TrafficThermalInfo &output) noexcept;
   void MergeClusters(unsigned keep_index, unsigned remove_index,
                      TrafficThermalInfo &output) noexcept;
@@ -141,8 +163,15 @@ public:
   /** Reset detector state and published FLARM thermal history. */
   void Reset(TrafficThermalInfo &output) noexcept;
 
-  /** Process one calculation snapshot. */
+  /**
+   * Process one calculation snapshot.
+   *
+   * @param ownship_altitude navigation altitude (QNH/barometric MSL when
+   * enabled, otherwise GPS MSL), used as the geometry datum for relative
+   * physical-FLARM altitudes
+   */
   void Process(const TrafficList &traffic, TimeStamp now,
+               double ownship_altitude,
                const SpeedVector &wind, const RasterTerrain *terrain,
                TrafficThermalInfo &output) noexcept;
 };

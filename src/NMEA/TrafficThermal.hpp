@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "Geo/SpeedVector.hpp"
 #include "NMEA/ThermalLocator.hpp"
 #include "util/TrivialArray.hxx"
 
@@ -11,8 +12,23 @@
 
 /** A calculated thermal marker contributed by physical FLARM traffic. */
 struct TrafficThermalSource {
-  /** Wind-adjustable ground source shared with the own-thermal renderer. */
+  /** Ground source and reported lift shown in the map-item details. */
   ThermalSource thermal;
+
+  /**
+   * Stable detected core at an explicit navigation-altitude (MSL) datum.
+   * Marker adjustment starts here instead of reinterpreting #thermal with a
+   * later reporting average or selected wind.
+   */
+  GeoPoint reference_location;
+  double reference_altitude;
+
+  /** Geometry parameters captured from contributors during qualification. */
+  double geometry_lift_rate;
+  SpeedVector geometry_wind;
+
+  /** Horizontal drift per metre of altitude, averaged per contributor. */
+  SpeedVector drift_per_altitude;
 
   /** Stable identity used by the calculation state to update this marker. */
   std::uint32_t cluster_serial;
@@ -34,6 +50,10 @@ struct TrafficThermalSource {
   bool active;
 
   void Clear() noexcept;
+
+  /** Project the retained core to another navigation-altitude (MSL) level. */
+  [[nodiscard]] [[gnu::pure]]
+  GeoPoint CalculateAdjustedLocation(double altitude) const noexcept;
 };
 
 static_assert(std::is_trivially_copyable_v<TrafficThermalSource>,

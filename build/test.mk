@@ -658,10 +658,11 @@ TEST_FLARM_THERMAL_COMPUTER_SOURCES = \
 	$(SRC)/Computer/ThermalBase.cpp \
 	$(SRC)/NMEA/ThermalLocator.cpp \
 	$(SRC)/NMEA/TrafficThermal.cpp \
+	$(TEST_SRC_DIR)/FakeLogFile.cpp \
 	$(TEST_SRC_DIR)/FakeTerrain.cpp \
 	$(TEST_SRC_DIR)/tap.c \
 	$(TEST_SRC_DIR)/TestFlarmThermalComputer.cpp
-TEST_FLARM_THERMAL_COMPUTER_DEPENDS = FLARM GEO TIME MATH UTIL THREAD
+TEST_FLARM_THERMAL_COMPUTER_DEPENDS = FLARM GEO TIME MATH UTIL THREAD FMT
 $(eval $(call link-program,TestFlarmThermalComputer,TEST_FLARM_THERMAL_COMPUTER))
 
 TEST_CIRCLING_WIND_SOURCES = \

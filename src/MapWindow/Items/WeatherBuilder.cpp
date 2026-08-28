@@ -55,6 +55,8 @@ MapItemListBuilder::AddTrafficThermals(const TrafficThermalInfo &thermals,
                                        const MoreData &basic,
                                        const DerivedInfo &calculated)
 {
+  (void)calculated;
+
   for (const auto &source : thermals.sources) {
     if (list.full())
       break;
@@ -63,9 +65,11 @@ MapItemListBuilder::AddTrafficThermals(const TrafficThermalInfo &thermals,
     if (basic.nav_altitude < thermal.ground_height)
       continue;
 
-    const GeoPoint adjusted_location = calculated.wind_available
-      ? thermal.CalculateAdjustedLocation(basic.nav_altitude, calculated.wind)
-      : thermal.location;
+    const GeoPoint adjusted_location =
+      source.CalculateAdjustedLocation(basic.nav_altitude);
+    if (!adjusted_location.IsValid())
+      continue;
+
     if (location.DistanceS(adjusted_location) < range)
       list.append(new TrafficThermalMapItem(source, basic.time));
   }
