@@ -3,12 +3,19 @@
 
 #include "Calculations.hpp"
 
+FlarmCalculations::AverageResult
+FlarmCalculations::Average30sWithSpan(FlarmId id, TimeStamp time,
+                                      double altitude) noexcept
+{
+  ClimbAverageCalculator &item = averageCalculatorMap[id];
+  return item.GetAverageWithSpan(time, altitude, std::chrono::seconds{30});
+}
+
 double
 FlarmCalculations::Average30s(FlarmId id, TimeStamp time,
                               double altitude) noexcept
 {
-  ClimbAverageCalculator &item = averageCalculatorMap[id];
-  return item.GetAverage(time, altitude, std::chrono::seconds{30});
+  return Average30sWithSpan(id, time, altitude).average;
 }
 
 void

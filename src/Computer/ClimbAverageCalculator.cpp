@@ -14,10 +14,18 @@ ClimbAverageCalculator::Reset()
 }
 
 double
-ClimbAverageCalculator::GetAverage(TimeStamp time, double altitude,
-                                   FloatDuration average_time) noexcept
+ClimbAverageCalculator::GetAverageWithSpan(TimeStamp time, double altitude,
+                                           FloatDuration average_time) noexcept
 {
   assert(average_time.count() <= MAX_HISTORY);
+
+  if (!time.IsDefined())
+    return {0, FloatDuration::zero()};
+
+  /* A backwards timestamp starts a new observation window. */
+  if (newestValIndex >= 0 && history[newestValIndex].IsDefined() &&
+      time < history[newestValIndex].time)
+    Reset();
 
   int bestHistory;
 
@@ -49,11 +57,19 @@ ClimbAverageCalculator::GetAverage(TimeStamp time, double altitude,
   }
 
   // calculate the average !
-  if (bestHistory != newestValIndex)
-    return (altitude - history[bestHistory].altitude) /
-      (time - history[bestHistory].time).count();
+  const auto time_span = time - history[bestHistory].time;
+  const auto average = bestHistory != newestValIndex && time_span.count() > 0
+    ? (altitude - history[bestHistory].altitude) / time_span.count()
+    : 0;
 
-  return 0;
+  return {average, time_span};
+}
+
+double
+ClimbAverageCalculator::GetAverage(TimeStamp time, double altitude,
+                                   FloatDuration average_time) noexcept
+{
+  return GetAverageWithSpan(time, altitude, average_time).average;
 }
 
 bool

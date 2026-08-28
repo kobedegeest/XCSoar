@@ -90,7 +90,7 @@ TEST_NAMES = \
 	TestValidity TestUTM \
 	TestAllocatedGrid \
 	TestRadixTree TestGeoBounds TestGeoClip \
-	TestLogger TestGRecord TestClimbAvCalc TestCirclingWind \
+	TestLogger TestGRecord TestClimbAvCalc TestFlarmThermalComputer TestCirclingWind \
 	TestFilteredVarioComputer \
 	TestVarioSynthesiser TestAudioVario \
 	TestWaypointReader TestThermalBase \
@@ -651,6 +651,14 @@ TEST_CLIMB_AV_CALC_SOURCES = \
 	$(TEST_SRC_DIR)/TestClimbAvCalc.cpp
 TEST_CLIMB_AV_CALC_DEPENDS = MATH
 $(eval $(call link-program,TestClimbAvCalc,TEST_CLIMB_AV_CALC))
+
+TEST_FLARM_THERMAL_COMPUTER_SOURCES = \
+	$(SRC)/Computer/FlarmThermalComputer.cpp \
+	$(SRC)/NMEA/TrafficThermal.cpp \
+	$(TEST_SRC_DIR)/tap.c \
+	$(TEST_SRC_DIR)/TestFlarmThermalComputer.cpp
+TEST_FLARM_THERMAL_COMPUTER_DEPENDS = FLARM NMEA GEO TIME MATH UTIL
+$(eval $(call link-program,TestFlarmThermalComputer,TEST_FLARM_THERMAL_COMPUTER))
 
 TEST_CIRCLING_WIND_SOURCES = \
 	$(SRC)/Computer/Wind/CirclingWind.cpp \

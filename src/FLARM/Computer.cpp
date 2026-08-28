@@ -7,6 +7,8 @@
 #include "Geo/GeoVector.hpp"
 #include "time/Cast.hxx"
 
+#include <chrono>
+
 void
 FlarmComputer::Process(FlarmData &flarm, const FlarmData &last_flarm,
                        const NMEAInfo &basic) noexcept
@@ -96,11 +98,17 @@ FlarmComputer::Process(FlarmData &flarm, const FlarmData &last_flarm,
         traffic.altitude - RoughAltitude(*ownship_altitude);
     }
 
-    // Calculate average climb rate
-    traffic.climb_rate_avg30s_available = traffic.altitude_available;
-    if (traffic.climb_rate_avg30s_available)
-      traffic.climb_rate_avg30s =
-        flarm_calculations.Average30s(traffic.id, now, traffic.altitude);
+    // Calculate average climb rate.  Do not advertise a 30-second average
+    // until the retained history actually spans the complete window.
+    traffic.climb_rate_avg30s_available = false;
+    if (traffic.altitude_available) {
+      const auto average =
+        flarm_calculations.Average30sWithSpan(traffic.id, now,
+                                              traffic.altitude);
+      traffic.climb_rate_avg30s = average.average;
+      traffic.climb_rate_avg30s_available =
+        average.IsComplete(std::chrono::seconds{30});
+    }
 
     // The following calculations are only relevant for targets
     // where information is missing
