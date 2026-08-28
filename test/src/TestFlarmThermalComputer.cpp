@@ -4,6 +4,7 @@
 #include "Computer/FlarmThermalComputer.hpp"
 #include "Geo/Math.hpp"
 #include "Geo/SpeedVector.hpp"
+#include "MapWindow/TrafficThermalVisibility.hpp"
 #include "TestUtil.hpp"
 
 #include <chrono>
@@ -228,16 +229,26 @@ TestSeparateThermals()
   ok1(info.sources.size() == 2);
 }
 
+static void
+TestTrafficThermalVisibility()
+{
+  ok1(TrafficThermalLayer::IsVisible(true, 4000));
+  ok1(TrafficThermalLayer::IsVisible(true, 3999));
+  ok1(!TrafficThermalLayer::IsVisible(true, 4001));
+  ok1(!TrafficThermalLayer::IsVisible(false, 1000));
+}
+
 int
 main()
 {
-  plan_tests(36);
+  plan_tests(40);
 
   TestTrafficThermalAllocation();
   TestQualificationAndLifecycle();
   TestRejectedTracks();
   TestGrouping();
   TestSeparateThermals();
+  TestTrafficThermalVisibility();
 
   return exit_status();
 }

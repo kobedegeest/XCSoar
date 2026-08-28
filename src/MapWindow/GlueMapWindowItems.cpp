@@ -6,6 +6,7 @@
 #include "Items/Builder.hpp"
 #include "Items/OverlayMapItem.hpp"
 #include "Items/RaspMapItem.hpp"
+#include "TrafficThermalVisibility.hpp"
 #include "Dialogs/MapItemListDialog.hpp"
 #include "UIGlobals.hpp"
 #include "Screen/Layout.hpp"
@@ -68,7 +69,8 @@ GlueMapWindow::ShowMapItems(const GeoPoint &location,
 
   if (visible_projection.GetMapScale() <= 4000) {
     builder.AddThermals(calculated.thermal_locator, basic, calculated);
-    if (settings.show_flarm_on_map)
+    if (TrafficThermalLayer::IsVisible(settings.show_flarm_on_map,
+                                       visible_projection.GetMapScale()))
       builder.AddTrafficThermals(calculated.traffic_thermals, basic,
                                  calculated);
 
