@@ -49,6 +49,18 @@ TrafficThermalInfo::FindBySerial(std::uint32_t serial) const noexcept
   return nullptr;
 }
 
+bool
+TrafficThermalInfo::RemoveBySerial(std::uint32_t serial) noexcept
+{
+  for (unsigned i = 0; i < sources.size(); ++i)
+    if (sources[i].cluster_serial == serial) {
+      sources.remove(i);
+      return true;
+    }
+
+  return false;
+}
+
 static bool
 IsOlder(const TrafficThermalSource &a,
         const TrafficThermalSource &b) noexcept

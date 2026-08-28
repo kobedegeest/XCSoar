@@ -53,6 +53,22 @@ MapWindow::DrawThermalEstimate(Canvas &canvas) const noexcept
                      calculated.wind_available
                      ? calculated.wind : SpeedVector::Zero());
 
+  if (GetMapSettings().show_flarm_on_map) {
+    const auto wind = calculated.wind_available
+      ? calculated.wind
+      : SpeedVector::Zero();
+    for (const auto &source : calculated.traffic_thermals.sources) {
+      if (basic.nav_altitude < source.thermal.ground_height)
+        continue;
+
+      const GeoPoint location = wind.IsNonZero()
+        ? source.thermal.CalculateAdjustedLocation(basic.nav_altitude, wind)
+        : source.thermal.location;
+      if (auto p = render_projection.GeoToScreenIfVisible(location))
+        look.flarm_thermal_source_icon.Draw(canvas, *p);
+    }
+  }
+
 #ifdef HAVE_SKYLINES_TRACKING
   const auto &cloud_settings = GetComputerSettings().tracking.cloud;
   if (cloud_settings.show_thermals && skylines_data != nullptr) {

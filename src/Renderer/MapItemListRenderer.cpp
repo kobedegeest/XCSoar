@@ -294,6 +294,57 @@ Draw(Canvas &canvas, PixelRect rc,
 
 static void
 Draw(Canvas &canvas, PixelRect rc,
+     const TrafficThermalMapItem &item,
+     RoughTimeDelta utc_offset,
+     const TwoTextRowsRenderer &row_renderer,
+     const MapLook &look)
+{
+  const unsigned line_height = rc.GetHeight();
+  const unsigned text_padding = Layout::GetTextPadding();
+  const auto &thermal = item.thermal;
+
+  const PixelPoint pt(rc.left + line_height / 2,
+                      rc.top + line_height / 2);
+  look.flarm_thermal_source_icon.Draw(canvas, pt);
+  rc.left += line_height + text_padding;
+
+  StaticString<128> title;
+  if (thermal.aircraft_count == 1)
+    title = _("FLARM thermal — 1 aircraft");
+  else
+    title.Format(_("FLARM thermal — %u aircraft"),
+                 thermal.aircraft_count);
+  row_renderer.DrawFirstRow(canvas, rc, title);
+
+  StaticString<256> buffer;
+  if (thermal.active) {
+    buffer.Format(_("%s: %s - %s: %u - %s - %s: %s"),
+                  _("Avg. lift"),
+                  FormatUserVerticalSpeed(thermal.thermal.lift_rate).c_str(),
+                  _("Active"), thermal.active_aircraft_count,
+                  FormatLocalTimeHHMM(thermal.last_seen, utc_offset).c_str(),
+                  _("Altitude"),
+                  FormatUserAltitude(thermal.mean_observed_altitude).c_str());
+  } else {
+    auto age = TimeStamp{BrokenDateTime::NowUTC().DurationSinceMidnight()} -
+      thermal.last_seen;
+    if (age.count() < 0)
+      age += hours{24};
+
+    buffer.Format(_("%s: %s - last seen %s ago (%s) - %s: %s"),
+                  _("Avg. lift"),
+                  FormatUserVerticalSpeed(thermal.thermal.lift_rate).c_str(),
+                  FormatTimespanSmart(age).c_str(),
+                  FormatLocalTimeHHMM(thermal.last_seen, utc_offset).c_str(),
+                  _("Altitude"),
+                  FormatUserAltitude(thermal.mean_observed_altitude).c_str());
+  }
+
+  row_renderer.DrawSecondRow(canvas, rc, buffer);
+}
+
+static void
+Draw(Canvas &canvas, PixelRect rc,
      const TaskOZMapItem &item,
      const TwoTextRowsRenderer &row_renderer,
      const TaskLook &look, const AirspaceLook &airspace_look,
@@ -503,6 +554,11 @@ MapItemListRenderer::Draw(Canvas &canvas, const PixelRect rc,
 
   case MapItem::Type::THERMAL:
     ::Draw(canvas, rc, (const ThermalMapItem &)item, utc_offset,
+           row_renderer, look);
+    break;
+
+  case MapItem::Type::TRAFFIC_THERMAL:
+    ::Draw(canvas, rc, (const TrafficThermalMapItem &)item, utc_offset,
            row_renderer, look);
     break;
 

@@ -6,6 +6,7 @@
 #include "FLARM/List.hpp"
 #include "Math/Angle.hpp"
 #include "NMEA/TrafficThermal.hpp"
+#include "NMEA/Validity.hpp"
 #include "time/Stamp.hpp"
 #include "util/TrivialArray.hxx"
 
@@ -17,6 +18,7 @@ struct SpeedVector;
 /** Initial tunable values for the FLARM thermal detector. */
 namespace FlarmThermalConstants {
 static constexpr FloatDuration OBSERVATION_WINDOW{30};
+static constexpr FloatDuration MIN_SAMPLE_INTERVAL{0.25};
 static constexpr FloatDuration MAX_SAMPLE_GAP{5};
 static constexpr FloatDuration CONTRIBUTOR_TIMEOUT{10};
 static constexpr FloatDuration GROUPING_TIME_GAP{120};
@@ -27,12 +29,8 @@ static constexpr double MAX_DRIFT_CORRECTED_RADIUS = 500;
 static constexpr double GROUPING_RADIUS = 500;
 static constexpr double MIN_ACCUMULATED_TURN = 270;
 
-/**
- * Temporary bounded history for the first detector skeleton.  Replace this
- * sample-count bound with a rate-aware time-based ring when FLARM update-rate
- * requirements are established.
- */
-static constexpr unsigned MAX_SAMPLE_COUNT = 64;
+/** Enough for the complete window after rate-aware sample coalescing. */
+static constexpr unsigned MAX_SAMPLE_COUNT = 128;
 }
 
 /**
@@ -56,6 +54,7 @@ class FlarmThermalComputer {
     FlarmId id;
     TrivialArray<Sample, FlarmThermalConstants::MAX_SAMPLE_COUNT> samples;
     std::uint32_t assigned_cluster_serial;
+    Validity last_update;
     TimeStamp last_seen;
     bool qualified;
   };
@@ -63,9 +62,19 @@ class FlarmThermalComputer {
   struct ContributorState {
     FlarmId id;
     GeoPoint centre;
+    ThermalSource source;
+    TimeStamp first_seen;
     TimeStamp last_seen;
+    TimeStamp last_value_time;
     double latest_climb_rate;
+    double last_climb_rate;
+    double climb_integral;
+    double encounter_duration;
     double encounter_average;
+    double last_altitude;
+    double altitude_integral;
+    double altitude_duration;
+    double mean_altitude;
     bool active;
   };
 
@@ -82,17 +91,57 @@ class FlarmThermalComputer {
   TrivialArray<TargetState, TrafficList::DEVICE_MAX_COUNT> targets;
   TrivialArray<ClusterState, TrafficThermalInfo::MAX_SOURCES> clusters;
   std::uint32_t next_cluster_serial;
+  TimeStamp last_process_time;
+
+  struct Candidate {
+    FlarmId id;
+    GeoPoint centre;
+    ThermalSource source;
+    TimeStamp first_seen;
+    double altitude;
+    double climb_rate;
+  };
+
+  TargetState *FindTarget(FlarmId id) noexcept;
+  TargetState &AllocateTarget(FlarmId id,
+                              TrafficThermalInfo &output) noexcept;
+  void ResetTargetWindow(TargetState &target) noexcept;
+  void DeactivateTarget(TargetState &target) noexcept;
+
+  ClusterState *FindCluster(std::uint32_t serial) noexcept;
+  ClusterState &AllocateCluster(TimeStamp first_seen,
+                                TrafficThermalInfo &output) noexcept;
+  ClusterState *FindCompatibleCluster(const Candidate &candidate,
+                                      TimeStamp now,
+                                      const SpeedVector &wind,
+                                      const TrafficThermalInfo &output)
+    noexcept;
+
+  bool BuildCandidate(const TargetState &target,
+                      const FlarmTraffic &traffic,
+                      const SpeedVector &wind,
+                      const RasterTerrain *terrain,
+                      Candidate &candidate) const noexcept;
+  void UpdateContributor(ClusterState &cluster, TargetState &target,
+                         const Candidate &candidate, TimeStamp now,
+                         const SpeedVector &wind,
+                         const RasterTerrain *terrain) noexcept;
+  void UpdateLifecycle(TimeStamp now,
+                       TrafficThermalInfo &output) noexcept;
+  void RecomputeCluster(ClusterState &cluster,
+                        TrafficThermalInfo &output) noexcept;
+  void MergeCompatibleClusters(TimeStamp now, const SpeedVector &wind,
+                               TrafficThermalInfo &output) noexcept;
+  void MergeClusters(unsigned keep_index, unsigned remove_index,
+                     TrafficThermalInfo &output) noexcept;
 
 public:
+  FlarmThermalComputer() noexcept;
+
   /** Reset detector state and published FLARM thermal history. */
   void Reset(TrafficThermalInfo &output) noexcept;
 
-  /**
-   * Process one calculation snapshot.
-   *
-   * TODO(issue #832): implement target qualification, cluster assignment,
-   * equal-weight aggregation, merging, and recent/closed lifecycle handling.
-   */
+  /** Process one calculation snapshot. */
   void Process(const TrafficList &traffic, TimeStamp now,
                const SpeedVector &wind, const RasterTerrain *terrain,
                TrafficThermalInfo &output) noexcept;

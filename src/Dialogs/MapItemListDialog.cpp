@@ -87,6 +87,7 @@ HasDetails(const MapItem &item)
   switch (item.type) {
   case MapItem::Type::ARRIVAL_ALTITUDE:
   case MapItem::Type::THERMAL:
+  case MapItem::Type::TRAFFIC_THERMAL:
     return false;
 
   case MapItem::Type::SELF:
@@ -586,6 +587,7 @@ ShowMapItemDialog(const MapItem &item,
   switch (item.type) {
   case MapItem::Type::ARRIVAL_ALTITUDE:
   case MapItem::Type::THERMAL:
+  case MapItem::Type::TRAFFIC_THERMAL:
     return false;
 
   case MapItem::Type::SELF:

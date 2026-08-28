@@ -19,8 +19,12 @@ FlarmComputer::Process(FlarmData &flarm, const FlarmData &last_flarm,
   flarm_calculations.CleanUp(now);
 
   // if (FLARM data is available)
-  if (!flarm.IsDetected())
+  if (!flarm.IsDetected()) {
+    flarm_calculations.Clear();
     return;
+  }
+
+  flarm_calculations.ResetMissing(flarm.traffic);
 
   double north_to_latitude(0);
   double east_to_longitude(0);
@@ -48,6 +52,8 @@ FlarmComputer::Process(FlarmData &flarm, const FlarmData &last_flarm,
   // for each item in traffic
   for (auto &traffic : flarm.traffic.list) {
     const auto ownship_altitude = basic.GetAnyAltitude();
+    const FlarmTraffic *last_traffic =
+      last_flarm.traffic.FindTraffic(traffic.id);
 
     // Keep the cached display name (callsign) in sync with current sources.
     // Skip for no_track targets and random IDs: they must not be resolved
@@ -102,13 +108,24 @@ FlarmComputer::Process(FlarmData &flarm, const FlarmData &last_flarm,
     // until the retained history actually spans the complete window.
     traffic.climb_rate_avg30s_available = false;
     if (traffic.altitude_available) {
-      const auto average =
-        flarm_calculations.Average30sWithSpan(traffic.id, now,
-                                              traffic.altitude);
-      traffic.climb_rate_avg30s = average.average;
-      traffic.climb_rate_avg30s_available =
-        average.IsComplete(std::chrono::seconds{30});
-    }
+      if (last_traffic != nullptr &&
+          traffic.valid == last_traffic->valid) {
+        traffic.climb_rate_avg30s_available =
+          last_traffic->climb_rate_avg30s_available;
+        traffic.climb_rate_avg30s =
+          traffic.climb_rate_avg30s_available
+          ? last_traffic->climb_rate_avg30s
+          : 0;
+      } else {
+        const auto average =
+          flarm_calculations.Average30sWithSpan(traffic.id, now,
+                                                traffic.altitude);
+        traffic.climb_rate_avg30s = average.average;
+        traffic.climb_rate_avg30s_available =
+          average.IsComplete(std::chrono::seconds{30});
+      }
+    } else
+      flarm_calculations.Reset(traffic.id);
 
     // The following calculations are only relevant for targets
     // where information is missing
@@ -117,8 +134,6 @@ FlarmComputer::Process(FlarmData &flarm, const FlarmData &last_flarm,
       continue;
 
     // Check if the target has been seen before in the last seconds
-    const FlarmTraffic *last_traffic =
-      last_flarm.traffic.FindTraffic(traffic.id);
     if (last_traffic == nullptr || !last_traffic->valid)
       continue;
 

@@ -54,6 +54,9 @@ struct TrafficThermalInfo {
   [[nodiscard]]
   const TrafficThermalSource *FindBySerial(std::uint32_t serial) const noexcept;
 
+  /** Remove a published source, preserving the order of the others. */
+  bool RemoveBySerial(std::uint32_t serial) noexcept;
+
   /**
    * Find an existing source or allocate a slot, replacing the oldest source
    * when the bounded history is full.

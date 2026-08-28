@@ -13,14 +13,16 @@ ClimbAverageCalculator::Reset()
     history[i].Reset();
 }
 
-double
+ClimbAverageResult
 ClimbAverageCalculator::GetAverageWithSpan(TimeStamp time, double altitude,
                                            FloatDuration average_time) noexcept
 {
-  assert(average_time.count() <= MAX_HISTORY);
+  assert(average_time.count() > 0);
 
-  if (!time.IsDefined())
+  if (!time.IsDefined()) {
+    Reset();
     return {0, FloatDuration::zero()};
+  }
 
   /* A backwards timestamp starts a new observation window. */
   if (newestValIndex >= 0 && history[newestValIndex].IsDefined() &&
@@ -29,14 +31,18 @@ ClimbAverageCalculator::GetAverageWithSpan(TimeStamp time, double altitude,
 
   int bestHistory;
 
-  // Don't update newestValIndex if the time didn't move forward
-  if (newestValIndex < 0 ||
-      !history[newestValIndex].IsDefined() ||
-      time > history[newestValIndex].time)
+  const bool have_newest = newestValIndex >= 0 &&
+    history[newestValIndex].IsDefined();
+  const bool replace_newest = have_newest &&
+    time == history[newestValIndex].time;
+  const bool append_sample = !have_newest ||
+    time >= history[newestValIndex].time + MIN_SAMPLE_INTERVAL;
+
+  if (append_sample)
     newestValIndex = newestValIndex < MAX_HISTORY - 1 ? newestValIndex + 1 : 0;
 
-  // add the new sample
-  history[newestValIndex] = HistoryItem(time, altitude);
+  if (append_sample || replace_newest)
+    history[newestValIndex] = HistoryItem(time, altitude);
 
   // initially bestHistory is the current...
   bestHistory = newestValIndex;

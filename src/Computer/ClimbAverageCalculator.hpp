@@ -19,8 +19,15 @@ struct ClimbAverageResult {
 
 class ClimbAverageCalculator
 {
-  /* TODO(issue #832): size this ring from the supported update rate. */
-  static constexpr int MAX_HISTORY = 40;
+  static constexpr FloatDuration MIN_SAMPLE_INTERVAL{0.125};
+
+  /**
+   * Keep enough samples for a 30 second window at substantially more than
+   * the normal FLARM reporting rate.  Duplicate and very high-rate samples
+   * are coalesced, so this is a hard memory bound rather than an assumption
+   * that updates arrive at one hertz.
+   */
+  static constexpr int MAX_HISTORY = 256;
   struct HistoryItem
   {
     TimeStamp time;

@@ -9,6 +9,7 @@
 #include "FLARM/Id.hpp"
 #include "FLARM/Color.hpp"
 #include "NMEA/ThermalLocator.hpp"
+#include "NMEA/TrafficThermal.hpp"
 #include "Weather/Features.hpp"
 #include "Engine/Waypoint/Ptr.hpp"
 #include "Engine/Airspace/Ptr.hpp"
@@ -39,6 +40,7 @@ struct MapItem
 #endif
     AIRSPACE,
     THERMAL,
+    TRAFFIC_THERMAL,
     WAYPOINT,
     TRAFFIC,
     OVERLAY,
@@ -203,4 +205,12 @@ struct ThermalMapItem: public MapItem
 
   ThermalMapItem(const ThermalSource &_thermal)
     :MapItem(Type::THERMAL), thermal(_thermal) {}
+};
+
+struct TrafficThermalMapItem: public MapItem
+{
+  TrafficThermalSource thermal;
+
+  explicit TrafficThermalMapItem(const TrafficThermalSource &_thermal)
+    :MapItem(Type::TRAFFIC_THERMAL), thermal(_thermal) {}
 };
