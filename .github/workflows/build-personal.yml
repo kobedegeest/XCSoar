@@ -15,6 +15,7 @@ on:
     branches:
       - master
       - 'testing-thermal-markers'
+      - 'restructure-commit-history-flarm-thermal-markers'
 
 env:
   DEBUG: y
