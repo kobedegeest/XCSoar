@@ -129,11 +129,19 @@ FlarmComputer::Process(FlarmData &flarm, const FlarmData &last_flarm,
     if (traffic.altitude_available) {
       if (last_traffic != nullptr &&
           traffic.valid == last_traffic->valid) {
+        /* Keep the sampling event level-triggered until a newer target
+           update replaces it.  The CalculationThread consumes a copied
+           snapshot asynchronously and may not have seen the first merge
+           pass which published this event. */
         traffic.climb_rate_avg30s_available =
           last_traffic->climb_rate_avg30s_available;
         traffic.climb_rate_avg30s = last_traffic->climb_rate_avg30s;
         traffic.climb_rate_avg30s_time_span =
           last_traffic->climb_rate_avg30s_time_span;
+        traffic.climb_rate_avg30s_update =
+          last_traffic->climb_rate_avg30s_update;
+        traffic.climb_rate_avg30s_reset =
+          last_traffic->climb_rate_avg30s_reset;
       } else {
         const auto average =
           flarm_calculations.Average30sWithSpan(traffic.id, now,

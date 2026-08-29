@@ -3,9 +3,12 @@
 
 #include "Computer/FlarmThermalComputer.hpp"
 #include "FLARM/Calculations.hpp"
+#include "FLARM/Computer.hpp"
+#include "FLARM/Data.hpp"
 #include "Geo/Math.hpp"
 #include "Geo/SpeedVector.hpp"
 #include "MapWindow/ThermalDisplay.hpp"
+#include "NMEA/Info.hpp"
 #include "NMEA/ThermalProjection.hpp"
 #include "FakeLogFile.hpp"
 #include "TestUtil.hpp"
@@ -611,10 +614,80 @@ TestPublishedSamplingPolicy()
   ok1(info.sources.front().aircraft_count == 1);
 }
 
+static FlarmData
+MakeAverageTraffic(TimeStamp valid_time, double altitude)
+{
+  FlarmData data;
+  data.Clear();
+
+  auto *traffic = data.traffic.AllocateTraffic();
+  traffic->Clear();
+  traffic->id = FlarmId::FromValue(33);
+  traffic->id_type = FlarmTraffic::IdType::RANDOM;
+  traffic->valid.Update(valid_time);
+  traffic->relative_north = 0;
+  traffic->relative_east = 0;
+  traffic->absolute_altitude = true;
+  traffic->altitude_available = true;
+  traffic->altitude = altitude;
+  traffic->track_received = true;
+  traffic->turn_rate_received = true;
+  traffic->speed_received = true;
+  traffic->climb_rate_received = true;
+  return data;
+}
+
+static void
+TestPublishedSamplingActionPersistence()
+{
+  FlarmComputer computer;
+  FlarmData empty;
+  empty.Clear();
+
+  NMEAInfo basic;
+  basic.Reset();
+  basic.clock = TimeStamp{seconds{100}};
+  basic.ProvideTime(TimeStamp{seconds{1}});
+
+  auto first = MakeAverageTraffic(TimeStamp{seconds{10}}, 1000);
+  computer.Process(first, empty, basic);
+  const auto &first_traffic = first.traffic.list.front();
+  ok1(first_traffic.climb_rate_avg30s_update ==
+      FlarmTraffic::Average30sUpdate::APPENDED);
+  ok1(!first_traffic.climb_rate_avg30s_reset);
+
+  auto repeated = first;
+  computer.Process(repeated, first, basic);
+  const auto &repeated_traffic = repeated.traffic.list.front();
+  ok1(repeated_traffic.climb_rate_avg30s_update ==
+      FlarmTraffic::Average30sUpdate::APPENDED);
+  ok1(!repeated_traffic.climb_rate_avg30s_reset);
+  ok1(repeated_traffic.climb_rate_avg30s_time_span ==
+      first_traffic.climb_rate_avg30s_time_span);
+
+  basic.clock = TimeStamp{seconds{106}};
+  basic.ProvideTime(TimeStamp{seconds{7}});
+  auto after_gap = repeated;
+  after_gap.traffic.list.front().valid.Update(TimeStamp{seconds{20}});
+  after_gap.traffic.list.front().altitude = 1010;
+  computer.Process(after_gap, repeated, basic);
+  const auto &gap_traffic = after_gap.traffic.list.front();
+  ok1(gap_traffic.climb_rate_avg30s_update ==
+      FlarmTraffic::Average30sUpdate::APPENDED);
+  ok1(gap_traffic.climb_rate_avg30s_reset);
+
+  auto repeated_gap = after_gap;
+  computer.Process(repeated_gap, after_gap, basic);
+  const auto &repeated_gap_traffic = repeated_gap.traffic.list.front();
+  ok1(repeated_gap_traffic.climb_rate_avg30s_update ==
+      FlarmTraffic::Average30sUpdate::APPENDED);
+  ok1(repeated_gap_traffic.climb_rate_avg30s_reset);
+}
+
 int
 main()
 {
-  plan_tests(99);
+  plan_tests(108);
   SetFakeLogFileQuiet(true);
 
   TestThermalProjection();
@@ -629,6 +702,7 @@ main()
   TestStableGeometryAndAltitudeDatum();
   TestThermalVisibility();
   TestPublishedSamplingPolicy();
+  TestPublishedSamplingActionPersistence();
 
   return exit_status();
 }

@@ -667,6 +667,7 @@ TEST_FLARM_THERMAL_COMPUTER_SOURCES = \
 	$(SRC)/NMEA/ThermalProjection.cpp \
 	$(SRC)/NMEA/ThermalLocator.cpp \
 	$(SRC)/NMEA/TrafficThermal.cpp \
+	$(TEST_SRC_DIR)/FakeFlarmGlue.cpp \
 	$(TEST_SRC_DIR)/FakeLogFile.cpp \
 	$(TEST_SRC_DIR)/FakeTerrain.cpp \
 	$(TEST_SRC_DIR)/tap.c \
