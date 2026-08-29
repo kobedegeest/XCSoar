@@ -92,11 +92,8 @@ FlarmThermalComputer::DeactivateTarget(TargetState &target,
 }
 
 FlarmThermalComputer::TargetState &
-FlarmThermalComputer::AllocateTarget(FlarmId id,
-                                     TrafficThermalInfo &output) noexcept
+FlarmThermalComputer::AllocateTarget(FlarmId id) noexcept
 {
-  (void)output;
-
   auto allocation = BoundedArray::AppendOrReplaceOldest(
     targets,
     [](const TargetState &target) noexcept {
@@ -153,9 +150,15 @@ FlarmThermalComputer::AllocateCluster(TimeStamp first_seen,
   } while (cluster.serial == 0);
 
   cluster.contributors.clear();
+  cluster.geometry.reference_location = GeoPoint::Invalid();
+  cluster.geometry.reference_altitude = reference_altitude;
+  cluster.geometry.lift_rate = 0;
+  cluster.geometry.wind = SpeedVector::Zero();
+  cluster.geometry.drift_per_meter = SpeedVector::Zero();
+  cluster.geometry.ground_height = 0;
+  cluster.geometry.max_observed_altitude = reference_altitude;
   cluster.first_seen = first_seen;
   cluster.last_seen = first_seen;
-  cluster.reference_altitude = reference_altitude;
   cluster.recent = false;
   cluster.closed = false;
   return cluster;
@@ -275,8 +278,7 @@ FlarmThermalComputer::BuildCandidate(const TargetState &target,
 
 FlarmThermalComputer::ClusterState *
 FlarmThermalComputer::FindCompatibleCluster(
-    const Candidate &candidate, TimeStamp now,
-    const TrafficThermalInfo &output) noexcept
+    const Candidate &candidate, TimeStamp now) noexcept
 {
   ClusterState *best = nullptr;
   double best_distance = GROUPING_RADIUS;
@@ -296,25 +298,26 @@ FlarmThermalComputer::FindCompatibleCluster(
     if (cluster.contributors.full() && !already_contributed)
       continue;
 
-    const auto *published = output.FindBySerial(cluster.serial);
-    if (published == nullptr ||
-        !published->reference_location.IsValid() ||
-        !(published->geometry_lift_rate > 0))
+    const auto &geometry = cluster.geometry;
+    if (!geometry.reference_location.IsValid() ||
+        !(geometry.lift_rate > 0))
       continue;
 
     const double comparison_altitude = std::max({
       candidate.altitude,
       candidate.source.ground_height,
-      published->thermal.ground_height,
-      published->max_observed_altitude,
-      published->reference_altitude,
+      geometry.ground_height,
+      geometry.max_observed_altitude,
+      geometry.reference_altitude,
     });
     const auto candidate_location =
       ProjectThermalCore(candidate.centre,
                          comparison_altitude - candidate.altitude,
                          candidate.drift_per_meter);
     const auto cluster_location =
-      published->CalculateAdjustedLocation(comparison_altitude);
+      ProjectThermalCore(geometry.reference_location,
+                         comparison_altitude - geometry.reference_altitude,
+                         geometry.drift_per_meter);
     const double distance = candidate_location.DistanceS(cluster_location);
     if (distance <= best_distance) {
       best = &cluster;
@@ -445,14 +448,15 @@ FlarmThermalComputer::RecomputeCluster(ClusterState &cluster,
   double ground_height = 0;
 
   for (const auto &contributor : cluster.contributors)
-    cluster.reference_altitude =
-      std::max(cluster.reference_altitude,
+    cluster.geometry.reference_altitude =
+      std::max(cluster.geometry.reference_altitude,
                contributor.source.ground_height);
 
   const auto &first = cluster.contributors.front();
   const GeoPoint projection_centre =
     ProjectThermalCore(first.centre,
-                       cluster.reference_altitude - first.reference_altitude,
+                       cluster.geometry.reference_altitude -
+                         first.reference_altitude,
                        first.drift_per_meter);
   const FlatProjection projection(projection_centre);
   FlatPoint reference_location(0, 0);
@@ -472,12 +476,23 @@ FlarmThermalComputer::RecomputeCluster(ClusterState &cluster,
     reference_location += projection.ProjectFloat(
       ProjectThermalCore(
         contributor.centre,
-        cluster.reference_altitude - contributor.reference_altitude,
+        cluster.geometry.reference_altitude -
+          contributor.reference_altitude,
         contributor.drift_per_meter));
     ground_height += contributor.source.ground_height;
   }
 
   const double count = cluster.contributors.size();
+  cluster.geometry.reference_location =
+    projection.Unproject(reference_location * (1. / count));
+  cluster.geometry.lift_rate = geometry_lift / count;
+  cluster.geometry.wind =
+    AverageVector(wind_east, wind_north, count);
+  cluster.geometry.drift_per_meter =
+    AverageVector(drift_east, drift_north, count);
+  cluster.geometry.ground_height = ground_height / count;
+  cluster.geometry.max_observed_altitude = max_altitude;
+
   auto &published = output.AllocateSource(cluster.serial);
   published.cluster_serial = cluster.serial;
   published.aircraft_count = cluster.contributors.size();
@@ -488,16 +503,13 @@ FlarmThermalComputer::RecomputeCluster(ClusterState &cluster,
   published.last_seen = cluster.last_seen;
   published.active = active_count > 0;
 
-  published.reference_location =
-    projection.Unproject(reference_location * (1. / count));
-  published.reference_altitude = cluster.reference_altitude;
-  published.geometry_lift_rate = geometry_lift / count;
-  published.geometry_wind =
-    AverageVector(wind_east, wind_north, count);
-  published.drift_per_meter =
-    AverageVector(drift_east, drift_north, count);
+  published.reference_location = cluster.geometry.reference_location;
+  published.reference_altitude = cluster.geometry.reference_altitude;
+  published.geometry_lift_rate = cluster.geometry.lift_rate;
+  published.geometry_wind = cluster.geometry.wind;
+  published.drift_per_meter = cluster.geometry.drift_per_meter;
 
-  published.thermal.ground_height = ground_height / count;
+  published.thermal.ground_height = cluster.geometry.ground_height;
   published.thermal.location = ProjectThermalCore(
     published.reference_location,
     published.thermal.ground_height - published.reference_altitude,
@@ -662,8 +674,9 @@ FlarmThermalComputer::MergeCompatibleClusters(
       if (clusters[i].closed)
         continue;
 
-      const auto *a = output.FindBySerial(clusters[i].serial);
-      if (a == nullptr || !(a->geometry_lift_rate > 0))
+      const auto &a = clusters[i].geometry;
+      if (!a.reference_location.IsValid() ||
+          !(a.lift_rate > 0))
         continue;
 
       for (unsigned j = i + 1; j < clusters.size(); ++j) {
@@ -674,22 +687,27 @@ FlarmThermalComputer::MergeCompatibleClusters(
                                    clusters[j].last_seen))
           continue;
 
-        const auto *b = output.FindBySerial(clusters[j].serial);
-        if (b == nullptr || !(b->geometry_lift_rate > 0))
+        const auto &b = clusters[j].geometry;
+        if (!b.reference_location.IsValid() ||
+            !(b.lift_rate > 0))
           continue;
 
         const double comparison_altitude = std::max({
-          a->thermal.ground_height,
-          b->thermal.ground_height,
-          a->max_observed_altitude,
-          b->max_observed_altitude,
-          a->reference_altitude,
-          b->reference_altitude,
+          a.ground_height,
+          b.ground_height,
+          a.max_observed_altitude,
+          b.max_observed_altitude,
+          a.reference_altitude,
+          b.reference_altitude,
         });
-        const auto a_location = a->CalculateAdjustedLocation(
-          comparison_altitude);
-        const auto b_location = b->CalculateAdjustedLocation(
-          comparison_altitude);
+        const auto a_location = ProjectThermalCore(
+          a.reference_location,
+          comparison_altitude - a.reference_altitude,
+          a.drift_per_meter);
+        const auto b_location = ProjectThermalCore(
+          b.reference_location,
+          comparison_altitude - b.reference_altitude,
+          b.drift_per_meter);
         if (a_location.DistanceS(b_location) > GROUPING_RADIUS)
           continue;
 
@@ -740,7 +758,7 @@ FlarmThermalComputer::Process(const TrafficList &traffic, TimeStamp now,
       continue;
 
     if (target == nullptr)
-      target = &AllocateTarget(item.id, output);
+      target = &AllocateTarget(item.id);
 
     /* The sampling action remains in the copied traffic snapshot until the
        next FLARM calculation pass.  Consume each published action once. */
@@ -840,7 +858,7 @@ FlarmThermalComputer::Process(const TrafficList &traffic, TimeStamp now,
 
     ClusterState *cluster = FindCluster(target->assigned_cluster_serial);
     if (cluster == nullptr || cluster->closed) {
-      cluster = FindCompatibleCluster(candidate, now, output);
+      cluster = FindCompatibleCluster(candidate, now);
       if (cluster == nullptr)
         cluster = &AllocateCluster(candidate.first_seen,
                                    candidate.altitude, output);

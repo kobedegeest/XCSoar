@@ -30,7 +30,10 @@ struct TrafficThermalSource {
   /** Horizontal drift per metre of altitude, averaged per contributor. */
   SpeedVector drift_per_meter;
 
-  /** Stable identity used by the calculation state to update this marker. */
+  /**
+   * Opaque key used to update this bounded published marker.  This is a
+   * cluster generation, not a contributor or aircraft identity.
+   */
   std::uint32_t cluster_serial;
 
   /** Number of unique aircraft contributing to this encounter. */
@@ -60,7 +63,10 @@ struct TrafficThermalSource {
 static_assert(std::is_trivially_copyable_v<TrafficThermalSource>,
               "type is not trivially copyable");
 
-/** Bounded blackboard output for aggregated FLARM thermal markers. */
+/**
+ * Bounded, identity-free blackboard output for aggregated FLARM thermal
+ * markers.  Per-aircraft state remains private to FlarmThermalComputer.
+ */
 struct TrafficThermalInfo {
   static constexpr unsigned MAX_SOURCES = 20;
 

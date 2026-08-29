@@ -81,13 +81,30 @@ class FlarmThermalComputer {
     bool active;
   };
 
+  /**
+   * Identity-free aggregate used for detector-side grouping and merging.
+   *
+   * This deliberately mirrors only the published geometry needed by the
+   * detector.  TrafficThermalInfo is an output snapshot and must not become
+   * an input to qualification, clustering, or contributor lifecycle rules.
+   */
+  struct ClusterGeometry {
+    GeoPoint reference_location;
+    double reference_altitude;
+    double lift_rate;
+    SpeedVector wind;
+    SpeedVector drift_per_meter;
+    double ground_height;
+    double max_observed_altitude;
+  };
+
   struct ClusterState {
     std::uint32_t serial;
     TrivialArray<ContributorState, TrafficList::DEVICE_MAX_COUNT>
       contributors;
+    ClusterGeometry geometry;
     TimeStamp first_seen;
     TimeStamp last_seen;
-    double reference_altitude;
     bool recent;
     bool closed;
   };
@@ -122,8 +139,7 @@ class FlarmThermalComputer {
   };
 
   TargetState *FindTarget(FlarmId id) noexcept;
-  TargetState &AllocateTarget(FlarmId id,
-                              TrafficThermalInfo &output) noexcept;
+  TargetState &AllocateTarget(FlarmId id) noexcept;
   void ResetTargetWindow(TargetState &target) noexcept;
   void DeactivateTarget(TargetState &target, const char *reason) noexcept;
 
@@ -132,9 +148,7 @@ class FlarmThermalComputer {
                                 double reference_altitude,
                                 TrafficThermalInfo &output) noexcept;
   ClusterState *FindCompatibleCluster(const Candidate &candidate,
-                                      TimeStamp now,
-                                      const TrafficThermalInfo &output)
-    noexcept;
+                                      TimeStamp now) noexcept;
 
   CandidateResult BuildCandidate(const TargetState &target,
                                  const FlarmTraffic &traffic,
