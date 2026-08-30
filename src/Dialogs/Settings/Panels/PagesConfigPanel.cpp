@@ -51,6 +51,7 @@ private:
   enum Controls {
     MAIN,
     INFO_BOX_PANEL,
+    MAP_ELEMENT_SET,
     BOTTOM,
     OVERLAY,
     OVERLAY_DETAIL,
@@ -58,6 +59,7 @@ private:
 
   static constexpr unsigned IBP_NONE = 0x7000;
   static constexpr unsigned IBP_AUTO = 0x7001;
+  static constexpr unsigned MES_AUTO = 0x7100;
 
   PageLayout value;
 
@@ -356,6 +358,12 @@ PageLayoutEditWidget::UpdateOverlayControls() noexcept
 void
 PageLayoutEditWidget::ApplyValueToForm() noexcept
 {
+  const unsigned map_element_set = value.map_element_config.auto_switch
+    ? MES_AUTO
+    : value.map_element_config.set;
+  LoadValueEnum(MAP_ELEMENT_SET, map_element_set);
+  GetControl(MAP_ELEMENT_SET).RefreshDisplay();
+
   LoadValueEnum(BOTTOM, value.bottom);
   GetControl(BOTTOM).RefreshDisplay();
   LoadValueEnum(OVERLAY, value.overlay);
@@ -369,6 +377,8 @@ PageLayoutEditWidget::Prepare([[maybe_unused]] ContainerWindow &parent, [[maybe_
 {
   const InfoBoxSettings &info_box_settings =
     CommonInterface::GetUISettings().info_boxes;
+  const MapElementSettings &map_element_settings =
+    CommonInterface::GetUISettings().map_elements;
 
   static constexpr StaticEnumChoice main_list[] = {
     { PageLayout::Main::MAP, N_("Map") },
@@ -413,6 +423,21 @@ PageLayoutEditWidget::Prepare([[maybe_unused]] ContainerWindow &parent, [[maybe_
       break;
     }
     ib.AddChoice(i, display_text, display_text, help_text);
+  }
+
+  static constexpr StaticEnumChoice map_element_list[] = {
+    { MES_AUTO, NC_("Setting", "Auto"),
+      N_("Uses the Circling, Cruise, or Final glide map element set according to the current flight mode.") },
+    nullptr
+  };
+
+  wp = AddEnum(_("Map elements"),
+               _("Specifies which map elements should be displayed on this page."),
+               map_element_list, MES_AUTO, this);
+  DataFieldEnum &map_elements = *(DataFieldEnum *)wp->GetDataField();
+  for (unsigned i = 0; i < MapElementSettings::MAX_SETS; ++i) {
+    const char *display_text = gettext(map_element_settings.sets[i].name);
+    map_elements.AddChoice(i, display_text);
   }
 
   static constexpr StaticEnumChoice bottom_list[] = {
@@ -480,6 +505,11 @@ PageLayoutEditWidget::SetValue(const PageLayout &_value)
 
   LoadValueEnum(INFO_BOX_PANEL, ib);
 
+  const unsigned map_element_set = value.map_element_config.auto_switch
+    ? MES_AUTO
+    : value.map_element_config.set;
+  LoadValueEnum(MAP_ELEMENT_SET, map_element_set);
+
   FillOverlayDetailControl();
   UpdateOverlayControls();
 }
@@ -505,6 +535,16 @@ PageLayoutEditWidget::OnModified(DataField &df) noexcept
       value.infobox_config.enabled = true;
       value.infobox_config.auto_switch = false;
       value.infobox_config.panel = ibp;
+    }
+  } else if (&df == &GetDataField(MAP_ELEMENT_SET)) {
+    const DataFieldEnum &dfe = (const DataFieldEnum &)df;
+    const unsigned set = dfe.GetValue();
+    if (set == MES_AUTO) {
+      value.map_element_config.auto_switch = true;
+      value.map_element_config.set = MapElementSettings::SET_CIRCLING;
+    } else if (set < MapElementSettings::MAX_SETS) {
+      value.map_element_config.auto_switch = false;
+      value.map_element_config.set = set;
     }
   } else if (&df == &GetDataField(BOTTOM)) {
     const DataFieldEnum &dfe = (const DataFieldEnum &)df;
