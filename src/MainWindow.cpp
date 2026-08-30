@@ -22,6 +22,7 @@
 #include "Gauge/VarioGeometry.hpp"
 #include "Form/Form.hpp"
 #include "Widget/Widget.hpp"
+#include "Widget/WindowWidget.hpp"
 #include "Look/GlobalFonts.hpp"
 #include "Look/DefaultFonts.hpp"
 #include "Look/Look.hpp"
@@ -339,6 +340,7 @@ MainWindow::LayoutMapArea() noexcept
     bottom_widget->Move(layout.bottom);
 
   map->Move(layout.map);
+  RaiseBottomBannerWidget();
 }
 
 void
@@ -766,6 +768,8 @@ MainWindow::ReinitialiseLayout() noexcept
 
   if (map != nullptr)
     map->BringToBottom();
+
+  RaiseBottomBannerWidget();
 }
 
 void
@@ -1163,10 +1167,11 @@ MainWindow::OnMouseMove(PixelPoint p, unsigned keys) noexcept
 bool
 MainWindow::OnKeyDown(unsigned key_code) noexcept
 {
-  return (widget != nullptr && widget->KeyPress(key_code)) ||
+  return (HaveBottomBannerWidget() &&
+          bottom_banner_widget->GetWindow().IsVisible() &&
+          bottom_banner_widget->KeyPress(key_code)) ||
+    (widget != nullptr && widget->KeyPress(key_code)) ||
     (HaveTopWidget() && top_widget->KeyPress(key_code)) ||
-    (HaveBottomBannerWidget() &&
-     bottom_banner_widget->KeyPress(key_code)) ||
     (HaveBottomWidget() && bottom_widget->KeyPress(key_code)) ||
     InputEvents::processKey(key_code) ||
     SingleWindow::OnKeyDown(key_code);
@@ -1235,6 +1240,8 @@ MainWindow::RunTimer() noexcept
       widget->Raise();
     }
   }
+
+  RaiseBottomBannerWidget();
 
   battery_timer.Process();
 }
@@ -1430,6 +1437,8 @@ MainWindow::SetFullScreen(bool _full_screen) noexcept
   if (popup != nullptr)
     popup->UpdateLayout(GetMainRect());
 
+  RaiseBottomBannerWidget();
+
   // the repaint will be triggered by the DrawThread
 
   UpdateVarioGaugeVisibility();
@@ -1505,6 +1514,7 @@ MainWindow::ActivateMap() noexcept
 
     LayoutMapArea();
     map->Show();
+    RaiseBottomBannerWidget();
     map->SetFocus();
     UpdateMapOverlayButtonLayout();
 
@@ -1612,13 +1622,22 @@ MainWindow::KillBottomBannerWidget() noexcept
   if (bottom_banner_widget == nullptr)
     return;
 
-  Widget *const old = bottom_banner_widget;
+  WindowWidget *const old = bottom_banner_widget;
   bottom_banner_widget = nullptr;
 
-  old->Hide();
+  if (old->GetWindow().IsVisible())
+    old->Hide();
 
   old->Unprepare();
   delete old;
+}
+
+void
+MainWindow::RaiseBottomBannerWidget() noexcept
+{
+  if (HaveBottomBannerWidget() &&
+      bottom_banner_widget->GetWindow().IsVisible())
+    bottom_banner_widget->GetWindow().BringToTop();
 }
 
 void
@@ -1673,7 +1692,7 @@ MainWindow::SetBottomWidget(Widget *_widget) noexcept
 }
 
 void
-MainWindow::SetBottomBannerWidget(Widget *_widget) noexcept
+MainWindow::SetBottomBannerWidget(WindowWidget *_widget) noexcept
 {
   if (bottom_banner_widget == nullptr && _widget == nullptr)
     return;
@@ -1711,6 +1730,7 @@ MainWindow::SetBottomBannerWidget(Widget *_widget) noexcept
       ? layout.bottom_banner
       : GetBottomWidgetRect(GetMainRect(), bottom_banner_widget);
     bottom_banner_widget->Show(banner_rect);
+    RaiseBottomBannerWidget();
   }
 
   LayoutMapArea();
@@ -1760,6 +1780,8 @@ MainWindow::SetWidget(Widget *_widget) noexcept
   if (have_bottom_banner_widget)
     bottom_banner_widget->Show(GetBottomWidgetRect(rc,
                                                    bottom_banner_widget));
+
+  RaiseBottomBannerWidget();
 
   UpdateMapOverlayButtonLayout();
 

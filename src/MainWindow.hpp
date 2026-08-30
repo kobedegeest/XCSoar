@@ -26,6 +26,7 @@ class Menu;
 class MenuBar;
 class GlueMapWindow;
 class Widget;
+class WindowWidget;
 class RasterTerrain;
 class TopographyStore;
 class MapWindowProjection;
@@ -84,7 +85,7 @@ class MainWindow : public UI::SingleWindow {
    * A transient #Widget that is shown over the bottom of a custom main
    * widget, or between the map and the configured bottom widget.
    */
-  Widget *bottom_banner_widget = nullptr;
+  WindowWidget *bottom_banner_widget = nullptr;
 
   /**
    * A #Widget that is shown instead of the map.  The #GlueMapWindow
@@ -238,6 +239,9 @@ protected:
    * bottom banner Widget.
    */
   void KillBottomBannerWidget() noexcept;
+
+  /** Keep the banner above the active page and other sibling overlays. */
+  void RaiseBottomBannerWidget() noexcept;
 
 public:
   Widget *GetBottomWidget() const noexcept {
@@ -491,7 +495,7 @@ public:
    * (deletes) the previous bottom banner, if any.  To disable this feature,
    * call this method with widget==nullptr.
    */
-  void SetBottomBannerWidget(Widget *widget) noexcept;
+  void SetBottomBannerWidget(WindowWidget *widget) noexcept;
 
   /**
    * Replace the map with a #Widget.  The Widget instance gets deleted
