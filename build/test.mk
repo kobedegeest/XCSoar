@@ -2232,6 +2232,7 @@ RUN_MAP_WINDOW_SOURCES = \
 	$(SRC)/Renderer/LabelBlock.cpp \
 	$(SRC)/Renderer/TextInBox.cpp \
 	$(SRC)/UISettings.cpp \
+	$(SRC)/MapElementSettings.cpp \
 	$(SRC)/Audio/Settings.cpp \
 	$(SRC)/Audio/VarioSettings.cpp \
 	$(SRC)/DisplaySettings.cpp \
@@ -2673,6 +2674,7 @@ RUN_ANALYSIS_SOURCES = \
 	$(SRC)/Audio/Settings.cpp \
 	$(SRC)/Audio/VarioSettings.cpp \
 	$(SRC)/UISettings.cpp \
+	$(SRC)/MapElementSettings.cpp \
 	$(SRC)/DisplaySettings.cpp \
 	$(SRC)/PageSettings.cpp \
 	$(TEST_SRC_DIR)/PageOverlayTitleStub.cpp \
@@ -2746,6 +2748,7 @@ RUN_AIRSPACE_WARNING_DIALOG_SOURCES = \
 	$(SRC)/Projection/WindowProjection.cpp \
 	$(SRC)/MapSettings.cpp \
 	$(SRC)/UISettings.cpp \
+	$(SRC)/MapElementSettings.cpp \
 	$(SRC)/DisplaySettings.cpp \
 	$(SRC)/PageSettings.cpp \
 	$(TEST_SRC_DIR)/PageOverlayTitleStub.cpp \

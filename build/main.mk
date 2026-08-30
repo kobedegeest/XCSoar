@@ -444,6 +444,7 @@ XCSOAR_SOURCES := \
 	$(SRC)/UISettings.cpp \
 	$(SRC)/DisplaySettings.cpp \
 	$(SRC)/MapSettings.cpp \
+	$(SRC)/MapElementSettings.cpp \
 	$(SRC)/SystemSettings.cpp \
 	$(SRC)/Audio/Settings.cpp \
 	$(SRC)/Audio/VarioSettings.cpp \

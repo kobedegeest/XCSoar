@@ -5,6 +5,7 @@
 
 #include "FormatSettings.hpp"
 #include "MapSettings.hpp"
+#include "MapElementSettings.hpp"
 #include "InfoBoxes/InfoBoxSettings.hpp"
 #include "Gauge/VarioSettings.hpp"
 #include "Gauge/TrafficSettings.hpp"
@@ -74,6 +75,7 @@ struct UISettings {
 
   FormatSettings format;
   MapSettings map;
+  MapElementSettings map_elements;
   InfoBoxSettings info_boxes;
   VarioSettings vario;
   TrafficSettings traffic;

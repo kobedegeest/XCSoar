@@ -39,6 +39,7 @@ UISettings::SetDefaults() noexcept
 
   format.SetDefaults();
   map.SetDefaults();
+  map_elements.SetDefaults();
   info_boxes.SetDefaults();
   vario.SetDefaults();
   traffic.SetDefaults();
