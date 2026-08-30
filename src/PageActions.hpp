@@ -64,6 +64,11 @@ namespace PageActions
   void Update();
 
   /**
+   * Reapply an automatic map element set after the display mode changes.
+   */
+  void UpdateMapElementsForDisplayMode() noexcept;
+
+  /**
    * Like Update(), but runs on the next event-loop iteration.
    */
   void ScheduleUpdate() noexcept;

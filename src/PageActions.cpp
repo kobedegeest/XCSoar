@@ -649,6 +649,14 @@ PageActions::LoadMapElements(const PageLayout::MapElementConfig &config) noexcep
 }
 
 void
+PageActions::UpdateMapElementsForDisplayMode() noexcept
+{
+  const auto &config = GetCurrentLayout().map_element_config;
+  if (config.auto_switch)
+    LoadMapElements(config);
+}
+
+void
 PageActions::LoadLayout(const PageLayout &layout)
 {
   if (!layout.valid)
@@ -673,7 +681,7 @@ PageActions::LoadLayout(const PageLayout &layout)
   if (!active.UsesWeatherOverlay() && InputEvents::IsMode("weather"))
     InputEvents::setMode(InputEvents::MODE_DEFAULT);
 
-  ActionInterface::UpdateDisplayMode();
+  ActionInterface::UpdateDisplayMode(false);
   LoadMapElements(active.map_element_config);
   ActionInterface::SendUIState(false);
   main_window.ScheduleRefreshInfoBoxes();

@@ -115,7 +115,7 @@ SendUIState(const bool trigger_draw) noexcept;
  * You may have to call SendUIState() after this.
  */
 void
-UpdateDisplayMode() noexcept;
+UpdateDisplayMode(bool reapply_map_elements=true) noexcept;
 
 /**
  * Call this after UIState has been modified (via SetUIState() or

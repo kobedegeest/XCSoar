@@ -325,11 +325,12 @@ UpdateMapScalePageInfo(UIState &state) noexcept
 }
 
 void
-ActionInterface::UpdateDisplayMode() noexcept
+ActionInterface::UpdateDisplayMode(const bool reapply_map_elements) noexcept
 {
   UIState &state = SetUIState();
   const UISettings &settings = GetUISettings();
 
+  const DisplayMode previous_display_mode = state.display_mode;
   state.display_mode = GetNewDisplayMode(settings.info_boxes, state,
                                          Calculated());
   state.panel_index = GetPanelIndex(state);
@@ -338,6 +339,10 @@ ActionInterface::UpdateDisplayMode() noexcept
   state.panel_name = gettext(panel.name);
 
   UpdateMapScalePageInfo(state);
+
+  if (reapply_map_elements &&
+      state.display_mode != previous_display_mode)
+    PageActions::UpdateMapElementsForDisplayMode();
 }
 
 void
