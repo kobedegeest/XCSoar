@@ -60,6 +60,9 @@ namespace PageActions {
    */
   static void LoadLayout(const PageLayout &layout);
 
+  static void
+  LoadMapElements(const PageLayout::MapElementConfig &config) noexcept;
+
   static const PageLayout &
   GetActiveLayout() noexcept;
 
@@ -595,6 +598,57 @@ LoadInfoBoxes(const PageLayout::InfoBoxConfig &config)
 }
 
 void
+PageActions::LoadMapElements(const PageLayout::MapElementConfig &config) noexcept
+{
+  unsigned set_index = MapElementSettings::SET_CRUISE;
+
+  if (!config.auto_switch) {
+    set_index = config.set < MapElementSettings::MAX_SETS
+      ? config.set
+      : MapElementSettings::MAX_SETS - 1;
+  } else {
+    switch (CommonInterface::GetUIState().display_mode) {
+    case DisplayMode::CIRCLING:
+      set_index = MapElementSettings::SET_CIRCLING;
+      break;
+
+    case DisplayMode::FINAL_GLIDE:
+      set_index = MapElementSettings::SET_FINAL_GLIDE;
+      break;
+
+    case DisplayMode::NONE:
+    case DisplayMode::CRUISE:
+      break;
+    }
+  }
+
+  const MapElementSet set =
+    CommonInterface::GetUISettings().map_elements.sets[set_index];
+
+  MapSettings &map_settings = CommonInterface::SetMapSettings();
+  map_settings.final_glide_bar_display_mode =
+    set.final_glide_bar_display_mode;
+  map_settings.final_glide_bar_mc0_enabled =
+    set.final_glide_bar_mc0_enabled;
+  map_settings.trail = set.trail;
+  map_settings.distance_rings_enabled = set.distance_rings_enabled;
+  map_settings.display_ground_track = set.display_ground_track;
+  map_settings.show_flarm_on_map = set.show_flarm_on_map;
+  map_settings.show_thermal_profile = set.show_thermal_profile;
+  map_settings.vario_bar_enabled = set.vario_bar_enabled;
+
+  CommonInterface::SetUISettings().traffic.enable_gauge =
+    set.flarm_gauge_enabled;
+
+  CommonInterface::SetComputerSettings().features.final_glide_terrain =
+    set.final_glide_terrain;
+  CommonInterface::main_window->SetComputerSettings(
+    CommonInterface::GetComputerSettings());
+
+  ActionInterface::SendMapSettings(true);
+}
+
+void
 PageActions::LoadLayout(const PageLayout &layout)
 {
   if (!layout.valid)
@@ -620,6 +674,7 @@ PageActions::LoadLayout(const PageLayout &layout)
     InputEvents::setMode(InputEvents::MODE_DEFAULT);
 
   ActionInterface::UpdateDisplayMode();
+  LoadMapElements(active.map_element_config);
   ActionInterface::SendUIState(false);
   main_window.ScheduleRefreshInfoBoxes();
 }
