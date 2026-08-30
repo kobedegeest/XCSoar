@@ -7,5 +7,5 @@
 std::unique_ptr<Widget>
 CreateWindConfigPanel()
 {
-  return std::make_unique<WindSettingsPanel>(false, false, false);
+  return std::make_unique<WindSettingsPanel>(false, false);
 }
