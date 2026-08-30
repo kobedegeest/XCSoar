@@ -281,6 +281,31 @@ MainWindow::GetMapAreaRect() const noexcept
                                 bottom_banner_widget, bottom_widget).map;
 }
 
+PixelRect
+MainWindow::GetBottomBannerRect() const noexcept
+{
+  assert(bottom_banner_widget != nullptr);
+
+  if (widget == nullptr)
+    return CalculateMapAreaLayout(GetMainRect(), top_widget,
+                                  bottom_banner_widget,
+                                  bottom_widget).bottom_banner;
+
+  PixelRect available = GetClientRect();
+  if (menu_bar != nullptr)
+    available = menu_bar->GetRemainingRectAboveBottomButtons(available);
+
+  return GetBottomWidgetRect(available, bottom_banner_widget);
+}
+
+void
+MainWindow::LayoutBottomBannerWidget() noexcept
+{
+  if (HaveBottomBannerWidget() &&
+      bottom_banner_widget->GetWindow().IsVisible())
+    bottom_banner_widget->Move(GetBottomBannerRect());
+}
+
 void
 MainWindow::BeginCoalesceMapLayout() noexcept
 {
@@ -330,11 +355,7 @@ MainWindow::LayoutMapArea() noexcept
   if (HaveTopWidget())
     top_widget->Move(layout.top);
 
-  if (HaveBottomBannerWidget())
-    bottom_banner_widget->Move(widget == nullptr
-                               ? layout.bottom_banner
-                               : GetBottomWidgetRect(GetMainRect(),
-                                                     bottom_banner_widget));
+  LayoutBottomBannerWidget();
 
   if (HaveBottomWidget())
     bottom_widget->Move(layout.bottom);
@@ -1069,6 +1090,9 @@ MainWindow::OnResize(PixelSize new_size) noexcept
   if (menu_bar != nullptr)
     menu_bar->OnResize(rc);
 
+  LayoutBottomBannerWidget();
+  RaiseBottomBannerWidget();
+
   ProgressGlue::Move(rc);
 }
 
@@ -1708,28 +1732,28 @@ MainWindow::SetBottomBannerWidget(WindowWidget *_widget) noexcept
   bottom_banner_widget = _widget;
 
   if (bottom_banner_widget != nullptr) {
-    PixelRect available = GetMainRect();
-    available = GetMapRectBelow(available,
-                                GetTopWidgetRect(available, top_widget));
-    available = GetMapRectAbove(available,
-                                GetBottomWidgetRect(available,
-                                                    bottom_widget));
+    PixelRect available;
+    if (widget != nullptr) {
+      available = GetClientRect();
+      if (menu_bar != nullptr)
+        available = menu_bar->GetRemainingRectAboveBottomButtons(available);
+    } else {
+      available = GetMainRect();
+      available = GetMapRectBelow(available,
+                                  GetTopWidgetRect(available, top_widget));
+      available = GetMapRectAbove(available,
+                                  GetBottomWidgetRect(available,
+                                                      bottom_widget));
+    }
 
-    /* Prepare with all space above the configured bottom widget so the
-       banner can determine its final minimum size. */
+    /* Prepare with the available active-content area so the banner can
+       determine its final minimum size. */
     bottom_banner_widget->Initialise(*this, available);
     bottom_banner_widget->Prepare(*this, available);
   }
 
-  const MapAreaLayout layout =
-    CalculateMapAreaLayout(GetMainRect(), top_widget,
-                           bottom_banner_widget, bottom_widget);
-
   if (HaveBottomBannerWidget()) {
-    const PixelRect banner_rect = widget == nullptr
-      ? layout.bottom_banner
-      : GetBottomWidgetRect(GetMainRect(), bottom_banner_widget);
-    bottom_banner_widget->Show(banner_rect);
+    bottom_banner_widget->Show(GetBottomBannerRect());
     RaiseBottomBannerWidget();
   }
 
@@ -1778,8 +1802,7 @@ MainWindow::SetWidget(Widget *_widget) noexcept
   widget->Show(rc);
 
   if (have_bottom_banner_widget)
-    bottom_banner_widget->Show(GetBottomWidgetRect(rc,
-                                                   bottom_banner_widget));
+    bottom_banner_widget->Show(GetBottomBannerRect());
 
   RaiseBottomBannerWidget();
 
@@ -1803,6 +1826,8 @@ MainWindow::ShowMenu(const Menu &menu, const Menu *overlay, bool full) noexcept
   assert(menu_bar != nullptr);
 
   MenuGlue::Set(*menu_bar, menu, overlay, full);
+  LayoutBottomBannerWidget();
+  RaiseBottomBannerWidget();
 }
 
 bool

@@ -301,6 +301,15 @@ private:
   PixelRect GetMapAreaRect() const noexcept;
 
   /**
+   * Return the banner rectangle for the active main content.  Custom pages
+   * use the full client area, shortened only by bottom menu buttons.
+   */
+  [[gnu::pure]]
+  PixelRect GetBottomBannerRect() const noexcept;
+
+  void LayoutBottomBannerWidget() noexcept;
+
+  /**
    * Move top/bottom widgets and the map into the area returned by
    * #GetMapAreaRect().
    */
