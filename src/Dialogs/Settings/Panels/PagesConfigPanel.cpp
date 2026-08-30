@@ -672,6 +672,8 @@ PageListWidget::OnPaintItem(Canvas &canvas, const PixelRect rc,
 {
   const InfoBoxSettings &info_box_settings =
     CommonInterface::GetUISettings().info_boxes;
+  const MapElementSettings &map_element_settings =
+    CommonInterface::GetUISettings().map_elements;
 
   assert(idx < PageSettings::MAX_PAGES);
   const auto &value = settings.pages[idx];
@@ -679,6 +681,7 @@ PageListWidget::OnPaintItem(Canvas &canvas, const PixelRect rc,
   StaticString<64> buffer;
   row_renderer.DrawTextRow(canvas, rc,
                            value.MakeTitle(info_box_settings,
+                                           map_element_settings,
                                            std::span{buffer.data(), buffer.capacity()},
                                            DataGlobals::GetRasp().get()));
 }

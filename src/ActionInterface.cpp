@@ -315,6 +315,7 @@ UpdateMapScalePageInfo(UIState &state) noexcept
     const auto &settings = CommonInterface::GetUISettings();
     const char *title = overlay_layout.MakeTitle(
       settings.info_boxes,
+      settings.map_elements,
       std::span{state.map_scale_page_title.data(),
                 state.map_scale_page_title.capacity()},
       DataGlobals::GetRasp().get(), true);

@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "MapElementSettings.hpp"
 #include "util/StaticString.hxx"
 
 #include <array>
@@ -38,6 +39,24 @@ struct PageLayout
     constexpr bool operator==(const InfoBoxConfig &other) const noexcept = default;
   };
 
+  struct MapElementConfig {
+    bool auto_switch;
+    unsigned set;
+
+    constexpr MapElementConfig() noexcept = default;
+
+    constexpr MapElementConfig(bool _auto_switch, unsigned _set) noexcept
+      :auto_switch(_auto_switch), set(_set) {}
+
+    constexpr void SetDefaults() noexcept {
+      auto_switch = true;
+      set = MapElementSettings::SET_CIRCLING;
+    }
+
+    constexpr bool operator==(const MapElementConfig &other) const noexcept =
+      default;
+  };
+
   bool valid;
 
   /**
@@ -63,6 +82,7 @@ struct PageLayout
   } main;
 
   InfoBoxConfig infobox_config;
+  MapElementConfig map_element_config;
 
   /**
    * SkySight layer identifier for this page when overlay is SKYSIGHT.
@@ -162,6 +182,7 @@ struct PageLayout
   constexpr PageLayout(bool _valid, InfoBoxConfig _infobox_config)
     :valid(_valid), main(Main::MAP),
      infobox_config(_infobox_config),
+     map_element_config(true, MapElementSettings::SET_CIRCLING),
      skysight_overlay{},
      skysight_time(SKYSIGHT_TIME_AUTO),
      bottom(Bottom::NOTHING),
@@ -176,6 +197,7 @@ struct PageLayout
   constexpr PageLayout(InfoBoxConfig _infobox_config)
     :valid(true), main(Main::MAP),
      infobox_config(_infobox_config),
+     map_element_config(true, MapElementSettings::SET_CIRCLING),
      skysight_overlay{},
      skysight_time(SKYSIGHT_TIME_AUTO),
      bottom(Bottom::NOTHING),
@@ -277,6 +299,11 @@ struct PageLayout
    */
   constexpr void Normalise() noexcept
   {
+    if (map_element_config.auto_switch)
+      map_element_config.set = MapElementSettings::SET_CIRCLING;
+    else if (map_element_config.set >= MapElementSettings::MAX_SETS)
+      map_element_config.set = MapElementSettings::MAX_SETS - 1;
+
     if (main == Main::EDL_MAP) {
       main = Main::MAP;
       skysight_overlay.clear();
@@ -348,6 +375,7 @@ struct PageLayout
 
   [[nodiscard]]
   const char *MakeTitle(const InfoBoxSettings &info_box_settings,
+                        const MapElementSettings &map_element_settings,
                         std::span<char> buffer,
                         const RaspStore *rasp=nullptr,
                         const bool concise=false) const noexcept;

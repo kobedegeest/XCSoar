@@ -13,6 +13,7 @@
 
 const char *
 PageLayout::MakeTitle(const InfoBoxSettings &info_box_settings,
+                      const MapElementSettings &map_element_settings,
                       std::span<char> buffer,
                       const RaspStore *rasp,
                       const bool concise) const noexcept
@@ -71,6 +72,22 @@ PageLayout::MakeTitle(const InfoBoxSettings &info_box_settings,
         builder.Append(_("Info Hide"));
       else
         builder.Append(_("Map (Full screen)"));
+    }
+
+    builder.Append(", ");
+    builder.Append(_("Elements"));
+    if (!map_element_config.auto_switch &&
+        map_element_config.set < MapElementSettings::MAX_SETS) {
+      builder.Append(' ');
+      builder.Append(gettext(map_element_settings
+                               .sets[map_element_config.set].name));
+    } else if (concise) {
+      builder.Append(' ');
+      builder.Append(C_("Status", "Auto"));
+    } else {
+      builder.Append(" (");
+      builder.Append(C_("Status", "Auto"));
+      builder.Append(')');
     }
 
     AppendOverlayTitle(builder, *this, rasp);

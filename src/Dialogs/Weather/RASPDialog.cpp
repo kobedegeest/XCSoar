@@ -565,6 +565,7 @@ RASPSettingsPanel::Prepare([[maybe_unused]] ContainerWindow &parent,
     StaticString<64> title_buffer;
     const char *title =
       page.MakeTitle(ui_settings.info_boxes,
+                     ui_settings.map_elements,
                      std::span{title_buffer.data(), title_buffer.capacity()});
 
     StaticString<128> header;

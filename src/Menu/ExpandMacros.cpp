@@ -483,6 +483,7 @@ LookupMacro(std::string_view name, bool &invalid) noexcept
     const PageLayout &page =
       CommonInterface::GetUISettings().pages.pages[PageActions::NextIndex()];
     return page.MakeTitle(CommonInterface::GetUISettings().info_boxes,
+                          CommonInterface::GetUISettings().map_elements,
                           std::span{label},
                           DataGlobals::GetRasp().get(),
                           true);
