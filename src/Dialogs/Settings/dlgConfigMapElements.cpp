@@ -33,6 +33,8 @@ class MapElementSetConfigWidget final
     REACH_DISPLAY,
     THERMAL_BAND,
     VARIO_BAR,
+    // Todo: missing elements easy to add: Wind arrow, Detour cost markers, Online traffic, Thermal assistant, Turn back marker, Menu button, zoom button, Quickmenu button, XCSoar cloud show thermals, Thermmal information map
+    // Todo: missing elements might need small refactoring: skylines traffic (currently setting is track or not when yes it is dissplayed so needs seperate display option), Xcsoar cloud traffic,  
   };
 
   MapElementSet &data;
@@ -238,7 +240,7 @@ dlgConfigMapElementsShowModal(SingleWindow &parent,
     WidgetDialog::Full{}, parent, dialog_look, _("Map Element Set"),
     new VScrollWidget(std::move(widget), dialog_look));
   dialog.AddButton(_("OK"), mrOK);
-  dialog.AddButton(_("Cancel"), mrCancel);
+  dialog.AddButton(_("Cancel"), mrCancel); // Todo: add copy and paste buttons to copy settings from one set to another, and paste them into another set. simmilar as infobox copy and paste buttons.
 
   return dialog.ShowModal() == mrOK && dialog.GetChanged();
 }
