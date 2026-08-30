@@ -5,6 +5,7 @@
 #include "Profile/Keys.hpp"
 #include "Profile/Current.hpp"
 #include "Profile/PageProfile.hpp"
+#include "Profile/MapElementConfig.hpp"
 #include "PageSettings.hpp"
 #include "Profile/Map.hpp"
 #include "Profile/WeatherProfile.hpp"
@@ -175,12 +176,16 @@ TestWeatherPageCursorRoundTrip()
   settings.SetDefaults();
 
   auto &edl = settings.pages[0];
+  edl.map_element_config.auto_switch = false;
+  edl.map_element_config.set = 5;
   edl.overlay = PageLayout::Overlay::EDL;
   edl.edl_time = 500000;
   edl.edl_isobar = 70000;
   edl.Normalise();
 
   auto &xctherm = settings.pages[1];
+  xctherm.map_element_config.auto_switch = true;
+  xctherm.map_element_config.set = 7;
   xctherm.overlay = PageLayout::Overlay::XCTHERM;
   xctherm.xctherm_layer = 3;
   xctherm.xctherm_time = 15;
@@ -203,10 +208,60 @@ TestWeatherPageCursorRoundTrip()
 
   ok1(loaded.pages[0].edl_time == edl.edl_time);
   ok1(loaded.pages[0].edl_isobar == edl.edl_isobar);
+  ok1(!loaded.pages[0].map_element_config.auto_switch);
+  ok1(loaded.pages[0].map_element_config.set == 5);
   ok1(loaded.pages[1].xctherm_layer == xctherm.xctherm_layer);
   ok1(loaded.pages[1].xctherm_time == xctherm.xctherm_time);
+  ok1(loaded.pages[1].map_element_config.auto_switch);
+  ok1(loaded.pages[1].map_element_config.set ==
+      MapElementSettings::SET_CIRCLING);
   ok1(loaded.pages[2].skysight_overlay == skysight.skysight_overlay);
   ok1(loaded.pages[2].skysight_time == skysight.skysight_time);
+}
+
+static void
+TestMapElementSetRoundTrip()
+{
+  MapElementSet source{};
+  source.name = "Weather";
+  source.final_glide_bar_display_mode = FinalGlideBarDisplayMode::AUTO;
+  source.final_glide_bar_mc0_enabled = false;
+  source.trail.wind_drift_enabled = false;
+  source.trail.scaling_enabled = true;
+  source.trail.type = TrailSettings::Type::VARIO_EINK;
+  source.trail.length = TrailSettings::Length::SHORT;
+  source.distance_rings_enabled = true;
+  source.display_ground_track = DisplayGroundTrack::ON;
+  source.show_flarm_on_map = false;
+  source.flarm_gauge_enabled = false;
+  source.final_glide_terrain =
+    FeaturesSettings::FinalGlideTerrain::WORKING_TERRAIN_SHADE;
+  source.show_thermal_profile = false;
+  source.vario_bar_enabled = true;
+
+  ProfileMap map;
+  Profile::Save(map, source, 3);
+
+  MapElementSettings loaded{};
+  Profile::Load(map, loaded);
+  const auto &result = loaded.sets[3];
+
+  ok1(StringIsEqual(result.name.c_str(), source.name.c_str()));
+  ok1(result.final_glide_bar_display_mode ==
+      source.final_glide_bar_display_mode);
+  ok1(result.final_glide_bar_mc0_enabled ==
+      source.final_glide_bar_mc0_enabled);
+  ok1(result.trail.wind_drift_enabled == source.trail.wind_drift_enabled);
+  ok1(result.trail.scaling_enabled == source.trail.scaling_enabled);
+  ok1(result.trail.type == source.trail.type);
+  ok1(result.trail.length == source.trail.length);
+  ok1(result.distance_rings_enabled == source.distance_rings_enabled);
+  ok1(result.display_ground_track == source.display_ground_track);
+  ok1(result.show_flarm_on_map == source.show_flarm_on_map);
+  ok1(result.flarm_gauge_enabled == source.flarm_gauge_enabled);
+  ok1(result.final_glide_terrain == source.final_glide_terrain);
+  ok1(result.show_thermal_profile == source.show_thermal_profile);
+  ok1(result.vario_bar_enabled == source.vario_bar_enabled);
 }
 
 #ifdef HAVE_HTTP
@@ -259,7 +314,7 @@ TestSkySightProfileCompatibility()
 
 int main()
 try {
-  plan_tests(50
+  plan_tests(68
 #ifdef HAVE_HTTP
              + 8
 #endif
@@ -270,6 +325,7 @@ try {
   TestReader();
   TestMigration();
   TestWeatherPageCursorRoundTrip();
+  TestMapElementSetRoundTrip();
 #ifdef HAVE_HTTP
   TestSkySightProfileCompatibility();
 #endif

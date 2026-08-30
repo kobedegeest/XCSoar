@@ -413,6 +413,7 @@ TEST_PROFILE_SOURCES = \
 	$(SRC)/LocalPath.cpp \
 	$(SRC)/PageSettings.cpp \
 	$(SRC)/Profile/PageProfile.cpp \
+	$(SRC)/Profile/MapElementConfig.cpp \
 	$(SRC)/Profile/Profile.cpp \
 	$(SRC)/Profile/WeatherProfile.cpp \
 	$(TEST_SRC_DIR)/tap.c \

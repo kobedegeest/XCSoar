@@ -536,6 +536,7 @@ XCSOAR_SOURCES := \
 	$(SRC)/Profile/UnitsConfig.cpp \
 	$(SRC)/Profile/DeviceConfig.cpp \
 	$(SRC)/Profile/InfoBoxConfig.cpp \
+	$(SRC)/Profile/MapElementConfig.cpp \
 	$(SRC)/Profile/AirspaceConfig.cpp \
 	$(if $(filter y,$(HAVE_HTTP)),$(SRC)/Profile/NotamConfig.cpp) \
 	$(SRC)/Profile/TerrainConfig.cpp \

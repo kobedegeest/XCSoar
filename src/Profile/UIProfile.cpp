@@ -6,6 +6,7 @@
 #include "Map.hpp"
 #include "MapProfile.hpp"
 #include "InfoBoxConfig.hpp"
+#include "MapElementConfig.hpp"
 #include "PageProfile.hpp"
 #include "UnitsConfig.hpp"
 #include "UISettings.hpp"
@@ -156,6 +157,7 @@ Profile::Load(const ProfileMap &map, UISettings &settings)
   Load(map, settings.info_boxes);
   Load(map, settings.vario);
   Load(map, settings.traffic);
+  Load(map, settings.map_elements);
   Load(map, settings.pages);
   Load(map, settings.dialog);
   Load(map, settings.sound);

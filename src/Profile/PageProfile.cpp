@@ -37,6 +37,11 @@ Load(const ProfileMap &map, PageLayout &_pl, const unsigned page)
   if (!map.Get(profileKey, pl.infobox_config.panel))
     return;
 
+  strcpy(profileKey + prefixLen, "MapElementAuto");
+  map.Get(profileKey, pl.map_element_config.auto_switch);
+  strcpy(profileKey + prefixLen, "MapElementSet");
+  map.Get(profileKey, pl.map_element_config.set);
+
   strcpy(profileKey + prefixLen, "Layout");
   unsigned temp = 0;
   map.Get(profileKey, temp);
@@ -144,6 +149,11 @@ Profile::Save(ProfileMap &map, const PageLayout &page, const unsigned i)
   map.Set(profileKey, page.infobox_config.auto_switch);
   strcpy(profileKey + prefixLen, "InfoBoxPanel");
   map.Set(profileKey, page.infobox_config.panel);
+
+  strcpy(profileKey + prefixLen, "MapElementAuto");
+  map.Set(profileKey, page.map_element_config.auto_switch);
+  strcpy(profileKey + prefixLen, "MapElementSet");
+  map.Set(profileKey, page.map_element_config.set);
 
   strcpy(profileKey + prefixLen, "Layout");
   map.Set(profileKey,
