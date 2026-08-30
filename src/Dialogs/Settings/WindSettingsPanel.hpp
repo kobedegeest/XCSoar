@@ -16,14 +16,13 @@ class WindSettingsPanel final
     CIRCLING_WIND,
     ZIG_ZAG_WIND,
     EXTERNAL_WIND,
-    TrailDrift,
     SOURCE,
     Speed,
     Direction,
     CLEAR_MANUAL_BUTTON,
   };
 
-  const bool edit_manual_wind, clear_manual_button, edit_trail_drift;
+  const bool edit_manual_wind, clear_manual_button;
 
   /**
    * Has the user modified the manual wind?
@@ -44,8 +43,7 @@ public:
    * @param manual_wind edit the manual wind setting
    * @param clear_manual_button add a "Clear" button
    */
-  WindSettingsPanel(bool edit_manual_wind, bool clear_manual_button,
-                    bool edit_trail_drift) noexcept;
+  WindSettingsPanel(bool edit_manual_wind, bool clear_manual_button) noexcept;
 
   void SetClearManualButton(Button *_button) noexcept {
     clear_manual_window = _button;

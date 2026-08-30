@@ -18,7 +18,6 @@ enum ControlIndex {
   empty_spacer,
   TurningReach,
   ReachPolarMode,
-  FinalGlideTerrain,
 };
 
 class RouteConfigPanel final
@@ -50,7 +49,6 @@ RouteConfigPanel::ShowRouteControls(bool show)
 void
 RouteConfigPanel::ShowReachControls(bool show)
 {
-  SetRowVisible(FinalGlideTerrain, show);
   SetRowVisible(ReachPolarMode, show);
 }
 
@@ -137,25 +135,6 @@ RouteConfigPanel::Prepare(ContainerWindow &parent,
           reach_polar_list, (unsigned)route_planner.reach_polar_mode);
   SetExpertRow(ReachPolarMode);
 
-  static constexpr StaticEnumChoice final_glide_terrain_list[] = {
-    { FeaturesSettings::FinalGlideTerrain::OFF, N_("Off"),
-      N_("Disables the reach display.") },
-    { FeaturesSettings::FinalGlideTerrain::TERRAIN_LINE, N_("Terrain line"),
-      N_("Draws a dashed line at the terrain glide reach.") },
-    { FeaturesSettings::FinalGlideTerrain::TERRAIN_SHADE, N_("Terrain shade"),
-      N_("Shades terrain outside glide reach.") },
-    { FeaturesSettings::FinalGlideTerrain::WORKING, N_("Working line"),
-      N_("Draws a dashed line at the working glide reach.") },
-    { FeaturesSettings::FinalGlideTerrain::WORKING_TERRAIN_LINE, N_("Working line, terrain line"),
-      N_("Draws a dashed line at the working and terrain glide reaches.") },
-    { FeaturesSettings::FinalGlideTerrain::WORKING_TERRAIN_SHADE, N_("Working line, terrain shade"),
-      N_("Draws a dashed line at working, and shade terrain, glide reaches.") },
-    nullptr
-  };
-
-  AddEnum(_("Reach display"), nullptr, final_glide_terrain_list,
-          (unsigned)settings_computer.features.final_glide_terrain);
-
   ShowRouteControls(route_planner.mode != RoutePlannerConfig::Mode::NONE);
   ShowReachControls(route_planner.reach_calc_mode != RoutePlannerConfig::ReachMode::OFF);
 }
@@ -172,9 +151,6 @@ RouteConfigPanel::Save(bool &_changed) noexcept
 
   changed |= SaveValueEnum(ReachPolarMode, ProfileKeys::ReachPolarMode,
                            route_planner.reach_polar_mode);
-
-  changed |= SaveValueEnum(FinalGlideTerrain, ProfileKeys::FinalGlideTerrain,
-                           settings_computer.features.final_glide_terrain);
 
   changed |= SaveValue(RoutePlannerAllowClimb, ProfileKeys::RoutePlannerAllowClimb,
                        route_planner.allow_climb);

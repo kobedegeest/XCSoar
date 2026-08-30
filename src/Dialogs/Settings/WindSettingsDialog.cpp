@@ -10,7 +10,7 @@
 void
 ShowWindSettingsDialog()
 {
-  WindSettingsPanel *panel = new WindSettingsPanel(true, false, true);
+  WindSettingsPanel *panel = new WindSettingsPanel(true, false);
   WidgetDialog dialog(WidgetDialog::Auto{}, UIGlobals::GetMainWindow(),
                       UIGlobals::GetDialogLook(),
                       _("Wind Settings"), panel);

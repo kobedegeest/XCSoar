@@ -12,12 +12,10 @@
 #include "Units/Units.hpp"
 
 WindSettingsPanel::WindSettingsPanel(bool _edit_manual_wind,
-                                     bool _clear_manual_button,
-                                     bool _edit_trail_drift) noexcept
+                                     bool _clear_manual_button) noexcept
   :RowFormWidget(UIGlobals::GetDialogLook()),
    edit_manual_wind(_edit_manual_wind),
    clear_manual_button(_clear_manual_button),
-   edit_trail_drift(_edit_trail_drift),
    clear_manual_window(nullptr) {}
 
 void
@@ -35,7 +33,6 @@ WindSettingsPanel::Prepare(ContainerWindow &parent,
   RowFormWidget::Prepare(parent, rc);
 
   const WindSettings &settings = CommonInterface::GetComputerSettings().wind;
-  const MapSettings &map_settings = CommonInterface::GetMapSettings();
 
   AddBoolean(_("Circling wind"),
              _("Estimate the wind vector while circling. Requires only a GPS."),
@@ -48,15 +45,6 @@ WindSettingsPanel::Prepare(ContainerWindow &parent,
   AddBoolean(_("External wind"),
              _("Should XCSoar accept wind estimates from other instruments?"),
              settings.external_wind);
-
-  if (edit_trail_drift)
-    AddBoolean(_("Trail drift"),
-               _("Determines whether the snail trail is drifted with the wind "
-                 "when displayed in circling mode at near map scales. Switched "
-                 "Off, the snail trail stays uncompensated for wind drift."),
-               map_settings.trail.wind_drift_enabled);
-  else
-    AddDummy();
 
   if (edit_manual_wind) {
     SpeedVector manual_wind = CommonInterface::Calculated().GetWindOrZero();
@@ -113,7 +101,6 @@ bool
 WindSettingsPanel::Save(bool &_changed) noexcept
 {
   WindSettings &settings = CommonInterface::SetComputerSettings().wind;
-  MapSettings &map_settings = CommonInterface::SetMapSettings();
 
   bool changed = false;
 
@@ -127,10 +114,6 @@ WindSettingsPanel::Save(bool &_changed) noexcept
 
   changed |= SaveValue(EXTERNAL_WIND, ProfileKeys::ExternalWind,
                        settings.external_wind);
-
-  if (edit_trail_drift)
-    changed |= SaveValue(TrailDrift, ProfileKeys::TrailDrift,
-                         map_settings.trail.wind_drift_enabled);
 
   _changed |= changed;
   return true;
