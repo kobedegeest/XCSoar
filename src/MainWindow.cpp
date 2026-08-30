@@ -330,7 +330,10 @@ MainWindow::LayoutMapArea() noexcept
     top_widget->Move(layout.top);
 
   if (HaveBottomBannerWidget())
-    bottom_banner_widget->Move(layout.bottom_banner);
+    bottom_banner_widget->Move(widget == nullptr
+                               ? layout.bottom_banner
+                               : GetBottomWidgetRect(GetMainRect(),
+                                                     bottom_banner_widget));
 
   if (HaveBottomWidget())
     bottom_widget->Move(layout.bottom);
@@ -1333,8 +1336,6 @@ MainWindow::OnDestroy() noexcept
 {
   timer.Cancel();
 
-  /* The bottom banner is hidden while a custom main widget is active.  Tear
-     it down before KillWidget() clears that state. */
   KillBottomBannerWidget();
   KillWidget();
   KillTopWidget();
@@ -1360,7 +1361,7 @@ MainWindow::OnClose() noexcept
 void
 MainWindow::OnPaint(Canvas &canvas) noexcept
 {
-  if (map != nullptr) {
+  if (map != nullptr && widget == nullptr) {
     const MapAreaLayout layout =
       CalculateMapAreaLayout(GetMainRect(), top_widget,
                              bottom_banner_widget, bottom_widget);
@@ -1486,13 +1487,17 @@ MainWindow::ActivateMap() noexcept
     return nullptr;
 
   if (widget != nullptr) {
+    const bool have_bottom_banner_widget = HaveBottomBannerWidget();
+    if (have_bottom_banner_widget)
+      bottom_banner_widget->Hide();
+
     KillWidget();
 
     const MapAreaLayout layout =
       CalculateMapAreaLayout(GetMainRect(), top_widget,
                              bottom_banner_widget, bottom_widget);
 
-    if (bottom_banner_widget != nullptr)
+    if (have_bottom_banner_widget)
       bottom_banner_widget->Show(layout.bottom_banner);
 
     if (bottom_widget != nullptr)
@@ -1610,8 +1615,7 @@ MainWindow::KillBottomBannerWidget() noexcept
   Widget *const old = bottom_banner_widget;
   bottom_banner_widget = nullptr;
 
-  if (widget == nullptr)
-    old->Hide();
+  old->Hide();
 
   old->Unprepare();
   delete old;
@@ -1702,8 +1706,12 @@ MainWindow::SetBottomBannerWidget(Widget *_widget) noexcept
     CalculateMapAreaLayout(GetMainRect(), top_widget,
                            bottom_banner_widget, bottom_widget);
 
-  if (HaveBottomBannerWidget())
-    bottom_banner_widget->Show(layout.bottom_banner);
+  if (HaveBottomBannerWidget()) {
+    const PixelRect banner_rect = widget == nullptr
+      ? layout.bottom_banner
+      : GetBottomWidgetRect(GetMainRect(), bottom_banner_widget);
+    bottom_banner_widget->Show(banner_rect);
+  }
 
   LayoutMapArea();
   map->FullRedraw();
@@ -1748,6 +1756,10 @@ MainWindow::SetWidget(Widget *_widget) noexcept
   widget->Initialise(*this, rc);
   widget->Prepare(*this, rc);
   widget->Show(rc);
+
+  if (have_bottom_banner_widget)
+    bottom_banner_widget->Show(GetBottomWidgetRect(rc,
+                                                   bottom_banner_widget));
 
   UpdateMapOverlayButtonLayout();
 

@@ -81,8 +81,8 @@ class MainWindow : public UI::SingleWindow {
   Widget *bottom_widget = nullptr;
 
   /**
-   * A transient #Widget that is shown between the map and the configured
-   * bottom widget.
+   * A transient #Widget that is shown over the bottom of a custom main
+   * widget, or between the map and the configured bottom widget.
    */
   Widget *bottom_banner_widget = nullptr;
 
@@ -229,7 +229,7 @@ protected:
   void KillBottomWidget() noexcept;
 
   bool HaveBottomBannerWidget() const noexcept {
-    return bottom_banner_widget != nullptr && widget == nullptr;
+    return bottom_banner_widget != nullptr;
   }
 
   /**
@@ -485,9 +485,11 @@ public:
   void SetBottomWidget(Widget *widget) noexcept;
 
   /**
-   * Show a transient #Widget below the map and above the configured bottom
-   * widget.  This replaces (deletes) the previous bottom banner, if any.
-   * To disable this feature, call this method with widget==nullptr.
+   * Show a transient #Widget at the bottom of the active main content.  On
+   * map pages, space is reserved for it above the configured bottom widget;
+   * on custom pages, it overlaps the custom main widget.  This replaces
+   * (deletes) the previous bottom banner, if any.  To disable this feature,
+   * call this method with widget==nullptr.
    */
   void SetBottomBannerWidget(Widget *widget) noexcept;
 
