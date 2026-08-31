@@ -697,7 +697,7 @@ void
 PageActions::UpdateMapElementsForDisplayMode() noexcept
 {
   const auto &config = GetCurrentLayout().map_element_config;
-  if (config.auto_switch)
+  if (config.auto_switch && !IsStuckPanFullScreenLayout())
     LoadMapElements(config);
 }
 
@@ -727,7 +727,10 @@ PageActions::LoadLayout(const PageLayout &layout)
     InputEvents::setMode(InputEvents::MODE_DEFAULT);
 
   ActionInterface::UpdateDisplayMode(false);
-  LoadMapElements(active.map_element_config);
+  /* Preserve the active map element set for transient full-screen layouts,
+     including the one used by pan mode. */
+  if (!IsStuckPanFullScreenLayout())
+    LoadMapElements(active.map_element_config);
   ActionInterface::SendUIState(false);
   main_window.ScheduleRefreshInfoBoxes();
 }
