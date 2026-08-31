@@ -2,6 +2,7 @@
 // Copyright The XCSoar Project
 
 #include "dlgConfigMapElements.hpp"
+#include "Dialogs/Message.hpp"
 #include "Dialogs/WidgetDialog.hpp"
 #include "Widget/RowFormWidget.hpp"
 #include "Widget/VScrollWidget.hpp"
@@ -15,6 +16,9 @@
 #include <utility>
 
 using namespace UI;
+
+static MapElementSet clipboard;
+static bool clipboard_valid;
 
 class MapElementSetConfigWidget final
   : public RowFormWidget, private DataFieldListener {
@@ -42,6 +46,8 @@ class MapElementSetConfigWidget final
 
   void UpdateFinalGlideBarControls() noexcept;
   void UpdateTrailControls() noexcept;
+  bool SaveSettings(MapElementSet &settings) const noexcept;
+  void LoadSettings(const MapElementSet &settings) noexcept;
 
 public:
   MapElementSetConfigWidget(const DialogLook &look, MapElementSet &_data,
@@ -51,6 +57,9 @@ public:
 
   void Prepare(ContainerWindow &parent, const PixelRect &rc) noexcept override;
   bool Save(bool &changed) noexcept override;
+
+  void Copy() noexcept;
+  void Paste();
 
 private:
   void OnModified(DataField &df) noexcept override;
@@ -187,6 +196,51 @@ MapElementSetConfigWidget::Prepare([[maybe_unused]] ContainerWindow &parent,
 }
 
 bool
+MapElementSetConfigWidget::SaveSettings(MapElementSet &settings) const noexcept
+{
+  bool changed = false;
+
+  changed |= SaveValueEnum(FINAL_GLIDE_BAR,
+                           settings.final_glide_bar_display_mode);
+  changed |= SaveValue(FINAL_GLIDE_BAR_MC0,
+                       settings.final_glide_bar_mc0_enabled);
+  changed |= SaveValueEnum(TRAIL_LENGTH, settings.trail.length);
+  changed |= SaveValue(TRAIL_DRIFT, settings.trail.wind_drift_enabled);
+  changed |= SaveValueEnum(TRAIL_TYPE, settings.trail.type);
+  changed |= SaveValue(TRAIL_SCALED, settings.trail.scaling_enabled);
+  changed |= SaveValue(DISTANCE_RINGS, settings.distance_rings_enabled);
+  changed |= SaveValueEnum(GROUND_TRACK, settings.display_ground_track);
+  changed |= SaveValue(FLARM_ON_MAP, settings.show_flarm_on_map);
+  changed |= SaveValue(FLARM_GAUGE, settings.flarm_gauge_enabled);
+  changed |= SaveValueEnum(REACH_DISPLAY, settings.final_glide_terrain);
+  changed |= SaveValue(THERMAL_BAND, settings.show_thermal_profile);
+  changed |= SaveValue(VARIO_BAR, settings.vario_bar_enabled);
+
+  return changed;
+}
+
+void
+MapElementSetConfigWidget::LoadSettings(const MapElementSet &settings) noexcept
+{
+  LoadValueEnum(FINAL_GLIDE_BAR, settings.final_glide_bar_display_mode);
+  LoadValue(FINAL_GLIDE_BAR_MC0, settings.final_glide_bar_mc0_enabled);
+  LoadValueEnum(TRAIL_LENGTH, settings.trail.length);
+  LoadValue(TRAIL_DRIFT, settings.trail.wind_drift_enabled);
+  LoadValueEnum(TRAIL_TYPE, settings.trail.type);
+  LoadValue(TRAIL_SCALED, settings.trail.scaling_enabled);
+  LoadValue(DISTANCE_RINGS, settings.distance_rings_enabled);
+  LoadValueEnum(GROUND_TRACK, settings.display_ground_track);
+  LoadValue(FLARM_ON_MAP, settings.show_flarm_on_map);
+  LoadValue(FLARM_GAUGE, settings.flarm_gauge_enabled);
+  LoadValueEnum(REACH_DISPLAY, settings.final_glide_terrain);
+  LoadValue(THERMAL_BAND, settings.show_thermal_profile);
+  LoadValue(VARIO_BAR, settings.vario_bar_enabled);
+
+  UpdateFinalGlideBarControls();
+  UpdateTrailControls();
+}
+
+bool
 MapElementSetConfigWidget::Save(bool &_changed) noexcept
 {
   bool changed = false;
@@ -199,24 +253,32 @@ MapElementSetConfigWidget::Save(bool &_changed) noexcept
     }
   }
 
-  changed |= SaveValueEnum(FINAL_GLIDE_BAR,
-                           data.final_glide_bar_display_mode);
-  changed |= SaveValue(FINAL_GLIDE_BAR_MC0,
-                       data.final_glide_bar_mc0_enabled);
-  changed |= SaveValueEnum(TRAIL_LENGTH, data.trail.length);
-  changed |= SaveValue(TRAIL_DRIFT, data.trail.wind_drift_enabled);
-  changed |= SaveValueEnum(TRAIL_TYPE, data.trail.type);
-  changed |= SaveValue(TRAIL_SCALED, data.trail.scaling_enabled);
-  changed |= SaveValue(DISTANCE_RINGS, data.distance_rings_enabled);
-  changed |= SaveValueEnum(GROUND_TRACK, data.display_ground_track);
-  changed |= SaveValue(FLARM_ON_MAP, data.show_flarm_on_map);
-  changed |= SaveValue(FLARM_GAUGE, data.flarm_gauge_enabled);
-  changed |= SaveValueEnum(REACH_DISPLAY, data.final_glide_terrain);
-  changed |= SaveValue(THERMAL_BAND, data.show_thermal_profile);
-  changed |= SaveValue(VARIO_BAR, data.vario_bar_enabled);
+  changed |= SaveSettings(data);
 
   _changed |= changed;
   return true;
+}
+
+void
+MapElementSetConfigWidget::Copy() noexcept
+{
+  clipboard = data;
+  SaveSettings(clipboard);
+  clipboard_valid = true;
+}
+
+void
+MapElementSetConfigWidget::Paste()
+{
+  if (!clipboard_valid)
+    return;
+
+  if (ShowMessageBox(_("Overwrite all map elements in this set?"),
+                     _("Map element paste set"),
+                     MB_YESNO | MB_ICONQUESTION) != IDYES)
+    return;
+
+  LoadSettings(clipboard);
 }
 
 void
@@ -236,11 +298,20 @@ dlgConfigMapElementsShowModal(SingleWindow &parent,
 {
   auto widget = std::make_unique<MapElementSetConfigWidget>(
     dialog_look, data, allow_name_change);
+  auto *const widget_ptr = widget.get();
   WidgetDialog dialog(
     WidgetDialog::Full{}, parent, dialog_look, _("Map Element Set"),
     new VScrollWidget(std::move(widget), dialog_look));
+  Button *paste_button = nullptr;
+  dialog.AddButton(_("Copy Set"), [widget_ptr, &paste_button](){
+    widget_ptr->Copy();
+    paste_button->SetEnabled(true);
+  });
+  paste_button = dialog.AddButton(_("Paste Set"),
+                                  [widget_ptr](){ widget_ptr->Paste(); });
+  paste_button->SetEnabled(clipboard_valid);
   dialog.AddButton(_("OK"), mrOK);
-  dialog.AddButton(_("Cancel"), mrCancel); // Todo: add copy and paste buttons to copy settings from one set to another, and paste them into another set. simmilar as infobox copy and paste buttons.
+  dialog.AddButton(_("Cancel"), mrCancel);
 
   return dialog.ShowModal() == mrOK && dialog.GetChanged();
 }
