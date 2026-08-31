@@ -18,7 +18,7 @@
 #include "Dialogs/Settings/Panels/PagesConfigPanel.hpp"
 #include "Dialogs/Settings/Panels/WeGlideConfigPanel.hpp"
 #include "Dialogs/Settings/Panels/NetworkConfigPanel.hpp"
-#include "Dialogs/Settings/Panels/WeatherConfigPanel.hpp"
+#include "Dialogs/Settings/Panels/MapElementSetsConfigPanel.hpp"
 #include "Dialogs/Settings/Panels/SafetyFactorsConfigPanel.hpp"
 #include "Dialogs/Settings/Panels/TrackingConfigPanel.hpp"
 #include "Dialogs/Settings/Panels/TerrainDisplayConfigPanel.hpp"
@@ -82,7 +82,7 @@ static constexpr ConfigPanelLink config_panel_links[] = {
   {"config/pages",      N_("Pages"),      CreatePagesConfigPanel},
   {"config/weglide",    N_("WeGlide"),    CreateWeGlideConfigPanel},
   {"config/network",    N_("Network"),    CreateNetworkConfigPanel},
-  {"config/weather",    N_("Weather"),    CreateWeatherConfigPanel},
+  {"config/weather",    N_("Map Element Sets"), CreateMapElementSetsConfigPanel},
   {"config/safety",     N_("Safety Factors"), CreateSafetyFactorsConfigPanel},
   {"config/tracking",   N_("Tracking"),   CreateTrackingConfigPanel},
   {"config/terrain",    N_("Terrain Display"), CreateTerrainDisplayConfigPanel},

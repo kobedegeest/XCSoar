@@ -30,7 +30,6 @@ enum ControlIndex {
 #ifdef HAVE_NET_STATE_ROAMING
   ROAMING,
 #endif
-  SHOW_THERMALS,
   HOST,
   PORT,
   OWN_FLARM_ID,
@@ -63,7 +62,6 @@ CloudConfigPanel::SetEnabled(bool enabled)
 #ifdef HAVE_NET_STATE_ROAMING
   SetRowEnabled(ROAMING, enabled);
 #endif
-  SetRowEnabled(SHOW_THERMALS, enabled);
   SetRowEnabled(HOST, enabled);
   SetRowEnabled(PORT, enabled);
   SetRowEnabled(OWN_FLARM_ID, enabled);
@@ -106,10 +104,6 @@ CloudConfigPanel::Prepare(ContainerWindow &parent,
                "mobile data connection."),
              settings.roaming, this);
 #endif
-
-  AddBoolean(_("Show thermals"),
-             _("Obtain and show thermal locations reported by others."),
-             settings.show_thermals);
 
   AddText(_("Server"),
           _("Hostname or IP address of the XCSoar Cloud server."),
@@ -175,9 +169,6 @@ CloudConfigPanel::Save(bool &_changed) noexcept
   changed |= SaveValue(ROAMING, ProfileKeys::CloudRoaming,
                        settings.roaming);
 #endif
-
-  changed |= SaveValue(SHOW_THERMALS, ProfileKeys::CloudShowThermals,
-                       settings.show_thermals);
 
   if (SaveValue(HOST, ProfileKeys::CloudHost, settings.host)) {
     if (settings.host.empty())

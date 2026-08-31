@@ -9,6 +9,7 @@
 #include "InfoBoxes/InfoBoxSettings.hpp"
 #include "Gauge/VarioSettings.hpp"
 #include "Gauge/TrafficSettings.hpp"
+#include "Gauge/ThermalAssistantSettings.hpp"
 #include "PageSettings.hpp"
 #include "Dialogs/DialogSettings.hpp"
 #include "DisplaySettings.hpp"
@@ -33,19 +34,8 @@ struct UISettings {
   unsigned custom_dpi;
 
   /** Position ThermalAssistant */
-  enum class ThermalAssistantPosition: uint8_t {
-    OFF,
-    BOTTOM_LEFT,
-    BOTTOM_LEFT_AVOID_IB,
-    BOTTOM_RIGHT,
-    BOTTOM_RIGHT_AVOID_IB,
-    TOP_LEFT,
-    TOP_RIGHT,
-    CENTER_TOP,
-    TOP_LEFT_AVOID_IB,
-    TOP_RIGHT_AVOID_IB,
-    CENTER_TOP_AVOID_IB,
-  } thermal_assistant_position;
+  using ThermalAssistantPosition = ::ThermalAssistantPosition;
+  ThermalAssistantPosition thermal_assistant_position;
 
   /** Enable warning dialog */
   bool enable_airspace_warning_dialog;

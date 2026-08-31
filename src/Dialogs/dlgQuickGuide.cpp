@@ -218,7 +218,10 @@ GetConfigurationHelpText()
   Profile::Get(ProfileKeys::WeGlideEnabled, weglide_enabled);
 
   bool tim_enabled = false;
-  Profile::Get(ProfileKeys::EnableThermalInformationMap, tim_enabled);
+#ifdef HAVE_HTTP
+  for (const auto &set : CommonInterface::GetUISettings().map_elements.sets)
+    tim_enabled |= set.enable_thermal_information_map;
+#endif
 
   const bool has_safety = SafetyFactorsDifferFromDefaults();
   const bool has_terrain_display = TerrainDisplayDiffersFromDefaults();

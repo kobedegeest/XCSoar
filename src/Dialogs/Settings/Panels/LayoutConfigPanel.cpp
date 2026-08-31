@@ -11,7 +11,6 @@
 #include "Widget/RowFormWidget.hpp"
 #include "UIGlobals.hpp"
 #include "Asset.hpp"
-#include "Menu/ShowButton.hpp"
 
 enum ControlIndex {
   AppInfoBoxGeom,
@@ -21,9 +20,6 @@ enum ControlIndex {
   AppInfoBoxColors,
   AppInfoBoxTheme,
   AppInfoBoxBorder,
-  ShowMenuButton,
-  ShowZoomButton,
-  ShowQuickMenuButton,
 };
 
 static constexpr StaticEnumChoice info_box_geometry_list[] = {
@@ -169,18 +165,6 @@ LayoutConfigPanel::Prepare(ContainerWindow &parent,
   AddEnum(_("InfoBox border"), nullptr, infobox_border_list,
           unsigned(ui_settings.info_boxes.border_style));
   SetExpertRow(AppInfoBoxBorder);
-
-  AddBoolean(_("Show Menu button"), _("Show the Menu button"),
-             ui_settings.show_menu_button);
-  SetExpertRow(ShowMenuButton);
-  AddBoolean(_("Show Zoom button"), _("Show the Zoom button"),
-             ui_settings.show_zoom_button);
-  SetExpertRow(ShowZoomButton);
-  AddBoolean(C_("Setting", "Show QuickMenu button"),
-             _("Show the QuickMenu button"),
-             ui_settings.show_quickmenu_button);
-  SetExpertRow(ShowQuickMenuButton);
-
 }
 
 void
@@ -236,19 +220,6 @@ LayoutConfigPanel::Save(bool &_changed) noexcept
 
   changed |= SaveValueEnum(AppInfoBoxBorder, ProfileKeys::AppInfoBoxBorder,
                            ui_settings.info_boxes.border_style);
-
-  bool overlay_buttons_changed = false;
-  if (SaveValue(ShowMenuButton, ProfileKeys::ShowMenuButton,
-                ui_settings.show_menu_button))
-    overlay_buttons_changed = changed = true;
-  if (SaveValue(ShowZoomButton, ProfileKeys::ShowZoomButton,
-                ui_settings.show_zoom_button))
-    overlay_buttons_changed = changed = true;
-  if (SaveValue(ShowQuickMenuButton, ProfileKeys::ShowQuickMenuButton,
-                ui_settings.show_quickmenu_button))
-    overlay_buttons_changed = changed = true;
-  if (overlay_buttons_changed)
-    CommonInterface::main_window->ReinitialiseMapOverlayButtons();
 
   DialogSettings &dialog_settings = CommonInterface::SetUISettings().dialog;
   changed |= SaveValueEnum(TabDialogStyle, ProfileKeys::AppDialogTabStyle, dialog_settings.tab_style);

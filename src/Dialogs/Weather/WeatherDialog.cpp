@@ -11,7 +11,6 @@
 #include "WeatherCredentialGateWidget.hpp"
 #include "Dialogs/Settings/Panels/XCThermConfigPanel.hpp"
 #endif
-#include "Dialogs/Settings/Panels/WeatherConfigPanel.hpp"
 #include "Weather/Features.hpp"
 
 #ifdef HAVE_HTTP

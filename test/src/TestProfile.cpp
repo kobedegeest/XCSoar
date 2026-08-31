@@ -238,6 +238,21 @@ TestMapElementSetRoundTrip()
     FeaturesSettings::FinalGlideTerrain::WORKING_TERRAIN_SHADE;
   source.show_thermal_profile = false;
   source.vario_bar_enabled = true;
+  source.detour_cost_markers_enabled = true;
+  source.wind_arrow_style = WindArrowStyle::FULL_ARROW;
+  source.online_traffic_map_mode =
+    DisplayOnlineTrafficMapMode::SYMBOL_NAME;
+  source.thermal_assistant_position = ThermalAssistantPosition::TOP_RIGHT;
+  source.turn_back_marker_enabled = true;
+  source.show_menu_button = true;
+  source.show_zoom_button = false;
+  source.show_quickmenu_button = true;
+#ifdef HAVE_TRACKING
+  source.cloud_show_thermals = false;
+#endif
+#ifdef HAVE_HTTP
+  source.enable_thermal_information_map = true;
+#endif
 
   ProfileMap map;
   Profile::Save(map, source, 3);
@@ -262,6 +277,66 @@ TestMapElementSetRoundTrip()
   ok1(result.final_glide_terrain == source.final_glide_terrain);
   ok1(result.show_thermal_profile == source.show_thermal_profile);
   ok1(result.vario_bar_enabled == source.vario_bar_enabled);
+  ok1(result.detour_cost_markers_enabled ==
+      source.detour_cost_markers_enabled);
+  ok1(result.wind_arrow_style == source.wind_arrow_style);
+  ok1(result.online_traffic_map_mode == source.online_traffic_map_mode);
+  ok1(result.thermal_assistant_position ==
+      source.thermal_assistant_position);
+  ok1(result.turn_back_marker_enabled == source.turn_back_marker_enabled);
+  ok1(result.show_menu_button == source.show_menu_button);
+  ok1(result.show_zoom_button == source.show_zoom_button);
+  ok1(result.show_quickmenu_button == source.show_quickmenu_button);
+#ifdef HAVE_TRACKING
+  ok1(result.cloud_show_thermals == source.cloud_show_thermals);
+#endif
+#ifdef HAVE_HTTP
+  ok1(result.enable_thermal_information_map ==
+      source.enable_thermal_information_map);
+#endif
+}
+
+static void
+TestMapElementSetLegacyMigration()
+{
+  ProfileMap map;
+  map.Set(ProfileKeys::DetourCostMarker, true);
+  map.SetEnum(ProfileKeys::WindArrowStyle, WindArrowStyle::NO_ARROW);
+  map.SetEnum(ProfileKeys::OnlineTrafficMapMode,
+              DisplayOnlineTrafficMapMode::SYMBOL_NAME);
+  map.SetEnum(ProfileKeys::TAPosition,
+              ThermalAssistantPosition::CENTER_TOP);
+  map.Set(ProfileKeys::TurnBackMarkerEnabled, true);
+  map.Set(ProfileKeys::ShowMenuButton, true);
+  map.Set(ProfileKeys::ShowZoomButton, false);
+  map.Set(ProfileKeys::ShowQuickMenuButton, true);
+#ifdef HAVE_TRACKING
+  map.Set(ProfileKeys::CloudShowThermals, false);
+#endif
+#ifdef HAVE_HTTP
+  map.Set(ProfileKeys::EnableThermalInformationMap, true);
+#endif
+
+  MapElementSettings loaded{};
+  Profile::Load(map, loaded);
+  const auto &result = loaded.sets[MapElementSettings::SET_CRUISE];
+
+  ok1(result.detour_cost_markers_enabled);
+  ok1(result.wind_arrow_style == WindArrowStyle::NO_ARROW);
+  ok1(result.online_traffic_map_mode ==
+      DisplayOnlineTrafficMapMode::SYMBOL_NAME);
+  ok1(result.thermal_assistant_position ==
+      ThermalAssistantPosition::CENTER_TOP);
+  ok1(result.turn_back_marker_enabled);
+  ok1(result.show_menu_button);
+  ok1(!result.show_zoom_button);
+  ok1(result.show_quickmenu_button);
+#ifdef HAVE_TRACKING
+  ok1(!result.cloud_show_thermals);
+#endif
+#ifdef HAVE_HTTP
+  ok1(result.enable_thermal_information_map);
+#endif
 }
 
 #ifdef HAVE_HTTP
@@ -314,9 +389,12 @@ TestSkySightProfileCompatibility()
 
 int main()
 try {
-  plan_tests(68
+  plan_tests(84
+#ifdef HAVE_TRACKING
+             + 2
+#endif
 #ifdef HAVE_HTTP
-             + 8
+             + 10
 #endif
              );
 
@@ -326,6 +404,7 @@ try {
   TestMigration();
   TestWeatherPageCursorRoundTrip();
   TestMapElementSetRoundTrip();
+  TestMapElementSetLegacyMigration();
 #ifdef HAVE_HTTP
   TestSkySightProfileCompatibility();
 #endif

@@ -74,6 +74,36 @@ LoadLegacyValues(const ProfileMap &map, MapElementSet &set) noexcept
   map.GetEnum(ProfileKeys::FinalGlideTerrain, set.final_glide_terrain);
   map.Get(ProfileKeys::EnableThermalProfile, set.show_thermal_profile);
   map.Get(ProfileKeys::EnableVarioBar, set.vario_bar_enabled);
+  map.Get(ProfileKeys::DetourCostMarker,
+          set.detour_cost_markers_enabled);
+  map.GetEnum(ProfileKeys::WindArrowStyle, set.wind_arrow_style);
+  if (!map.GetEnum(ProfileKeys::OnlineTrafficMapMode,
+                   set.online_traffic_map_mode))
+    map.GetEnum(ProfileKeys::SkyLinesTrafficMapMode,
+                set.online_traffic_map_mode);
+
+  if (!map.GetEnum(ProfileKeys::TAPosition,
+                   set.thermal_assistant_position)) {
+    bool enable_thermal_assistant_gauge_obsolete;
+    if (map.Get(ProfileKeys::EnableTAGauge,
+                enable_thermal_assistant_gauge_obsolete))
+      set.thermal_assistant_position = enable_thermal_assistant_gauge_obsolete
+        ? ThermalAssistantPosition::BOTTOM_LEFT
+        : ThermalAssistantPosition::OFF;
+  }
+
+  map.Get(ProfileKeys::TurnBackMarkerEnabled,
+          set.turn_back_marker_enabled);
+  map.Get(ProfileKeys::ShowMenuButton, set.show_menu_button);
+  map.Get(ProfileKeys::ShowZoomButton, set.show_zoom_button);
+  map.Get(ProfileKeys::ShowQuickMenuButton, set.show_quickmenu_button);
+#ifdef HAVE_TRACKING
+  map.Get(ProfileKeys::CloudShowThermals, set.cloud_show_thermals);
+#endif
+#ifdef HAVE_HTTP
+  map.Get(ProfileKeys::EnableThermalInformationMap,
+          set.enable_thermal_information_map);
+#endif
 }
 
 void
@@ -109,6 +139,25 @@ Profile::Load(const ProfileMap &map, MapElementSettings &settings)
     LoadEnum(map, i, "FinalGlideTerrain", set.final_glide_terrain);
     LoadValue(map, i, "ShowThermalProfile", set.show_thermal_profile);
     LoadValue(map, i, "VarioBarEnabled", set.vario_bar_enabled);
+    LoadValue(map, i, "DetourCostMarkersEnabled",
+              set.detour_cost_markers_enabled);
+    LoadEnum(map, i, "WindArrowStyle", set.wind_arrow_style);
+    LoadEnum(map, i, "OnlineTrafficMapMode",
+             set.online_traffic_map_mode);
+    LoadEnum(map, i, "ThermalAssistantPosition",
+             set.thermal_assistant_position);
+    LoadValue(map, i, "TurnBackMarkerEnabled",
+              set.turn_back_marker_enabled);
+    LoadValue(map, i, "ShowMenuButton", set.show_menu_button);
+    LoadValue(map, i, "ShowZoomButton", set.show_zoom_button);
+    LoadValue(map, i, "ShowQuickMenuButton", set.show_quickmenu_button);
+#ifdef HAVE_TRACKING
+    LoadValue(map, i, "CloudShowThermals", set.cloud_show_thermals);
+#endif
+#ifdef HAVE_HTTP
+    LoadValue(map, i, "EnableThermalInformationMap",
+              set.enable_thermal_information_map);
+#endif
   }
 }
 
@@ -136,4 +185,23 @@ Profile::Save(ProfileMap &map, const MapElementSet &set, unsigned index)
   SaveEnum(map, index, "FinalGlideTerrain", set.final_glide_terrain);
   SaveValue(map, index, "ShowThermalProfile", set.show_thermal_profile);
   SaveValue(map, index, "VarioBarEnabled", set.vario_bar_enabled);
+  SaveValue(map, index, "DetourCostMarkersEnabled",
+            set.detour_cost_markers_enabled);
+  SaveEnum(map, index, "WindArrowStyle", set.wind_arrow_style);
+  SaveEnum(map, index, "OnlineTrafficMapMode",
+           set.online_traffic_map_mode);
+  SaveEnum(map, index, "ThermalAssistantPosition",
+           set.thermal_assistant_position);
+  SaveValue(map, index, "TurnBackMarkerEnabled",
+            set.turn_back_marker_enabled);
+  SaveValue(map, index, "ShowMenuButton", set.show_menu_button);
+  SaveValue(map, index, "ShowZoomButton", set.show_zoom_button);
+  SaveValue(map, index, "ShowQuickMenuButton", set.show_quickmenu_button);
+#ifdef HAVE_TRACKING
+  SaveValue(map, index, "CloudShowThermals", set.cloud_show_thermals);
+#endif
+#ifdef HAVE_HTTP
+  SaveValue(map, index, "EnableThermalInformationMap",
+            set.enable_thermal_information_map);
+#endif
 }

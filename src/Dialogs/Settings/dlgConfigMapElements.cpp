@@ -37,8 +37,22 @@ class MapElementSetConfigWidget final
     REACH_DISPLAY,
     THERMAL_BAND,
     VARIO_BAR,
-    // Todo: missing elements easy to add: Wind arrow, Detour cost markers, Online traffic, Thermal assistant, Turn back marker, Menu button, zoom button, Quickmenu button, XCSoar cloud show thermals, Thermmal information map
-    // Todo: missing elements might need small refactoring: skylines traffic (currently setting is track or not when yes it is dissplayed so needs seperate display option), Xcsoar cloud traffic,  
+    DETOUR_COST_MARKERS,
+    WIND_ARROW,
+    ONLINE_TRAFFIC,
+    THERMAL_ASSISTANT,
+    TURN_BACK_MARKER,
+    MENU_BUTTON,
+    ZOOM_BUTTON,
+    QUICKMENU_BUTTON,
+#ifdef HAVE_TRACKING
+    CLOUD_SHOW_THERMALS,
+#endif
+#ifdef HAVE_HTTP
+    THERMAL_INFORMATION_MAP,
+#endif
+    // TODO: missing elements that need small refactoring: SkyLines traffic,
+    // XCSoar Cloud traffic
   };
 
   MapElementSet &data;
@@ -102,6 +116,58 @@ static constexpr StaticEnumChoice ground_track_mode_list[] = {
     N_("Always display ground track line.") },
   { DisplayGroundTrack::AUTO, NC_("Setting", "Auto"),
     N_("Display ground track line if there is a significant difference to plane heading.") },
+  nullptr
+};
+
+static constexpr StaticEnumChoice wind_arrow_list[] = {
+  { WindArrowStyle::NO_ARROW, N_("Off"), N_("No wind arrow is drawn.") },
+  { WindArrowStyle::ARROW_HEAD, N_("Arrow head"),
+    N_("Draws an arrow head only.") },
+  { WindArrowStyle::FULL_ARROW, N_("Full arrow"),
+    N_("Draws an arrow head with a dashed arrow line.") },
+  nullptr
+};
+
+static constexpr StaticEnumChoice online_traffic_map_mode_list[] = {
+  { DisplayOnlineTrafficMapMode::OFF, N_("Off"),
+    N_("No online traffic is drawn.") },
+  { DisplayOnlineTrafficMapMode::SYMBOL, N_("Symbol"),
+    N_("Draws the traffic symbol only.") },
+  { DisplayOnlineTrafficMapMode::SYMBOL_NAME, N_("Symbol and Name"),
+    N_("Draws the traffic symbol with name.") },
+  nullptr
+};
+
+static constexpr StaticEnumChoice thermal_assistant_position_list[] = {
+  { ThermalAssistantPosition::OFF, N_("Off"),
+    N_("Disable thermal assistant.") },
+  { ThermalAssistantPosition::BOTTOM_LEFT, N_("Bottom left"),
+    N_("Show thermal assistant in bottom left.") },
+  { ThermalAssistantPosition::BOTTOM_LEFT_AVOID_IB,
+    N_("Bottom left (avoid InfoBoxes)"),
+    N_("Show thermal assistant in bottom left, above or to the right of "
+       "InfoBoxes (if present).") },
+  { ThermalAssistantPosition::BOTTOM_RIGHT, N_("Bottom right"),
+    N_("Show thermal assistant in bottom right.") },
+  { ThermalAssistantPosition::BOTTOM_RIGHT_AVOID_IB,
+    N_("Bottom right (avoid InfoBoxes)"),
+    N_("Show thermal assistant in bottom right, above or to the left of "
+       "InfoBoxes (if present).") },
+  { ThermalAssistantPosition::TOP_LEFT, N_("Top left"),
+    N_("Show thermal assistant in top left.") },
+  { ThermalAssistantPosition::TOP_RIGHT, N_("Top right"),
+    N_("Show thermal assistant in top right.") },
+  { ThermalAssistantPosition::CENTER_TOP, N_("Center top"),
+    N_("Show thermal assistant in center top.") },
+  { ThermalAssistantPosition::TOP_LEFT_AVOID_IB,
+    N_("Top left (avoid InfoBoxes)"),
+    N_("Show thermal assistant in top left (avoid InfoBoxes).") },
+  { ThermalAssistantPosition::TOP_RIGHT_AVOID_IB,
+    N_("Top right (avoid InfoBoxes)"),
+    N_("Show thermal assistant in top right (avoid InfoBoxes).") },
+  { ThermalAssistantPosition::CENTER_TOP_AVOID_IB,
+    N_("Center top (avoid InfoBoxes)"),
+    N_("Show thermal assistant in center top (avoid InfoBoxes).") },
   nullptr
 };
 
@@ -191,6 +257,57 @@ MapElementSetConfigWidget::Prepare([[maybe_unused]] ContainerWindow &parent,
   AddBoolean(_("Vario bar"), _("Show the vario bar."),
              data.vario_bar_enabled);
 
+  AddBoolean(_("Detour cost markers"),
+             _("If the aircraft heading deviates from the current waypoint, "
+               "markers are displayed at points ahead of the aircraft. The "
+               "value of each marker is the extra distance required to reach "
+               "that point as a percentage of straight-line distance to the "
+               "waypoint."),
+             data.detour_cost_markers_enabled);
+  SetExpertRow(DETOUR_COST_MARKERS);
+  AddEnum(_("Wind arrow"),
+          _("Determines the way the wind arrow is drawn on the map."),
+          wind_arrow_list, static_cast<unsigned>(data.wind_arrow_style));
+  SetExpertRow(WIND_ARROW);
+  AddEnum(C_("Setting", "Online traffic on map"),
+          _("Show traffic from SkyLines and XCSoar Cloud on the map."),
+          online_traffic_map_mode_list,
+          static_cast<unsigned>(data.online_traffic_map_mode));
+  AddEnum(_("Thermal Assistant"),
+          _("Enable and select the position of the thermal assistant when "
+            "overlayed on the main screen."),
+          thermal_assistant_position_list,
+          static_cast<unsigned>(data.thermal_assistant_position));
+  AddBoolean(C_("Setting", "Turn back marker"),
+             _("Show a green triangle on the map along the current track "
+               "indicating the furthest point from which the active task "
+               "waypoint or Goto target can still be reached with the "
+               "current altitude and conditions. "
+               "The triangle is only shown during cruise when the target "
+               "is reachable."),
+             data.turn_back_marker_enabled);
+  AddBoolean(_("Show Menu button"), _("Show the Menu button"),
+             data.show_menu_button);
+  SetExpertRow(MENU_BUTTON);
+  AddBoolean(_("Show Zoom button"), _("Show the Zoom button"),
+             data.show_zoom_button);
+  SetExpertRow(ZOOM_BUTTON);
+  AddBoolean(C_("Setting", "Show QuickMenu button"),
+             _("Show the QuickMenu button"),
+             data.show_quickmenu_button);
+  SetExpertRow(QUICKMENU_BUTTON);
+#ifdef HAVE_TRACKING
+  AddBoolean(_("XCSoar Cloud thermals"),
+             _("Obtain and show thermal locations reported by others."),
+             data.cloud_show_thermals);
+#endif
+#ifdef HAVE_HTTP
+  AddBoolean(_("Thermal Information Map"),
+             _("Show thermal locations downloaded from Thermal Information "
+               "Map (thermalmap.info)."),
+             data.enable_thermal_information_map);
+#endif
+
   UpdateFinalGlideBarControls();
   UpdateTrailControls();
 }
@@ -215,6 +332,25 @@ MapElementSetConfigWidget::SaveSettings(MapElementSet &settings) const noexcept
   changed |= SaveValueEnum(REACH_DISPLAY, settings.final_glide_terrain);
   changed |= SaveValue(THERMAL_BAND, settings.show_thermal_profile);
   changed |= SaveValue(VARIO_BAR, settings.vario_bar_enabled);
+  changed |= SaveValue(DETOUR_COST_MARKERS,
+                       settings.detour_cost_markers_enabled);
+  changed |= SaveValueEnum(WIND_ARROW, settings.wind_arrow_style);
+  changed |= SaveValueEnum(ONLINE_TRAFFIC,
+                           settings.online_traffic_map_mode);
+  changed |= SaveValueEnum(THERMAL_ASSISTANT,
+                           settings.thermal_assistant_position);
+  changed |= SaveValue(TURN_BACK_MARKER,
+                       settings.turn_back_marker_enabled);
+  changed |= SaveValue(MENU_BUTTON, settings.show_menu_button);
+  changed |= SaveValue(ZOOM_BUTTON, settings.show_zoom_button);
+  changed |= SaveValue(QUICKMENU_BUTTON, settings.show_quickmenu_button);
+#ifdef HAVE_TRACKING
+  changed |= SaveValue(CLOUD_SHOW_THERMALS, settings.cloud_show_thermals);
+#endif
+#ifdef HAVE_HTTP
+  changed |= SaveValue(THERMAL_INFORMATION_MAP,
+                       settings.enable_thermal_information_map);
+#endif
 
   return changed;
 }
@@ -235,6 +371,21 @@ MapElementSetConfigWidget::LoadSettings(const MapElementSet &settings) noexcept
   LoadValueEnum(REACH_DISPLAY, settings.final_glide_terrain);
   LoadValue(THERMAL_BAND, settings.show_thermal_profile);
   LoadValue(VARIO_BAR, settings.vario_bar_enabled);
+  LoadValue(DETOUR_COST_MARKERS, settings.detour_cost_markers_enabled);
+  LoadValueEnum(WIND_ARROW, settings.wind_arrow_style);
+  LoadValueEnum(ONLINE_TRAFFIC, settings.online_traffic_map_mode);
+  LoadValueEnum(THERMAL_ASSISTANT, settings.thermal_assistant_position);
+  LoadValue(TURN_BACK_MARKER, settings.turn_back_marker_enabled);
+  LoadValue(MENU_BUTTON, settings.show_menu_button);
+  LoadValue(ZOOM_BUTTON, settings.show_zoom_button);
+  LoadValue(QUICKMENU_BUTTON, settings.show_quickmenu_button);
+#ifdef HAVE_TRACKING
+  LoadValue(CLOUD_SHOW_THERMALS, settings.cloud_show_thermals);
+#endif
+#ifdef HAVE_HTTP
+  LoadValue(THERMAL_INFORMATION_MAP,
+            settings.enable_thermal_information_map);
+#endif
 
   UpdateFinalGlideBarControls();
   UpdateTrailControls();

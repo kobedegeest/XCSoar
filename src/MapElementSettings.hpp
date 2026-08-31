@@ -5,6 +5,7 @@
 
 #include "MapSettings.hpp"
 #include "Computer/Settings.hpp"
+#include "Gauge/ThermalAssistantSettings.hpp"
 #include "util/StaticString.hxx"
 
 #include <type_traits>
@@ -23,6 +24,21 @@ struct MapElementSet {
   FeaturesSettings::FinalGlideTerrain final_glide_terrain;
   bool show_thermal_profile;
   bool vario_bar_enabled;
+
+  bool detour_cost_markers_enabled;
+  WindArrowStyle wind_arrow_style;
+  DisplayOnlineTrafficMapMode online_traffic_map_mode;
+  ThermalAssistantPosition thermal_assistant_position;
+  bool turn_back_marker_enabled;
+  bool show_menu_button;
+  bool show_zoom_button;
+  bool show_quickmenu_button;
+#ifdef HAVE_TRACKING
+  bool cloud_show_thermals;
+#endif
+#ifdef HAVE_HTTP
+  bool enable_thermal_information_map;
+#endif
 };
 
 static_assert(std::is_trivial<MapElementSet>::value, "type is not trivial");

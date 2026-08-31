@@ -17,6 +17,10 @@
 #include "UIGlobals.hpp"
 #include "MapWindow/GlueMapWindow.hpp"
 #include "Components.hpp"
+#ifdef HAVE_TRACKING
+#include "NetComponents.hpp"
+#include "Tracking/TrackingGlue.hpp"
+#endif
 #include "Weather/MapOverlay/ControlsFactory.hpp"
 #include "Weather/MapOverlay/ControlsWidget.hpp"
 #include "Weather/Rasp/FieldControls.hpp"
@@ -636,14 +640,55 @@ PageActions::LoadMapElements(const PageLayout::MapElementConfig &config) noexcep
   map_settings.show_flarm_on_map = set.show_flarm_on_map;
   map_settings.show_thermal_profile = set.show_thermal_profile;
   map_settings.vario_bar_enabled = set.vario_bar_enabled;
+  map_settings.detour_cost_markers_enabled =
+    set.detour_cost_markers_enabled;
+  map_settings.wind_arrow_style = set.wind_arrow_style;
+  map_settings.online_traffic_map_mode = set.online_traffic_map_mode;
 
-  CommonInterface::SetUISettings().traffic.enable_gauge =
-    set.flarm_gauge_enabled;
+  UISettings &ui_settings = CommonInterface::SetUISettings();
+  ui_settings.traffic.enable_gauge = set.flarm_gauge_enabled;
 
-  CommonInterface::SetComputerSettings().features.final_glide_terrain =
+  const bool thermal_assistant_changed =
+    ui_settings.thermal_assistant_position != set.thermal_assistant_position;
+  const bool overlay_buttons_changed =
+    ui_settings.show_menu_button != set.show_menu_button ||
+    ui_settings.show_zoom_button != set.show_zoom_button ||
+    ui_settings.show_quickmenu_button != set.show_quickmenu_button;
+
+  ui_settings.thermal_assistant_position = set.thermal_assistant_position;
+  ui_settings.show_menu_button = set.show_menu_button;
+  ui_settings.show_zoom_button = set.show_zoom_button;
+  ui_settings.show_quickmenu_button = set.show_quickmenu_button;
+
+  ComputerSettings &computer_settings =
+    CommonInterface::SetComputerSettings();
+  computer_settings.features.final_glide_terrain =
     set.final_glide_terrain;
-  CommonInterface::main_window->SetComputerSettings(
-    CommonInterface::GetComputerSettings());
+  computer_settings.task.turn_back_marker_enabled =
+    set.turn_back_marker_enabled;
+#ifdef HAVE_TRACKING
+  const bool cloud_settings_changed =
+    computer_settings.tracking.cloud.show_thermals !=
+    set.cloud_show_thermals;
+  computer_settings.tracking.cloud.show_thermals = set.cloud_show_thermals;
+#endif
+#ifdef HAVE_HTTP
+  computer_settings.weather.enable_tim =
+    set.enable_thermal_information_map;
+#endif
+
+  CommonInterface::main_window->SetComputerSettings(computer_settings);
+
+  if (thermal_assistant_changed)
+    CommonInterface::main_window->ReinitialiseLayout();
+  else if (overlay_buttons_changed)
+    CommonInterface::main_window->ReinitialiseMapOverlayButtons();
+
+#ifdef HAVE_TRACKING
+  if (cloud_settings_changed && net_components != nullptr &&
+      net_components->tracking != nullptr)
+    net_components->tracking->SetSettings(computer_settings.tracking);
+#endif
 
   ActionInterface::SendMapSettings(true);
 }
