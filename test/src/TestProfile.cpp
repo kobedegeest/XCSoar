@@ -19,6 +19,30 @@
 
 #include <stdlib.h>
 
+static constexpr DisplaySettingDescriptor display_override_descriptors[] = {
+  {
+    DisplaySettingKey{1}, DisplaySettingGroup::TERRAIN,
+    "TerrainDisplay", "Terrain display", nullptr,
+    DisplaySettingValueType::BOOLEAN,
+    DisplaySettingValue::Integer(0), DisplaySettingValue::Integer(1),
+    nullptr, true,
+  },
+  {
+    DisplaySettingKey{2}, DisplaySettingGroup::TERRAIN,
+    "TerrainBrightness", "Terrain brightness", nullptr,
+    DisplaySettingValueType::INTEGER,
+    DisplaySettingValue::Integer(0), DisplaySettingValue::Integer(100),
+    nullptr, true,
+  },
+  {
+    DisplaySettingKey{3}, DisplaySettingGroup::ORIENTATION,
+    "DisabledSetting", "Disabled setting", nullptr,
+    DisplaySettingValueType::BOOLEAN,
+    DisplaySettingValue::Integer(0), DisplaySettingValue::Integer(1),
+    nullptr,
+  },
+};
+
 static void
 TestMap()
 {
@@ -339,6 +363,82 @@ TestMapElementSetLegacyMigration()
 #endif
 }
 
+static void
+TestElementSetDisplayOverridePersistence()
+{
+  static constexpr unsigned set_index = 3;
+  static constexpr char terrain_display_key[] =
+    "MapElementSet3DisplayOverrideTerrainDisplay";
+  static constexpr char terrain_brightness_key[] =
+    "MapElementSet3DisplayOverrideTerrainBrightness";
+  static constexpr char disabled_setting_key[] =
+    "MapElementSet3DisplayOverrideDisabledSetting";
+
+  ElementSetDisplayOverrides source{};
+  source.Clear();
+  ok1(source.Set(display_override_descriptors[0],
+                 DisplaySettingValue::Boolean(true)) ==
+      SetDisplayOverrideResult::ADDED);
+  ok1(source.Set(display_override_descriptors[1],
+                 DisplaySettingValue::Integer(63)) ==
+      SetDisplayOverrideResult::ADDED);
+
+  ProfileMap map;
+  Profile::SaveElementSetDisplayOverrides(
+    map, set_index, source, display_override_descriptors);
+  ok1(map.Exists(terrain_display_key));
+  ok1(map.Exists(terrain_brightness_key));
+  ok1(!map.Exists(disabled_setting_key));
+
+  ElementSetDisplayOverrides loaded{};
+  loaded.Clear();
+  Profile::LoadElementSetDisplayOverrides(
+    map, set_index, loaded, display_override_descriptors);
+  ok1(loaded == source);
+  ok1(loaded.Get(display_override_descriptors[0].key)->AsBoolean());
+  ok1(loaded.Get(display_override_descriptors[1].key)->value == 63);
+
+  map.Clear();
+  Profile::LoadElementSetDisplayOverrides(
+    map, set_index, loaded, display_override_descriptors);
+  ok1(loaded.IsEmpty());
+
+  map.Set(terrain_display_key, 2);
+  map.Set(terrain_brightness_key, 101);
+  Profile::LoadElementSetDisplayOverrides(
+    map, set_index, loaded, display_override_descriptors);
+  ok1(loaded.IsEmpty());
+
+  map.Set(terrain_display_key, true);
+  Profile::LoadElementSetDisplayOverrides(
+    map, set_index, loaded, display_override_descriptors);
+  ok1(loaded.Size() == 1);
+  ok1(loaded.Get(display_override_descriptors[0].key)->AsBoolean());
+
+  map.Clear();
+  Profile::SaveElementSetDisplayOverrides(
+    map, set_index, source, display_override_descriptors);
+  ok1(map.Exists(terrain_display_key));
+  ok1(map.Exists(terrain_brightness_key));
+  ok1(source.Remove(display_override_descriptors[0].key));
+  Profile::SaveElementSetDisplayOverrides(
+    map, set_index, source, display_override_descriptors);
+  ok1(!map.Exists(terrain_display_key));
+  ok1(map.Exists(terrain_brightness_key));
+  source.Clear();
+  Profile::SaveElementSetDisplayOverrides(
+    map, set_index, source, display_override_descriptors);
+  ok1(!map.Exists(terrain_brightness_key));
+
+  map.Set(disabled_setting_key, true);
+  Profile::LoadElementSetDisplayOverrides(
+    map, set_index, loaded, display_override_descriptors);
+  ok1(loaded.IsEmpty());
+  Profile::SaveElementSetDisplayOverrides(
+    map, set_index, loaded, display_override_descriptors);
+  ok1(!map.Exists(disabled_setting_key));
+}
+
 #ifdef HAVE_HTTP
 
 static void
@@ -389,7 +489,7 @@ TestSkySightProfileCompatibility()
 
 int main()
 try {
-  plan_tests(84
+  plan_tests(104
 #ifdef HAVE_TRACKING
              + 2
 #endif
@@ -405,6 +505,7 @@ try {
   TestWeatherPageCursorRoundTrip();
   TestMapElementSetRoundTrip();
   TestMapElementSetLegacyMigration();
+  TestElementSetDisplayOverridePersistence();
 #ifdef HAVE_HTTP
   TestSkySightProfileCompatibility();
 #endif

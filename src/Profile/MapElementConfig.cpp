@@ -4,6 +4,7 @@
 #include "MapElementConfig.hpp"
 #include "Keys.hpp"
 #include "Map.hpp"
+#include "MapDisplay/DisplaySettingCatalog.hpp"
 #include "util/StringFormat.hpp"
 
 #include <cstddef>
@@ -14,6 +15,66 @@ MakeKey(char (&buffer)[64], unsigned index, const char *suffix) noexcept
   const int n = StringFormat(buffer, sizeof(buffer), "MapElementSet%u%s",
                              index, suffix);
   return n >= 0 && static_cast<std::size_t>(n) < sizeof(buffer);
+}
+
+static bool
+MakeDisplayOverrideKey(char (&buffer)[96], unsigned index,
+                       const char *suffix) noexcept
+{
+  const int n = StringFormat(buffer, sizeof(buffer),
+                             "MapElementSet%uDisplayOverride%s",
+                             index, suffix);
+  return n >= 0 && static_cast<std::size_t>(n) < sizeof(buffer);
+}
+
+void
+Profile::LoadElementSetDisplayOverrides(
+  const ProfileMap &map, unsigned index,
+  ElementSetDisplayOverrides &overrides,
+  std::span<const DisplaySettingDescriptor> catalog) noexcept
+{
+  overrides.Clear();
+
+  for (const auto &descriptor : catalog) {
+    if (!descriptor.element_set_overwritable)
+      continue;
+
+    char key[96];
+    int value;
+    if (!MakeDisplayOverrideKey(key, index, descriptor.profile_suffix) ||
+        !map.Get(key, value))
+      continue;
+
+    const DisplaySettingValue candidate{value};
+    if (!descriptor.IsValid(candidate))
+      continue;
+
+    const auto result = overrides.Set(descriptor, candidate);
+    if (result == SetDisplayOverrideResult::FULL)
+      break;
+  }
+}
+
+void
+Profile::SaveElementSetDisplayOverrides(
+  ProfileMap &map, unsigned index,
+  const ElementSetDisplayOverrides &overrides,
+  std::span<const DisplaySettingDescriptor> catalog) noexcept
+{
+  for (const auto &descriptor : catalog) {
+    char key[96];
+    if (!MakeDisplayOverrideKey(key, index, descriptor.profile_suffix))
+      continue;
+
+    const auto *value = overrides.Get(descriptor.key);
+    if (!descriptor.element_set_overwritable || value == nullptr ||
+        !descriptor.IsValid(*value)) {
+      map.Remove(key);
+      continue;
+    }
+
+    map.Set(key, value->value);
+  }
 }
 
 template<typename T>
@@ -158,6 +219,8 @@ Profile::Load(const ProfileMap &map, MapElementSettings &settings)
     LoadValue(map, i, "EnableThermalInformationMap",
               set.enable_thermal_information_map);
 #endif
+    LoadElementSetDisplayOverrides(map, i, set.display_overrides,
+                                   GetMapDisplaySettingCatalog());
   }
 }
 
@@ -204,4 +267,6 @@ Profile::Save(ProfileMap &map, const MapElementSet &set, unsigned index)
   SaveValue(map, index, "EnableThermalInformationMap",
             set.enable_thermal_information_map);
 #endif
+  SaveElementSetDisplayOverrides(map, index, set.display_overrides,
+                                 GetMapDisplaySettingCatalog());
 }
