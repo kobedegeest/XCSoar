@@ -447,6 +447,8 @@ XCSOAR_SOURCES := \
 	$(SRC)/DisplaySettings.cpp \
 	$(SRC)/MapSettings.cpp \
 	$(SRC)/MapElementSettings.cpp \
+	$(SRC)/MapDisplay/ElementSetDisplayOverrideService.cpp \
+	$(SRC)/MapDisplay/ElementSetDisplayOverrideGlue.cpp \
 	$(SRC)/SystemSettings.cpp \
 	$(SRC)/Audio/Settings.cpp \
 	$(SRC)/Audio/VarioSettings.cpp \

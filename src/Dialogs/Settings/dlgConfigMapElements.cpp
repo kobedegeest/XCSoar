@@ -11,6 +11,7 @@
 #include "Form/DataField/Listener.hpp"
 #include "MapElementSettings.hpp"
 #include "MapDisplay/DisplaySettingCatalog.hpp"
+#include "MapDisplay/ElementSetDisplayOverrideGlue.hpp"
 #include "Language/Language.hpp"
 #include "UIGlobals.hpp"
 #include "util/StringAPI.hxx"
@@ -488,7 +489,7 @@ MapElementSetConfigWidget::EditDisplayOverrides()
 {
   ShowElementSetDisplayOverridesDialog(
     UIGlobals::GetMainWindow(), GetLook(), display_overrides,
-    GetMapDisplaySettingCatalog(), nullptr);
+    GetMapDisplaySettingCatalog(), GetGlobalElementSetDisplaySettingValue);
 }
 
 void

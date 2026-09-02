@@ -89,6 +89,7 @@ TEST_NAMES = \
 	TestUnits TestEarth TestSunEphemeris \
 	TestValidity TestUTM \
 	TestElementSetDisplayOverrides \
+	TestElementSetDisplayOverrideService \
 	TestAllocatedGrid \
 	TestRadixTree TestGeoBounds TestGeoClip \
 	TestLogger TestGRecord TestClimbAvCalc TestCirclingWind \
@@ -167,6 +168,12 @@ TEST_ELEMENT_SET_DISPLAY_OVERRIDES_SOURCES = \
 	$(TEST_SRC_DIR)/tap.c \
 	$(TEST_SRC_DIR)/TestElementSetDisplayOverrides.cpp
 $(eval $(call link-program,TestElementSetDisplayOverrides,TEST_ELEMENT_SET_DISPLAY_OVERRIDES))
+
+TEST_ELEMENT_SET_DISPLAY_OVERRIDE_SERVICE_SOURCES = \
+	$(SRC)/MapDisplay/ElementSetDisplayOverrideService.cpp \
+	$(TEST_SRC_DIR)/tap.c \
+	$(TEST_SRC_DIR)/TestElementSetDisplayOverrideService.cpp
+$(eval $(call link-program,TestElementSetDisplayOverrideService,TEST_ELEMENT_SET_DISPLAY_OVERRIDE_SERVICE))
 
 TEST_HEX_STRING_SOURCES = \
 	$(TEST_SRC_DIR)/tap.c \

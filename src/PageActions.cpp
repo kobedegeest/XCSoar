@@ -2,6 +2,7 @@
 // Copyright The XCSoar Project
 
 #include "PageActions.hpp"
+#include "MapDisplay/ElementSetDisplayOverrideGlue.hpp"
 #include "UIActions.hpp"
 #include "UIState.hpp"
 #include "Interface.hpp"
@@ -626,7 +627,7 @@ PageActions::LoadMapElements(const PageLayout::MapElementConfig &config) noexcep
     }
   }
 
-  const MapElementSet set =
+  const MapElementSet &set =
     CommonInterface::GetUISettings().map_elements.sets[set_index];
 
   MapSettings &map_settings = CommonInterface::SetMapSettings();
@@ -689,6 +690,8 @@ PageActions::LoadMapElements(const PageLayout::MapElementConfig &config) noexcep
       net_components->tracking != nullptr)
     net_components->tracking->SetSettings(computer_settings.tracking);
 #endif
+
+  ApplyElementSetDisplayOverrides(set.display_overrides);
 
   ActionInterface::SendMapSettings(true);
 }

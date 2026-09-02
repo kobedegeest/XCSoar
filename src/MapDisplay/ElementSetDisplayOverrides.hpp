@@ -67,6 +67,28 @@ struct DisplaySettingEnumChoice {
   const char *help;
 };
 
+enum class DisplaySettingEffect : uint16_t {
+  NONE = 0,
+  REDRAW = 1u << 0,
+  TERRAIN_CACHE = 1u << 1,
+  PROJECTION = 1u << 2,
+  WAYPOINT_LOOK = 1u << 3,
+  AIRSPACE_COMPUTER = 1u << 4,
+};
+
+using DisplaySettingEffects = uint16_t;
+
+constexpr DisplaySettingEffects
+ToDisplaySettingEffects(DisplaySettingEffect effect) noexcept
+{
+  return static_cast<DisplaySettingEffects>(effect);
+}
+
+struct DisplaySettingAccessor {
+  DisplaySettingValue (*get_global)() noexcept;
+  void (*set_effective)(DisplaySettingValue value) noexcept;
+};
+
 struct DisplaySettingDescriptor {
   using Validator = bool (*)(DisplaySettingValue value) noexcept;
 
@@ -90,6 +112,10 @@ struct DisplaySettingDescriptor {
   const DisplaySettingEnumChoice *enum_choices = nullptr;
   uint16_t enum_choice_count = 0;
   int32_t integer_step = 1;
+
+  DisplaySettingAccessor accessor{};
+  DisplaySettingEffects effects =
+    ToDisplaySettingEffects(DisplaySettingEffect::NONE);
 
   constexpr bool IsValid(DisplaySettingValue candidate) const noexcept {
     bool valid = false;

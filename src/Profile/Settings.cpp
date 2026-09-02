@@ -6,6 +6,7 @@
 #include "ComputerProfile.hpp"
 #include "UIProfile.hpp"
 #include "Interface.hpp"
+#include "MapDisplay/ElementSetDisplayOverrideGlue.hpp"
 
 void
 Profile::Use(const ProfileMap &map)
@@ -13,4 +14,5 @@ Profile::Use(const ProfileMap &map)
   Load(map, CommonInterface::SetSystemSettings());
   Load(map, CommonInterface::SetComputerSettings());
   Load(map, CommonInterface::SetUISettings());
+  InitialiseElementSetDisplayOverrides();
 }
