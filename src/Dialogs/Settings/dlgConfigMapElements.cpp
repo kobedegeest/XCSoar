@@ -24,33 +24,45 @@ class MapElementSetConfigWidget final
   : public RowFormWidget, private DataFieldListener {
   enum Controls {
     NAME,
+    NAME_SEPARATOR,
+
     FINAL_GLIDE_BAR,
     FINAL_GLIDE_BAR_MC0,
+    REACH_DISPLAY,
+    TURN_BACK_MARKER,
+    DETOUR_COST_MARKERS,
+    GROUND_TRACK,
+    DISTANCE_RINGS,
+    NAVIGATION_SEPARATOR,
+
     TRAIL_LENGTH,
     TRAIL_DRIFT,
     TRAIL_TYPE,
     TRAIL_SCALED,
-    DISTANCE_RINGS,
-    GROUND_TRACK,
+    TRAIL_SEPARATOR,
+
     FLARM_ON_MAP,
-    FLARM_GAUGE,
-    REACH_DISPLAY,
-    THERMAL_BAND,
-    VARIO_BAR,
-    DETOUR_COST_MARKERS,
-    WIND_ARROW,
     ONLINE_TRAFFIC,
+    TRAFFIC_SEPARATOR,
+
+    WIND_ARROW,
+    THERMAL_BAND,
     THERMAL_ASSISTANT,
-    TURN_BACK_MARKER,
-    MENU_BUTTON,
-    ZOOM_BUTTON,
-    QUICKMENU_BUTTON,
 #ifdef HAVE_TRACKING
     CLOUD_SHOW_THERMALS,
 #endif
 #ifdef HAVE_HTTP
     THERMAL_INFORMATION_MAP,
 #endif
+    THERMAL_SEPARATOR,
+
+    FLARM_GAUGE,
+    VARIO_BAR,
+    GAUGES_SEPARATOR,
+
+    MENU_BUTTON,
+    ZOOM_BUTTON,
+    QUICKMENU_BUTTON,
     // TODO: missing elements that need small refactoring: SkyLines traffic,
     // XCSoar Cloud traffic
   };
@@ -71,6 +83,15 @@ public:
 
   void Prepare(ContainerWindow &parent, const PixelRect &rc) noexcept override;
   bool Save(bool &changed) noexcept override;
+
+  PixelSize GetMinimumSize() const noexcept override {
+    /* This is a long, scrollable form.  Using the maximum height keeps the
+       controls at their normal touch-friendly size instead of compressing
+       them to their minimum height to fit the viewport. */
+    PixelSize size = RowFormWidget::GetMinimumSize();
+    size.height = RowFormWidget::GetMaximumSize().height;
+    return size;
+  }
 
   void Copy() noexcept;
   void Paste();
@@ -215,6 +236,7 @@ MapElementSetConfigWidget::Prepare([[maybe_unused]] ContainerWindow &parent,
   AddText(_("Name"), _("The name of this map element set."),
           allow_name_change ? data.name.c_str() : gettext(data.name));
   SetReadOnly(NAME, !allow_name_change);
+  AddSpacer();
 
   AddEnum(_("Final glide bar"),
           _("If set to \"On\" the final glide will always be shown, if set to \"Auto\" it will be shown when approaching the final glide possibility."),
@@ -223,6 +245,32 @@ MapElementSetConfigWidget::Prepare([[maybe_unused]] ContainerWindow &parent,
   AddBoolean(_("Final glide bar MC0"),
              _("Show a second arrow indicating the height required to reach the final waypoint at MC zero."),
              data.final_glide_bar_mc0_enabled);
+  AddEnum(_("Reach display"), nullptr, final_glide_terrain_list,
+          static_cast<unsigned>(data.final_glide_terrain));
+  AddBoolean(C_("Setting", "Turn back marker"),
+             _("Show a green triangle on the map along the current track "
+               "indicating the furthest point from which the active task "
+               "waypoint or Goto target can still be reached with the "
+               "current altitude and conditions. "
+               "The triangle is only shown during cruise when the target "
+               "is reachable."),
+             data.turn_back_marker_enabled);
+  AddBoolean(_("Detour cost markers"),
+             _("If the aircraft heading deviates from the current waypoint, "
+               "markers are displayed at points ahead of the aircraft. The "
+               "value of each marker is the extra distance required to reach "
+               "that point as a percentage of straight-line distance to the "
+               "waypoint."),
+             data.detour_cost_markers_enabled);
+  SetExpertRow(DETOUR_COST_MARKERS);
+  AddEnum(_("Ground track"),
+          _("Display the ground track as a grey line on the map."),
+          ground_track_mode_list,
+          static_cast<unsigned>(data.display_ground_track));
+  AddBoolean(C_("Setting", "Distance rings"),
+             _("Display distance rings around the aircraft on the map."),
+             data.distance_rings_enabled);
+  AddSpacer();
 
   AddEnum(_("Trail length"),
           _("Determines whether and how long a snail trail is drawn behind the glider."),
@@ -235,67 +283,29 @@ MapElementSetConfigWidget::Prepare([[maybe_unused]] ContainerWindow &parent,
   AddBoolean(_("Trail scaled"),
              _("Scale the snail trail width according to the vario signal."),
              data.trail.scaling_enabled);
+  AddSpacer();
 
-  AddBoolean(C_("Setting", "Distance rings"),
-             _("Display distance rings around the aircraft on the map."),
-             data.distance_rings_enabled);
-  AddEnum(_("Ground track"),
-          _("Display the ground track as a grey line on the map."),
-          ground_track_mode_list,
-          static_cast<unsigned>(data.display_ground_track));
   AddBoolean(_("FLARM Traffic"),
              _("Enable the display of FLARM traffic on the map window."),
              data.show_flarm_on_map);
-  AddBoolean(_("FLARM Radar"),
-             _("Enable the display of the FLARM radar gauge."),
-             data.flarm_gauge_enabled);
-  AddEnum(_("Reach display"), nullptr, final_glide_terrain_list,
-          static_cast<unsigned>(data.final_glide_terrain));
-  AddBoolean(_("Thermal Band"),
-             _("Enable the thermal profile display on the map."),
-             data.show_thermal_profile);
-  AddBoolean(_("Vario bar"), _("Show the vario bar."),
-             data.vario_bar_enabled);
-
-  AddBoolean(_("Detour cost markers"),
-             _("If the aircraft heading deviates from the current waypoint, "
-               "markers are displayed at points ahead of the aircraft. The "
-               "value of each marker is the extra distance required to reach "
-               "that point as a percentage of straight-line distance to the "
-               "waypoint."),
-             data.detour_cost_markers_enabled);
-  SetExpertRow(DETOUR_COST_MARKERS);
-  AddEnum(_("Wind arrow"),
-          _("Determines the way the wind arrow is drawn on the map."),
-          wind_arrow_list, static_cast<unsigned>(data.wind_arrow_style));
-  SetExpertRow(WIND_ARROW);
   AddEnum(C_("Setting", "Online traffic on map"),
           _("Show traffic from SkyLines and XCSoar Cloud on the map."),
           online_traffic_map_mode_list,
           static_cast<unsigned>(data.online_traffic_map_mode));
+  AddSpacer();
+
+  AddEnum(_("Wind arrow"),
+          _("Determines the way the wind arrow is drawn on the map."),
+          wind_arrow_list, static_cast<unsigned>(data.wind_arrow_style));
+  SetExpertRow(WIND_ARROW);
+  AddBoolean(_("Thermal Band"),
+             _("Enable the thermal profile display on the map."),
+             data.show_thermal_profile);
   AddEnum(_("Thermal Assistant"),
           _("Enable and select the position of the thermal assistant when "
             "overlayed on the main screen."),
           thermal_assistant_position_list,
           static_cast<unsigned>(data.thermal_assistant_position));
-  AddBoolean(C_("Setting", "Turn back marker"),
-             _("Show a green triangle on the map along the current track "
-               "indicating the furthest point from which the active task "
-               "waypoint or Goto target can still be reached with the "
-               "current altitude and conditions. "
-               "The triangle is only shown during cruise when the target "
-               "is reachable."),
-             data.turn_back_marker_enabled);
-  AddBoolean(_("Show Menu button"), _("Show the Menu button"),
-             data.show_menu_button);
-  SetExpertRow(MENU_BUTTON);
-  AddBoolean(_("Show Zoom button"), _("Show the Zoom button"),
-             data.show_zoom_button);
-  SetExpertRow(ZOOM_BUTTON);
-  AddBoolean(C_("Setting", "Show QuickMenu button"),
-             _("Show the QuickMenu button"),
-             data.show_quickmenu_button);
-  SetExpertRow(QUICKMENU_BUTTON);
 #ifdef HAVE_TRACKING
   AddBoolean(_("XCSoar Cloud thermals"),
              _("Obtain and show thermal locations reported by others."),
@@ -307,6 +317,26 @@ MapElementSetConfigWidget::Prepare([[maybe_unused]] ContainerWindow &parent,
                "Map (thermalmap.info)."),
              data.enable_thermal_information_map);
 #endif
+  AddSpacer();
+
+  AddBoolean(_("FLARM Radar"),
+             _("Enable the display of the FLARM radar gauge."),
+             data.flarm_gauge_enabled);
+  AddBoolean(_("Vario bar"), _("Show the vario bar."),
+             data.vario_bar_enabled);
+  AddSpacer();
+  SetExpertRow(GAUGES_SEPARATOR);
+
+  AddBoolean(_("Show Menu button"), _("Show the Menu button"),
+             data.show_menu_button);
+  SetExpertRow(MENU_BUTTON);
+  AddBoolean(_("Show Zoom button"), _("Show the Zoom button"),
+             data.show_zoom_button);
+  SetExpertRow(ZOOM_BUTTON);
+  AddBoolean(C_("Setting", "Show QuickMenu button"),
+             _("Show the QuickMenu button"),
+             data.show_quickmenu_button);
+  SetExpertRow(QUICKMENU_BUTTON);
 
   UpdateFinalGlideBarControls();
   UpdateTrailControls();
