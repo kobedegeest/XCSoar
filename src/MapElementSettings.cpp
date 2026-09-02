@@ -24,6 +24,7 @@ MapElementSettings::SetDefaults() noexcept
 
   for (auto &set : sets) {
     set.name.clear();
+    set.display_overrides.Clear();
     set.final_glide_bar_display_mode =
       map_defaults.final_glide_bar_display_mode;
     set.final_glide_bar_mc0_enabled =

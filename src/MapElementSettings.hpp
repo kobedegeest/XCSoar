@@ -6,12 +6,16 @@
 #include "MapSettings.hpp"
 #include "Computer/Settings.hpp"
 #include "Gauge/ThermalAssistantSettings.hpp"
+#include "MapDisplay/ElementSetDisplayOverrides.hpp"
 #include "util/StaticString.hxx"
 
 #include <type_traits>
 
 struct MapElementSet {
   StaticString<32u> name;
+
+  /** Optional map-display settings which belong to this element set. */
+  ElementSetDisplayOverrides display_overrides;
 
   FinalGlideBarDisplayMode final_glide_bar_display_mode;
   bool final_glide_bar_mc0_enabled;
