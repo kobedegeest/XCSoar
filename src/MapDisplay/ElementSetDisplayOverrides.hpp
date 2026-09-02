@@ -60,6 +60,13 @@ struct DisplaySettingValue {
   constexpr auto operator<=>(const DisplaySettingValue &) const noexcept = default;
 };
 
+/** One choice shown by an enum display-setting editor. */
+struct DisplaySettingEnumChoice {
+  int32_t value;
+  const char *label;
+  const char *help;
+};
+
 struct DisplaySettingDescriptor {
   using Validator = bool (*)(DisplaySettingValue value) noexcept;
 
@@ -78,6 +85,11 @@ struct DisplaySettingDescriptor {
    * opts in explicitly.
    */
   bool element_set_overwritable = false;
+
+  /** Editor metadata; used only when value_type is ENUM/INTEGER. */
+  const DisplaySettingEnumChoice *enum_choices = nullptr;
+  uint16_t enum_choice_count = 0;
+  int32_t integer_step = 1;
 
   constexpr bool IsValid(DisplaySettingValue candidate) const noexcept {
     bool valid = false;

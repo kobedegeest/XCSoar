@@ -2,6 +2,7 @@
 // Copyright The XCSoar Project
 
 #include "dlgConfigMapElements.hpp"
+#include "ElementSetDisplayOverridesDialog.hpp"
 #include "Dialogs/Message.hpp"
 #include "Dialogs/WidgetDialog.hpp"
 #include "Widget/RowFormWidget.hpp"
@@ -9,7 +10,9 @@
 #include "Form/DataField/Enum.hpp"
 #include "Form/DataField/Listener.hpp"
 #include "MapElementSettings.hpp"
+#include "MapDisplay/DisplaySettingCatalog.hpp"
 #include "Language/Language.hpp"
+#include "UIGlobals.hpp"
 #include "util/StringAPI.hxx"
 
 #include <memory>
@@ -63,11 +66,16 @@ class MapElementSetConfigWidget final
     MENU_BUTTON,
     ZOOM_BUTTON,
     QUICKMENU_BUTTON,
+    DISPLAY_OVERRIDES_SEPARATOR,
+    DISPLAY_OVERRIDES,
     // TODO: missing elements that need small refactoring: SkyLines traffic,
     // XCSoar Cloud traffic
   };
 
+  static_assert(DISPLAY_OVERRIDES < 32);
+
   MapElementSet &data;
+  ElementSetDisplayOverrides display_overrides;
   const bool allow_name_change;
 
   void UpdateFinalGlideBarControls() noexcept;
@@ -79,6 +87,7 @@ public:
   MapElementSetConfigWidget(const DialogLook &look, MapElementSet &_data,
                             bool _allow_name_change) noexcept
     :RowFormWidget(look), data(_data),
+     display_overrides(_data.display_overrides),
      allow_name_change(_allow_name_change) {}
 
   void Prepare(ContainerWindow &parent, const PixelRect &rc) noexcept override;
@@ -95,6 +104,7 @@ public:
 
   void Copy() noexcept;
   void Paste();
+  void EditDisplayOverrides();
 
 private:
   void OnModified(DataField &df) noexcept override;
@@ -338,6 +348,10 @@ MapElementSetConfigWidget::Prepare([[maybe_unused]] ContainerWindow &parent,
              data.show_quickmenu_button);
   SetExpertRow(QUICKMENU_BUTTON);
 
+  AddSpacer();
+  AddButton(_("Setting overrides"),
+            [this](){ EditDisplayOverrides(); });
+
   UpdateFinalGlideBarControls();
   UpdateTrailControls();
 }
@@ -436,6 +450,11 @@ MapElementSetConfigWidget::Save(bool &_changed) noexcept
 
   changed |= SaveSettings(data);
 
+  if (data.display_overrides != display_overrides) {
+    data.display_overrides = display_overrides;
+    changed = true;
+  }
+
   _changed |= changed;
   return true;
 }
@@ -445,6 +464,7 @@ MapElementSetConfigWidget::Copy() noexcept
 {
   clipboard = data;
   SaveSettings(clipboard);
+  clipboard.display_overrides = display_overrides;
   clipboard_valid = true;
 }
 
@@ -460,6 +480,15 @@ MapElementSetConfigWidget::Paste()
     return;
 
   LoadSettings(clipboard);
+  display_overrides = clipboard.display_overrides;
+}
+
+void
+MapElementSetConfigWidget::EditDisplayOverrides()
+{
+  ShowElementSetDisplayOverridesDialog(
+    UIGlobals::GetMainWindow(), GetLook(), display_overrides,
+    GetMapDisplaySettingCatalog(), nullptr);
 }
 
 void

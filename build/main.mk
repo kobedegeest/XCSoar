@@ -71,6 +71,7 @@ DIALOG_SOURCES = \
 	$(SRC)/Dialogs/Settings/dlgConfiguration.cpp \
 	$(SRC)/Dialogs/Settings/dlgConfigInfoboxes.cpp \
 	$(SRC)/Dialogs/Settings/dlgConfigMapElements.cpp \
+	$(SRC)/Dialogs/Settings/ElementSetDisplayOverridesDialog.cpp \
 	$(SRC)/Dialogs/Traffic/TrafficList.cpp \
 	$(SRC)/Dialogs/Traffic/FlarmTrafficDetails.cpp \
 	$(SRC)/Dialogs/Traffic/TeamCodeDialog.cpp \
