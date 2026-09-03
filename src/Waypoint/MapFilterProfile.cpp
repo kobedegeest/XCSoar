@@ -4,6 +4,7 @@
 #include "MapFilterProfile.hpp"
 
 #include "MapFilterTypes.hpp"
+#include "Profile/Map.hpp"
 #include "Profile/Profile.hpp"
 #include "Renderer/WaypointRendererSettings.hpp"
 #include "util/StringFormat.hpp"
