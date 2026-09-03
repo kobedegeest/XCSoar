@@ -2,7 +2,10 @@
 // Copyright The XCSoar Project
 
 #include "MapDisplay/ElementSetDisplayOverrides.hpp"
+#include "MapDisplay/DisplaySettingCatalog.hpp"
 #include "TestUtil.hpp"
+
+#include <cstring>
 
 static constexpr DisplaySettingDescriptor
 MakeBooleanDescriptor(uint16_t key,
@@ -147,15 +150,63 @@ TestCapacityIsExplicit()
   ok1(overrides.Get(extra.key) == nullptr);
 }
 
+static void
+TestDenyByDefaultCatalog()
+{
+  const auto catalog = GetMapDisplaySettingCatalog();
+  ok1(catalog.size() == DisplaySettingCatalog::COUNT);
+  ok1(catalog.size() <= ElementSetDisplayOverrides::MAX_OVERRIDES);
+
+  std::size_t terrain = 0, orientation = 0, waypoints = 0, airspace = 0;
+  for (std::size_t i = 0; i < catalog.size(); ++i) {
+    const auto &descriptor = catalog[i];
+    ok1(!descriptor.element_set_overwritable);
+    ok1(descriptor.profile_suffix != nullptr &&
+        descriptor.profile_suffix[0] != '\0');
+
+    bool key_unique = true;
+    bool suffix_unique = true;
+    for (std::size_t j = 0; j < i; ++j) {
+      key_unique &= descriptor.key != catalog[j].key;
+      suffix_unique &= std::strcmp(descriptor.profile_suffix,
+                                   catalog[j].profile_suffix) != 0;
+    }
+    ok1(key_unique);
+    ok1(suffix_unique);
+
+    switch (descriptor.group) {
+    case DisplaySettingGroup::TERRAIN:
+      ++terrain;
+      break;
+    case DisplaySettingGroup::ORIENTATION:
+      ++orientation;
+      break;
+    case DisplaySettingGroup::WAYPOINTS:
+      ++waypoints;
+      break;
+    case DisplaySettingGroup::AIRSPACE:
+      ++airspace;
+      break;
+    }
+  }
+
+  ok1(terrain == DisplaySettingCatalog::TERRAIN_COUNT);
+  ok1(orientation == DisplaySettingCatalog::ORIENTATION_COUNT);
+  ok1(waypoints == DisplaySettingCatalog::WAYPOINT_COUNT);
+  ok1(airspace == DisplaySettingCatalog::AIRSPACE_COUNT);
+}
+
 int
 main()
 {
-  plan_tests(41 + ElementSetDisplayOverrides::MAX_OVERRIDES);
+  plan_tests(47 + ElementSetDisplayOverrides::MAX_OVERRIDES +
+             4 * DisplaySettingCatalog::COUNT);
 
   TestDescriptorValidation();
   TestSparseOverrides();
   TestCanonicalOrderAndEquality();
   TestCapacityIsExplicit();
+  TestDenyByDefaultCatalog();
 
   return exit_status();
 }

@@ -165,6 +165,7 @@ endif
 TESTS = $(call name-to-bin,$(TEST_NAMES))
 
 TEST_ELEMENT_SET_DISPLAY_OVERRIDES_SOURCES = \
+	$(SRC)/MapDisplay/DisplaySettingCatalog.cpp \
 	$(TEST_SRC_DIR)/tap.c \
 	$(TEST_SRC_DIR)/TestElementSetDisplayOverrides.cpp
 $(eval $(call link-program,TestElementSetDisplayOverrides,TEST_ELEMENT_SET_DISPLAY_OVERRIDES))
@@ -424,6 +425,7 @@ $(eval $(call link-program,TestWrapClock,TEST_WRAP_CLOCK))
 
 TEST_PROFILE_SOURCES = \
 	$(SRC)/LocalPath.cpp \
+	$(SRC)/MapDisplay/DisplaySettingCatalog.cpp \
 	$(SRC)/PageSettings.cpp \
 	$(SRC)/Profile/PageProfile.cpp \
 	$(SRC)/Profile/MapElementConfig.cpp \
