@@ -25,11 +25,6 @@
 
 using namespace CommonInterface;
 
-namespace ActionInterface {
-static void
-SendGetComputerSettings() noexcept;
-}
-
 static void
 UpdateMapScalePageInfo(UIState &state) noexcept;
 
@@ -72,7 +67,7 @@ void
 XCSoarInterface::ExchangeBlackboard() noexcept
 {
   ExchangeDeviceBlackboard();
-  ActionInterface::SendGetComputerSettings();
+  ActionInterface::SendComputerSettings();
   ActionInterface::SendMapSettings();
 }
 
@@ -85,7 +80,7 @@ XCSoarInterface::ExchangeDeviceBlackboard() noexcept
 }
 
 void
-ActionInterface::SendGetComputerSettings() noexcept
+ActionInterface::SendComputerSettings() noexcept
 {
   assert(backend_components->calculation_thread != nullptr);
 
@@ -499,7 +494,7 @@ ActionInterface::SetQNH(AtmosphericPressure qnh, bool to_devices) noexcept
   settings_computer.pressure = qnh;
   settings_computer.pressure_available.Update(basic.clock);
 
-  SendGetComputerSettings();
+  SendComputerSettings();
 
   InfoBoxManager::SetDirty();
   InfoBoxManager::ProcessTimer();

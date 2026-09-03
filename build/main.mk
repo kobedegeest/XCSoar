@@ -254,6 +254,7 @@ XCSOAR_SOURCES := \
 	$(SRC)/Airspace/AirspaceParser.cpp \
 	$(SRC)/Airspace/AirspaceVisibility.cpp \
 	$(SRC)/Airspace/AirspaceComputerSettings.cpp \
+	$(SRC)/Airspace/AirspaceClassDisplay.cpp \
 	$(SRC)/Airspace/NearestAirspace.cpp \
 	$(SRC)/Renderer/AirspaceRendererSettings.cpp \
 	$(SRC)/Renderer/GeoBitmapRenderer.cpp \
@@ -451,6 +452,7 @@ XCSOAR_SOURCES := \
 	$(SRC)/MapElementSettings.cpp \
 	$(SRC)/MapDisplay/DisplaySettingCatalog.cpp \
 	$(SRC)/MapDisplay/DisplaySettingRuntime.cpp \
+	$(SRC)/MapDisplay/AirspaceDisplaySettings.cpp \
 	$(SRC)/MapDisplay/ElementSetDisplayOverrideService.cpp \
 	$(SRC)/MapDisplay/ElementSetDisplayOverrideGlue.cpp \
 	$(SRC)/MapDisplay/TerrainOrientationDisplaySettings.cpp \

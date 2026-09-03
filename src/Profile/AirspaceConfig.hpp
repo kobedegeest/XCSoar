@@ -17,6 +17,8 @@ namespace Profile
   void Load(const ProfileMap &map,
             unsigned i, AirspaceClassRendererSettings &settings);
   void Load(const ProfileMap &map, AirspaceComputerSettings &computer);
+  void LoadAirspaceWarningDialog(const ProfileMap &map,
+                                 bool &enabled) noexcept;
 
   /**
    * Saves the airspace mode setting to the profile

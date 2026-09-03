@@ -4,6 +4,7 @@
 #include "ElementSetDisplayOverrideGlue.hpp"
 #include "DisplaySettingCatalog.hpp"
 #include "DisplaySettingRuntime.hpp"
+#include "AirspaceDisplaySettings.hpp"
 #include "ElementSetDisplayOverrideService.hpp"
 #include "TerrainOrientationDisplaySettings.hpp"
 #include "WaypointDisplaySettings.hpp"
@@ -18,6 +19,7 @@ InitialiseElementSetDisplayOverrides() noexcept
 {
   RegisterTerrainOrientationDisplaySettings();
   RegisterWaypointDisplaySettings();
+  RegisterAirspaceDisplaySettings();
   if (!DisplaySettingRuntime::LoadGlobalValues())
     return false;
 

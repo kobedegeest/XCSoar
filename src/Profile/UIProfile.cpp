@@ -5,6 +5,7 @@
 #include "Keys.hpp"
 #include "Map.hpp"
 #include "MapProfile.hpp"
+#include "AirspaceConfig.hpp"
 #include "InfoBoxConfig.hpp"
 #include "MapElementConfig.hpp"
 #include "PageProfile.hpp"
@@ -128,7 +129,8 @@ Profile::Load(const ProfileMap &map, UISettings &settings)
         : UISettings::ThermalAssistantPosition::OFF;
     }
   }
-  map.Get(ProfileKeys::AirspaceWarningDialog, settings.enable_airspace_warning_dialog);
+  LoadAirspaceWarningDialog(map,
+                            settings.enable_airspace_warning_dialog);
 
   map.GetEnum(ProfileKeys::AppStatusMessageAlignment, settings.popup_message_position);
 

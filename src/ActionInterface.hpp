@@ -14,6 +14,9 @@ namespace ActionInterface {
 
 using namespace CommonInterface;
 
+/** Forward the current computer settings to the UI and calculation thread. */
+void SendComputerSettings() noexcept;
+
 /**
  * Configure a new Ballast setting in #ComputerSettings, and
  * forward it to all XCSoar modules that want it.

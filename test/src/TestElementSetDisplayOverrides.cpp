@@ -3,6 +3,7 @@
 
 #include "MapDisplay/ElementSetDisplayOverrides.hpp"
 #include "MapDisplay/DisplaySettingCatalog.hpp"
+#include "Airspace/AirspaceClassDisplay.hpp"
 #include "Waypoint/MapFilterTypes.hpp"
 #include "TestUtil.hpp"
 
@@ -165,7 +166,8 @@ TestCatalogWhitelist()
     const bool expected_overwritable =
       descriptor.group == DisplaySettingGroup::TERRAIN ||
       descriptor.group == DisplaySettingGroup::ORIENTATION ||
-      descriptor.group == DisplaySettingGroup::WAYPOINTS;
+      descriptor.group == DisplaySettingGroup::WAYPOINTS ||
+      descriptor.group == DisplaySettingGroup::AIRSPACE;
     ok1(descriptor.element_set_overwritable == expected_overwritable);
     ok1(descriptor.profile_suffix != nullptr &&
         descriptor.profile_suffix[0] != '\0');
@@ -211,7 +213,8 @@ TestCatalogWhitelist()
   ok1(airspace == DisplaySettingCatalog::AIRSPACE_COUNT);
   ok1(overwritable == DisplaySettingCatalog::TERRAIN_COUNT +
       DisplaySettingCatalog::ORIENTATION_COUNT +
-      DisplaySettingCatalog::WAYPOINT_COUNT);
+      DisplaySettingCatalog::WAYPOINT_COUNT +
+      DisplaySettingCatalog::AIRSPACE_COUNT);
 
   const auto waypoint_types = GetWaypointMapFilterTypes();
   ok1(waypoint_types.size() ==
@@ -234,14 +237,37 @@ TestCatalogWhitelist()
         std::strcmp(found->profile_suffix,
                     item.override_profile_suffix) == 0);
   }
+
+  const auto airspace_classes = GetAirspaceClassDisplaySettings();
+  ok1(airspace_classes.size() ==
+      DisplaySettingCatalog::AIRSPACE_CLASS_COUNT);
+  for (const auto &item : airspace_classes) {
+    const DisplaySettingDescriptor *found = nullptr;
+    for (const auto &descriptor : catalog)
+      if (descriptor.key.value == item.display_setting_key) {
+        found = &descriptor;
+        break;
+      }
+
+    ok1(found != nullptr);
+    ok1(found != nullptr &&
+        found->group == DisplaySettingGroup::AIRSPACE);
+    ok1(found != nullptr &&
+        found->value_type == DisplaySettingValueType::BOOLEAN);
+    ok1(found != nullptr && found->element_set_overwritable);
+    ok1(found != nullptr &&
+        std::strcmp(found->profile_suffix,
+                    item.override_profile_suffix) == 0);
+  }
 }
 
 int
 main()
 {
-  plan_tests(49 + ElementSetDisplayOverrides::MAX_OVERRIDES +
+  plan_tests(50 + ElementSetDisplayOverrides::MAX_OVERRIDES +
              7 * DisplaySettingCatalog::COUNT +
-             5 * DisplaySettingCatalog::WAYPOINT_TYPE_COUNT);
+             5 * DisplaySettingCatalog::WAYPOINT_TYPE_COUNT +
+             5 * DisplaySettingCatalog::AIRSPACE_CLASS_COUNT);
 
   TestDescriptorValidation();
   TestSparseOverrides();

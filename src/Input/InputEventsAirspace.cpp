@@ -19,6 +19,8 @@
 #include "NMEA/Aircraft.hpp"
 #include "Profile/Profile.hpp"
 #include "Profile/Keys.hpp"
+#include "MapDisplay/DisplaySettingCatalog.hpp"
+#include "MapDisplay/ElementSetDisplayOverrideGlue.hpp"
 #include "util/StringCompare.hxx"
 
 /*
@@ -67,24 +69,27 @@ InputEvents::eventAirSpace(const char *misc)
 void
 InputEvents::eventAirspaceLabels(const char *misc)
 {
-  AirspaceRendererSettings &settings =
-    CommonInterface::SetMapSettings().airspace;
+  using namespace DisplaySettingCatalog;
 
   const bool currently_on =
-    settings.label_selection == AirspaceRendererSettings::LabelSelection::ALL;
+    GetGlobalElementSetDisplaySettingValueByKey(
+      Key::AIRSPACE_LABEL_VISIBILITY).value ==
+        static_cast<int32_t>(AirspaceRendererSettings::LabelSelection::ALL);
+
+  AirspaceRendererSettings::LabelSelection value;
 
   if (StringIsEqual(misc, "toggle")) {
-    settings.label_selection = currently_on
+    value = currently_on
       ? AirspaceRendererSettings::LabelSelection::NONE
       : AirspaceRendererSettings::LabelSelection::ALL;
     Message::AddMessage(currently_on
                         ? _("Airspace labels hidden")
                         : _("Airspace labels shown"));
   } else if (StringIsEqual(misc, "off") || StringIsEqual(misc, "none")) {
-    settings.label_selection = AirspaceRendererSettings::LabelSelection::NONE;
+    value = AirspaceRendererSettings::LabelSelection::NONE;
     Message::AddMessage(_("Airspace labels hidden"));
   } else if (StringIsEqual(misc, "on") || StringIsEqual(misc, "all")) {
-    settings.label_selection = AirspaceRendererSettings::LabelSelection::ALL;
+    value = AirspaceRendererSettings::LabelSelection::ALL;
     Message::AddMessage(_("Airspace labels shown"));
   } else if (StringIsEqual(misc, "show")) {
     Message::AddMessage(currently_on
@@ -94,8 +99,8 @@ InputEvents::eventAirspaceLabels(const char *misc)
   } else
     return;
 
-  Profile::Set(ProfileKeys::AirspaceLabelSelection,
-               (int)settings.label_selection);
+  Profile::SetEnum(ProfileKeys::AirspaceLabelSelection, value);
+  ReloadGlobalElementSetDisplaySettings();
   ActionInterface::SendMapSettings(true);
 }
 

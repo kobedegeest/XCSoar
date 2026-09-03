@@ -92,6 +92,7 @@ TEST_NAMES = \
 	TestElementSetDisplayOverrideService \
 	TestDisplaySettingProfile \
 	TestWaypointDisplaySettings \
+	TestAirspaceDisplaySettings \
 	TestAllocatedGrid \
 	TestRadixTree TestGeoBounds TestGeoClip \
 	TestLogger TestGRecord TestClimbAvCalc TestCirclingWind \
@@ -167,6 +168,7 @@ endif
 TESTS = $(call name-to-bin,$(TEST_NAMES))
 
 TEST_ELEMENT_SET_DISPLAY_OVERRIDES_SOURCES = \
+	$(SRC)/Airspace/AirspaceClassDisplay.cpp \
 	$(SRC)/MapDisplay/DisplaySettingCatalog.cpp \
 	$(SRC)/MapDisplay/DisplaySettingRuntime.cpp \
 	$(SRC)/Waypoint/MapFilterTypes.cpp \
@@ -197,6 +199,18 @@ TEST_WAYPOINT_DISPLAY_SETTINGS_SOURCES = \
 	$(TEST_SRC_DIR)/TestWaypointDisplaySettings.cpp
 TEST_WAYPOINT_DISPLAY_SETTINGS_DEPENDS = PROFILE
 $(eval $(call link-program,TestWaypointDisplaySettings,TEST_WAYPOINT_DISPLAY_SETTINGS))
+
+TEST_AIRSPACE_DISPLAY_SETTINGS_SOURCES = \
+	$(SRC)/Airspace/AirspaceClassDisplay.cpp \
+	$(SRC)/Airspace/AirspaceComputerSettings.cpp \
+	$(SRC)/Engine/Airspace/AirspaceWarningConfig.cpp \
+	$(SRC)/Profile/AirspaceConfig.cpp \
+	$(if $(filter y,$(HAVE_HTTP)),$(SRC)/Profile/NotamConfig.cpp) \
+	$(SRC)/Renderer/AirspaceRendererSettings.cpp \
+	$(TEST_SRC_DIR)/tap.c \
+	$(TEST_SRC_DIR)/TestAirspaceDisplaySettings.cpp
+TEST_AIRSPACE_DISPLAY_SETTINGS_DEPENDS = PROFILE
+$(eval $(call link-program,TestAirspaceDisplaySettings,TEST_AIRSPACE_DISPLAY_SETTINGS))
 
 TEST_HEX_STRING_SOURCES = \
 	$(TEST_SRC_DIR)/tap.c \
@@ -447,6 +461,7 @@ $(eval $(call link-program,TestWrapClock,TEST_WRAP_CLOCK))
 
 TEST_PROFILE_SOURCES = \
 	$(SRC)/LocalPath.cpp \
+	$(SRC)/Airspace/AirspaceClassDisplay.cpp \
 	$(SRC)/MapDisplay/DisplaySettingCatalog.cpp \
 	$(SRC)/MapDisplay/DisplaySettingRuntime.cpp \
 	$(SRC)/Waypoint/MapFilterTypes.cpp \

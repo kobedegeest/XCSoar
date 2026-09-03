@@ -6,6 +6,7 @@
 #include "Profile/Current.hpp"
 #include "Profile/PageProfile.hpp"
 #include "Profile/MapElementConfig.hpp"
+#include "MapDisplay/DisplaySettingCatalog.hpp"
 #include "PageSettings.hpp"
 #include "Profile/Map.hpp"
 #include "Profile/WeatherProfile.hpp"
@@ -439,6 +440,33 @@ TestElementSetDisplayOverridePersistence()
   ok1(!map.Exists(disabled_setting_key));
 }
 
+static void
+TestFullDisplayOverrideCatalogRoundTrip()
+{
+  const auto catalog = GetMapDisplaySettingCatalog();
+  ElementSetDisplayOverrides source{};
+  source.Clear();
+
+  for (const auto &descriptor : catalog) {
+    DisplaySettingValue value = descriptor.minimum;
+    if (descriptor.value_type == DisplaySettingValueType::ENUM &&
+        descriptor.enum_choice_count > 0)
+      value = DisplaySettingValue::Enum(descriptor.enum_choices[0].value);
+
+    ok1(source.Set(descriptor, value) == SetDisplayOverrideResult::ADDED);
+  }
+
+  ok1(source.Size() == DisplaySettingCatalog::COUNT);
+
+  ProfileMap map;
+  Profile::SaveElementSetDisplayOverrides(map, 0, source, catalog);
+
+  ElementSetDisplayOverrides loaded{};
+  loaded.Clear();
+  Profile::LoadElementSetDisplayOverrides(map, 0, loaded, catalog);
+  ok1(loaded == source);
+}
+
 #ifdef HAVE_HTTP
 
 static void
@@ -489,7 +517,7 @@ TestSkySightProfileCompatibility()
 
 int main()
 try {
-  plan_tests(104
+  plan_tests(106 + DisplaySettingCatalog::COUNT
 #ifdef HAVE_TRACKING
              + 2
 #endif
@@ -506,6 +534,7 @@ try {
   TestMapElementSetRoundTrip();
   TestMapElementSetLegacyMigration();
   TestElementSetDisplayOverridePersistence();
+  TestFullDisplayOverrideCatalogRoundTrip();
 #ifdef HAVE_HTTP
   TestSkySightProfileCompatibility();
 #endif

@@ -461,21 +461,24 @@ InputEvents::eventDeclutterLabels(const char *misc)
 void
 InputEvents::eventAirspaceDisplayMode(const char *misc)
 {
-  AirspaceRendererSettings &settings =
-    CommonInterface::SetMapSettings().airspace;
+  AirspaceDisplayMode value;
 
   if (StringIsEqual(misc, "all"))
-    settings.altitude_mode = AirspaceDisplayMode::ALLON;
+    value = AirspaceDisplayMode::ALLON;
   else if (StringIsEqual(misc, "clip"))
-    settings.altitude_mode = AirspaceDisplayMode::CLIP;
+    value = AirspaceDisplayMode::CLIP;
   else if (StringIsEqual(misc, "auto"))
-    settings.altitude_mode = AirspaceDisplayMode::AUTO;
+    value = AirspaceDisplayMode::AUTO;
   else if (StringIsEqual(misc, "below"))
-    settings.altitude_mode = AirspaceDisplayMode::ALLBELOW;
+    value = AirspaceDisplayMode::ALLBELOW;
   else if (StringIsEqual(misc, "off"))
-    settings.altitude_mode = AirspaceDisplayMode::ALLOFF;
+    value = AirspaceDisplayMode::ALLOFF;
+  else
+    return;
 
-  TriggerMapUpdate();
+  Profile::SetEnum(ProfileKeys::AltMode, value);
+  ReloadGlobalElementSetDisplaySettings();
+  ActionInterface::SendMapSettings(true);
 }
 
 void

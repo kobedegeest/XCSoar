@@ -3,19 +3,21 @@
 
 #include "AirspaceConfigPanel.hpp"
 #include "ConfigPanel.hpp"
+#include "MapDisplay/ElementSetDisplayOverrideGlue.hpp"
+#include "ActionInterface.hpp"
 #include "Form/DataField/Enum.hpp"
 #include "Form/DataField/Boolean.hpp"
 #include "Form/DataField/Listener.hpp"
 #include "Widget/RowFormWidget.hpp"
 #include "Dialogs/Airspace/Airspace.hpp"
+#include "Profile/AirspaceConfig.hpp"
+#include "Profile/Current.hpp"
 #include "Profile/Keys.hpp"
 #include "Language/Language.hpp"
 #include "Airspace/AirspaceComputerSettings.hpp"
 #include "Renderer/AirspaceRendererSettings.hpp"
 #include "ui/canvas/Features.hpp"
-#include "Interface.hpp"
 #include "UIGlobals.hpp"
-#include "UtilsSettings.hpp"
 
 using namespace std::chrono;
 
@@ -48,6 +50,8 @@ static constexpr StaticEnumChoice as_display_list[] = {
     N_("Display airspaces within a margin of the glider.") },
   { AirspaceDisplayMode::ALLBELOW, N_("All below"),
     N_("Display airspaces below the glider or within a margin.") },
+  { AirspaceDisplayMode::ALLOFF, N_("All off"),
+    N_("No airspaces are displayed.") },
   nullptr
 };
 
@@ -74,6 +78,10 @@ static constexpr StaticEnumChoice as_label_selection_list[] = {
 
 class AirspaceConfigPanel final
   : public RowFormWidget, DataFieldListener {
+  AirspaceComputerSettings computer;
+  AirspaceRendererSettings renderer;
+  bool enable_warning_dialog;
+
 public:
   AirspaceConfigPanel()
     :RowFormWidget(UIGlobals::GetDialogLook()) {}
@@ -151,12 +159,13 @@ void
 AirspaceConfigPanel::Prepare(ContainerWindow &parent,
                              const PixelRect &rc) noexcept
 {
-  const AirspaceComputerSettings &computer =
-    CommonInterface::GetComputerSettings().airspace;
-  const AirspaceRendererSettings &renderer =
-    CommonInterface::GetMapSettings().airspace;
-  const UISettings &ui_settings =
-    CommonInterface::GetUISettings();
+  computer.SetDefaults();
+  Profile::Load(Profile::map, computer);
+  renderer.SetDefaults();
+  Profile::Load(Profile::map, renderer);
+  enable_warning_dialog = true;
+  Profile::LoadAirspaceWarningDialog(Profile::map,
+                                     enable_warning_dialog);
 
   RowFormWidget::Prepare(parent, rc);
 
@@ -191,7 +200,7 @@ AirspaceConfigPanel::Prepare(ContainerWindow &parent,
 
   AddBoolean(_("Warnings dialog"),
              _("Enable/disable displaying airspaces warnings dialog."),
-             ui_settings.enable_airspace_warning_dialog, this);
+             enable_warning_dialog, this);
   SetExpertRow(WarningDialog);
 
   AddDuration(_("Warning time"),
@@ -237,12 +246,6 @@ AirspaceConfigPanel::Save(bool &_changed) noexcept
 {
   bool changed = false;
 
-  AirspaceComputerSettings &computer =
-    CommonInterface::SetComputerSettings().airspace;
-  AirspaceRendererSettings &renderer =
-    CommonInterface::SetMapSettings().airspace;
-  UISettings &ui_settings = CommonInterface::SetUISettings();
-
   changed |= SaveValueEnum(AirspaceDisplay, ProfileKeys::AltMode, renderer.altitude_mode);
 
   changed |= SaveValueEnum(AirspaceLabelSelection, ProfileKeys::AirspaceLabelSelection, renderer.label_selection);
@@ -259,21 +262,16 @@ AirspaceConfigPanel::Save(bool &_changed) noexcept
   changed |= SaveValue(AirspaceWarnings, ProfileKeys::AirspaceWarning, computer.enable_warnings);
 
   changed |= SaveValue(WarningDialog, ProfileKeys::AirspaceWarningDialog,
-                       ui_settings.enable_airspace_warning_dialog);
+                       enable_warning_dialog);
 
-  if (SaveValue(WarningTime, ProfileKeys::WarningTime, computer.warnings.warning_time)) {
-    changed = true;
-    require_restart = true;
-  }
+  changed |= SaveValue(WarningTime, ProfileKeys::WarningTime,
+                       computer.warnings.warning_time);
 
   changed |= SaveValue(RepetitiveSound, ProfileKeys::RepetitiveSound,
                        computer.warnings.repetitive_sound);
 
-  if (SaveValue(AcknowledgeTime, ProfileKeys::AcknowledgementTime,
-                computer.warnings.acknowledgement_time)) {
-    changed = true;
-    require_restart = true;
-  }
+  changed |= SaveValue(AcknowledgeTime, ProfileKeys::AcknowledgementTime,
+                       computer.warnings.acknowledgement_time);
 
   changed |= SaveValue(UseBlackOutline, ProfileKeys::AirspaceBlackOutline, renderer.black_outline);
 
@@ -283,6 +281,11 @@ AirspaceConfigPanel::Save(bool &_changed) noexcept
   changed |= SaveValue(AirspaceTransparency, ProfileKeys::AirspaceTransparency,
                        renderer.transparency);
 #endif
+
+  if (changed) {
+    ReloadGlobalElementSetDisplaySettings();
+    ActionInterface::SendMapSettings(true);
+  }
 
   _changed |= changed;
 

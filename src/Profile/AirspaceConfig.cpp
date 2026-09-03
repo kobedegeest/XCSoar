@@ -12,6 +12,7 @@
 #include "util/StringFormat.hpp"
 
 #include <cassert>
+#include <chrono>
 
 #ifdef HAVE_HTTP
 #include "NotamConfig.hpp"
@@ -63,17 +64,33 @@ GetAirspaceColor(const ProfileMap &map, unsigned i, RGB8Color &color)
 void
 Profile::Load(const ProfileMap &map, AirspaceRendererSettings &settings)
 {
-  map.GetEnum(ProfileKeys::AirspaceLabelSelection, settings.label_selection);
+  unsigned value = static_cast<unsigned>(settings.label_selection);
+  if (map.Get(ProfileKeys::AirspaceLabelSelection, value) && value < 2)
+    settings.label_selection =
+      static_cast<AirspaceRendererSettings::LabelSelection>(value);
+
   map.Get(ProfileKeys::AirspaceShowNOTAMLabels, settings.show_notam_labels);
   map.Get(ProfileKeys::AirspaceBlackOutline, settings.black_outline);
-  map.GetEnum(ProfileKeys::AltMode, settings.altitude_mode);
-  map.Get(ProfileKeys::ClipAlt, settings.clip_altitude);
+
+  value = static_cast<unsigned>(settings.altitude_mode);
+  if (map.Get(ProfileKeys::AltMode, value) &&
+      (value <= static_cast<unsigned>(AirspaceDisplayMode::ALLBELOW) ||
+       value == static_cast<unsigned>(AirspaceDisplayMode::ALLOFF)))
+    settings.altitude_mode = static_cast<AirspaceDisplayMode>(value);
+
+  unsigned clip_altitude = settings.clip_altitude;
+  if (map.Get(ProfileKeys::ClipAlt, clip_altitude) &&
+      clip_altitude <= 20000)
+    settings.clip_altitude = clip_altitude;
 
 #if defined(HAVE_HATCHED_BRUSH) && defined(HAVE_ALPHA_BLEND)
   map.Get(ProfileKeys::AirspaceTransparency, settings.transparency);
 #endif
 
-  map.GetEnum(ProfileKeys::AirspaceFillMode, settings.fill_mode);
+  value = static_cast<unsigned>(settings.fill_mode);
+  if (map.Get(ProfileKeys::AirspaceFillMode, value) && value < 4)
+    settings.fill_mode =
+      static_cast<AirspaceRendererSettings::FillMode>(value);
 
   for (unsigned i = 0; i < AIRSPACECLASSCOUNT; i++)
     Load(map, i, settings.classes[i]);
@@ -114,17 +131,33 @@ Profile::Load(const ProfileMap &map,
   map.Get(name, settings.border_width);
 
   MakeAirspaceSettingName(name, "AirspaceFillMode", i);
-  map.GetEnum(name, settings.fill_mode);
+  unsigned fill_mode = static_cast<unsigned>(settings.fill_mode);
+  if (map.Get(name, fill_mode) && fill_mode < 3)
+    settings.fill_mode =
+      static_cast<AirspaceClassRendererSettings::FillMode>(fill_mode);
 }
 
 void
 Profile::Load(const ProfileMap &map, AirspaceComputerSettings &settings)
 {
   map.Get(ProfileKeys::AirspaceWarning, settings.enable_warnings);
-  map.Get(ProfileKeys::AltMargin, settings.warnings.altitude_warning_margin);
-  map.Get(ProfileKeys::WarningTime, settings.warnings.warning_time);
-  map.Get(ProfileKeys::AcknowledgementTime,
-          settings.warnings.acknowledgement_time);
+
+  unsigned margin = settings.warnings.altitude_warning_margin;
+  if (map.Get(ProfileKeys::AltMargin, margin) && margin <= 10000)
+    settings.warnings.altitude_warning_margin = margin;
+
+  using namespace std::chrono;
+  auto warning_time = settings.warnings.warning_time;
+  if (map.Get(ProfileKeys::WarningTime, warning_time) &&
+      warning_time >= seconds{10} && warning_time <= seconds{1000})
+    settings.warnings.warning_time = warning_time;
+
+  auto acknowledgement_time = settings.warnings.acknowledgement_time;
+  if (map.Get(ProfileKeys::AcknowledgementTime, acknowledgement_time) &&
+      acknowledgement_time >= seconds{10} &&
+      acknowledgement_time <= seconds{1000})
+    settings.warnings.acknowledgement_time = acknowledgement_time;
+
   map.Get(ProfileKeys::RepetitiveSound, settings.warnings.repetitive_sound);
 
   char name[64];
@@ -143,6 +176,13 @@ Profile::Load(const ProfileMap &map, AirspaceComputerSettings &settings)
   // Load NOTAM settings via NotamConfig
   Profile::LoadNOTAMSettings(map, settings.notam);
 #endif
+}
+
+void
+Profile::LoadAirspaceWarningDialog(const ProfileMap &map,
+                                   bool &enabled) noexcept
+{
+  map.Get(ProfileKeys::AirspaceWarningDialog, enabled);
 }
 
 void

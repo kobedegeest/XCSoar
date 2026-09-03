@@ -7,6 +7,8 @@
 #include "Profile/Current.hpp"
 #include "Profile/Profile.hpp"
 #include "Profile/AirspaceConfig.hpp"
+#include "MapDisplay/AirspaceDisplaySettings.hpp"
+#include "MapDisplay/ElementSetDisplayOverrideGlue.hpp"
 #include "ui/canvas/Canvas.hpp"
 #include "Screen/Layout.hpp"
 #include "Renderer/TextRowRenderer.hpp"
@@ -94,7 +96,7 @@ AirspaceSettingsListWidget::OnPaintItem(Canvas &canvas, PixelRect rc,
       canvas.DrawRectangle({second_x, rc.top + padding, rc.right - padding, rc.bottom - padding});
     }
   } else {
-    rc.right = renderer.classes[type].display
+    rc.right = GetGlobalAirspaceClassDisplay(type)
       ? row_renderer.DrawRightColumn(canvas, rc, _("Display"))
       : row_renderer.PreviousRightColumn(canvas, rc, _("Display"));
 
@@ -127,14 +129,15 @@ AirspaceSettingsListWidget::OnActivateItem(unsigned index) noexcept
     ActionInterface::SendMapSettings();
     look.Reinitialise(renderer);
   } else {
-    renderer.classes[type].display = !renderer.classes[type].display;
-    if (!renderer.classes[type].display)
-      computer.warnings.class_warnings[type] =
-        !computer.warnings.class_warnings[type];
+    bool display = !GetGlobalAirspaceClassDisplay(type);
+    bool warning = computer.warnings.class_warnings[type];
+    if (!display)
+      warning = !warning;
 
     Profile::SetAirspaceMode(Profile::map,
-                             type, renderer.classes[type].display,
-                             computer.warnings.class_warnings[type]);
+                             type, display, warning);
+    computer.warnings.class_warnings[type] = warning;
+    ReloadGlobalElementSetDisplaySettings();
     changed = true;
     ActionInterface::SendMapSettings();
   }
