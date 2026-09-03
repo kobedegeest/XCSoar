@@ -2,6 +2,8 @@
 // Copyright The XCSoar Project
 
 #include "MapDisplayConfigPanel.hpp"
+#include "MapDisplay/DisplaySettingCatalog.hpp"
+#include "MapDisplay/ElementSetDisplayOverrideGlue.hpp"
 #include "Profile/Keys.hpp"
 #include "Form/DataField/Enum.hpp"
 #include "Form/DataField/Listener.hpp"
@@ -9,6 +11,15 @@
 #include "Language/Language.hpp"
 #include "Widget/RowFormWidget.hpp"
 #include "UIGlobals.hpp"
+#include "ActionInterface.hpp"
+
+using namespace DisplaySettingCatalog;
+
+static int32_t
+GetGlobalValue(DisplaySettingKey key) noexcept
+{
+  return GetGlobalElementSetDisplaySettingValueByKey(key).value;
+}
 
 enum ControlIndex {
   OrientationCruise,
@@ -92,30 +103,30 @@ MapDisplayConfigPanel::Prepare(ContainerWindow &parent,
   AddEnum(_("Cruise orientation"),
           _("Determines how the screen is rotated with the glider"),
           orientation_list,
-          (unsigned)settings_map.cruise_orientation,
+          static_cast<unsigned>(GetGlobalValue(Key::CRUISE_ORIENTATION)),
           this);
 
   AddEnum(_("Circling orientation"),
           _("Determines how the screen is rotated with the glider while circling"),
           orientation_list,
-          (unsigned)settings_map.circling_orientation,
+          static_cast<unsigned>(GetGlobalValue(Key::CIRCLING_ORIENTATION)),
           this);
 
   AddBoolean(_("Circling zoom"),
              _("If enabled, then the map will zoom in automatically when entering circling mode and zoom out automatically when leaving circling mode."),
-             settings_map.circle_zoom_enabled);
+             GetGlobalValue(Key::CIRCLING_ZOOM) != 0);
 
   AddEnum(_("Map shift reference"),
           _("Determines what is used to shift the glider from the map center"),
           shift_bias_list,
-          (unsigned)settings_map.map_shift_bias,
+          static_cast<unsigned>(GetGlobalValue(Key::MAP_SHIFT_BIAS)),
           this);
   SetExpertRow(MAP_SHIFT_BIAS);
 
   AddInteger(_("Glider position offset"),
              _("Defines the location of the glider drawn on the screen in percent from the screen edge."),
              "%d %%", "%d", 10, 50, 5,
-             settings_map.glider_screen_position);
+             GetGlobalValue(Key::GLIDER_SCREEN_POSITION));
   SetExpertRow(GliderScreenPosition);
 
   AddFloat(_("Max. auto zoom distance"),
@@ -136,25 +147,38 @@ bool
 MapDisplayConfigPanel::Save(bool &_changed) noexcept
 {
   bool changed = false;
+  bool display_setting_changed = false;
 
   MapSettings &settings_map = CommonInterface::SetMapSettings();
   PageSettings &page_settings = CommonInterface::SetUISettings().pages;
 
-  changed |= SaveValueEnum(OrientationCruise, ProfileKeys::OrientationCruise,
-                           settings_map.cruise_orientation);
+  auto cruise_orientation = static_cast<MapOrientation>(
+    GetGlobalValue(Key::CRUISE_ORIENTATION));
+  display_setting_changed |= SaveValueEnum(
+    OrientationCruise, ProfileKeys::OrientationCruise, cruise_orientation);
 
-  changed |= SaveValueEnum(OrientationCircling, ProfileKeys::OrientationCircling,
-                           settings_map.circling_orientation);
+  auto circling_orientation = static_cast<MapOrientation>(
+    GetGlobalValue(Key::CIRCLING_ORIENTATION));
+  display_setting_changed |= SaveValueEnum(
+    OrientationCircling, ProfileKeys::OrientationCircling,
+    circling_orientation);
 
-  changed |= SaveValueEnum(MAP_SHIFT_BIAS, ProfileKeys::MapShiftBias,
-                           settings_map.map_shift_bias);
+  auto map_shift_bias = static_cast<MapShiftBias>(
+    GetGlobalValue(Key::MAP_SHIFT_BIAS));
+  display_setting_changed |= SaveValueEnum(
+    MAP_SHIFT_BIAS, ProfileKeys::MapShiftBias, map_shift_bias);
 
-  changed |= SaveValueInteger(GliderScreenPosition,
-                              ProfileKeys::GliderScreenPosition,
-                              settings_map.glider_screen_position);
+  int glider_screen_position =
+    GetGlobalValue(Key::GLIDER_SCREEN_POSITION);
+  display_setting_changed |= SaveValueInteger(
+    GliderScreenPosition, ProfileKeys::GliderScreenPosition,
+    glider_screen_position);
 
-  changed |= SaveValue(CirclingZoom, ProfileKeys::CircleZoom,
-                       settings_map.circle_zoom_enabled);
+  bool circle_zoom_enabled = GetGlobalValue(Key::CIRCLING_ZOOM) != 0;
+  display_setting_changed |= SaveValue(
+    CirclingZoom, ProfileKeys::CircleZoom, circle_zoom_enabled);
+
+  changed |= display_setting_changed;
 
   changed |= SaveValue(MaxAutoZoomDistance, UnitGroup::DISTANCE,
                        ProfileKeys::MaxAutoZoomDistance,
@@ -162,6 +186,11 @@ MapDisplayConfigPanel::Save(bool &_changed) noexcept
 
   changed |= SaveValue(PAGES_DISTINCT_ZOOM, ProfileKeys::PagesDistinctZoom,
                        page_settings.distinct_zoom);
+
+  if (display_setting_changed) {
+    ReloadGlobalElementSetDisplaySettings();
+    ActionInterface::SendMapSettings(true);
+  }
 
   _changed |= changed;
 

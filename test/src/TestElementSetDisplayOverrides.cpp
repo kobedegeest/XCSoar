@@ -151,18 +151,31 @@ TestCapacityIsExplicit()
 }
 
 static void
-TestDenyByDefaultCatalog()
+TestCatalogWhitelist()
 {
   const auto catalog = GetMapDisplaySettingCatalog();
   ok1(catalog.size() == DisplaySettingCatalog::COUNT);
   ok1(catalog.size() <= ElementSetDisplayOverrides::MAX_OVERRIDES);
 
   std::size_t terrain = 0, orientation = 0, waypoints = 0, airspace = 0;
+  std::size_t overwritable = 0;
   for (std::size_t i = 0; i < catalog.size(); ++i) {
     const auto &descriptor = catalog[i];
-    ok1(!descriptor.element_set_overwritable);
+    const bool expected_overwritable =
+      descriptor.group == DisplaySettingGroup::TERRAIN ||
+      descriptor.group == DisplaySettingGroup::ORIENTATION;
+    ok1(descriptor.element_set_overwritable == expected_overwritable);
     ok1(descriptor.profile_suffix != nullptr &&
         descriptor.profile_suffix[0] != '\0');
+    ok1((descriptor.accessor.get_global != nullptr) ==
+        expected_overwritable);
+    ok1((descriptor.accessor.set_global != nullptr) ==
+        expected_overwritable);
+    ok1((descriptor.accessor.set_effective != nullptr) ==
+        expected_overwritable);
+
+    if (descriptor.element_set_overwritable)
+      ++overwritable;
 
     bool key_unique = true;
     bool suffix_unique = true;
@@ -194,19 +207,21 @@ TestDenyByDefaultCatalog()
   ok1(orientation == DisplaySettingCatalog::ORIENTATION_COUNT);
   ok1(waypoints == DisplaySettingCatalog::WAYPOINT_COUNT);
   ok1(airspace == DisplaySettingCatalog::AIRSPACE_COUNT);
+  ok1(overwritable == DisplaySettingCatalog::TERRAIN_COUNT +
+      DisplaySettingCatalog::ORIENTATION_COUNT);
 }
 
 int
 main()
 {
-  plan_tests(47 + ElementSetDisplayOverrides::MAX_OVERRIDES +
-             4 * DisplaySettingCatalog::COUNT);
+  plan_tests(48 + ElementSetDisplayOverrides::MAX_OVERRIDES +
+             7 * DisplaySettingCatalog::COUNT);
 
   TestDescriptorValidation();
   TestSparseOverrides();
   TestCanonicalOrderAndEquality();
   TestCapacityIsExplicit();
-  TestDenyByDefaultCatalog();
+  TestCatalogWhitelist();
 
   return exit_status();
 }

@@ -85,8 +85,11 @@ ToDisplaySettingEffects(DisplaySettingEffect effect) noexcept
 }
 
 struct DisplaySettingAccessor {
-  DisplaySettingValue (*get_global)() noexcept;
-  void (*set_effective)(DisplaySettingValue value) noexcept;
+  DisplaySettingValue (*get_global)(DisplaySettingKey key) noexcept;
+  bool (*set_global)(DisplaySettingKey key,
+                     DisplaySettingValue value) noexcept;
+  bool (*set_effective)(DisplaySettingKey key,
+                        DisplaySettingValue value) noexcept;
 };
 
 struct DisplaySettingDescriptor {
@@ -126,6 +129,21 @@ struct DisplaySettingDescriptor {
       break;
 
     case DisplaySettingValueType::ENUM:
+      if (candidate.value < minimum.value || candidate.value > maximum.value)
+        break;
+
+      if (enum_choices == nullptr) {
+        valid = true;
+        break;
+      }
+
+      for (uint16_t i = 0; i < enum_choice_count; ++i)
+        if (enum_choices[i].value == candidate.value) {
+          valid = true;
+          break;
+        }
+      break;
+
     case DisplaySettingValueType::INTEGER:
       valid = candidate.value >= minimum.value &&
         candidate.value <= maximum.value;

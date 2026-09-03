@@ -18,6 +18,8 @@
 #include "Screen/Layout.hpp"
 #include "Asset.hpp"
 #include "Hardware/CPU.hpp"
+#include "MapDisplay/DisplaySettingCatalog.hpp"
+#include "MapDisplay/ElementSetDisplayOverrideGlue.hpp"
 
 #include <cmath>
 
@@ -36,6 +38,7 @@
 void
 InputEvents::eventZoom(const char* misc)
 {
+  using namespace DisplaySettingCatalog;
   // JMW pass through to handler in MapWindow
   // here:
   // -1 means toggle
@@ -72,13 +75,19 @@ InputEvents::eventZoom(const char* misc)
   else if (StringIsEqual(misc, "++"))
     sub_ScaleZoom(2);
   else if (StringIsEqual(misc, "circlezoom toggle")) {
-    settings_map.circle_zoom_enabled = !settings_map.circle_zoom_enabled;
+    const bool value = !GetGlobalElementSetDisplaySettingValueByKey(
+      Key::CIRCLING_ZOOM).AsBoolean();
+    Profile::Set(ProfileKeys::CircleZoom, value);
+    ReloadGlobalElementSetDisplaySettings();
   } else if (StringIsEqual(misc, "circlezoom on")) {
-    settings_map.circle_zoom_enabled = true;
+    Profile::Set(ProfileKeys::CircleZoom, true);
+    ReloadGlobalElementSetDisplaySettings();
   } else if (StringIsEqual(misc, "circlezoom off")) {
-    settings_map.circle_zoom_enabled = false;
+    Profile::Set(ProfileKeys::CircleZoom, false);
+    ReloadGlobalElementSetDisplaySettings();
   } else if (StringIsEqual(misc, "circlezoom show")) {
-    if (settings_map.circle_zoom_enabled)
+    if (GetGlobalElementSetDisplaySettingValueByKey(
+          Key::CIRCLING_ZOOM).AsBoolean())
       Message::AddMessage(_("Circling zoom on"));
     else
       Message::AddMessage(_("Circling zoom off"));

@@ -2,6 +2,8 @@
 // Copyright The XCSoar Project
 
 #include "TerrainDisplayConfigPanel.hpp"
+#include "MapDisplay/DisplaySettingCatalog.hpp"
+#include "MapDisplay/ElementSetDisplayOverrideGlue.hpp"
 #include "Profile/Keys.hpp"
 #include "Profile/Profile.hpp"
 #include "Form/DataField/Listener.hpp"
@@ -22,7 +24,6 @@
 #include "Look/DialogLook.hpp"
 #include "Look/MapLook.hpp"
 #include "UIGlobals.hpp"
-#include "Message.hpp"
 
 #ifdef ENABLE_OPENGL
 #include "ui/canvas/opengl/Scissor.hpp"
@@ -90,6 +91,7 @@ protected:
   /** Values when the panel was opened; used so Save() does not write
       unchanged defaults into a profile that lacked those keys (#1793). */
   TerrainRendererSettings initial_terrain_settings;
+  bool initial_topography_enabled;
 
 public:
   TerrainDisplayConfigPanel()
@@ -134,9 +136,32 @@ ByteToPercent(short byte)
 }
 
 static short
-PercentToByte(short percent)
+PercentToByte(int percent)
 {
   return (percent * 510 + 255) / 200;
+}
+
+static int32_t
+GetGlobalValue(DisplaySettingKey key) noexcept
+{
+  return GetGlobalElementSetDisplaySettingValueByKey(key).value;
+}
+
+static void
+LoadGlobalTerrainSettings(TerrainRendererSettings &terrain,
+                          bool &topography_enabled) noexcept
+{
+  using namespace DisplaySettingCatalog;
+
+  terrain.enable = GetGlobalValue(Key::TERRAIN_DISPLAY) != 0;
+  topography_enabled = GetGlobalValue(Key::TOPOGRAPHY_DISPLAY) != 0;
+  terrain.ramp = static_cast<unsigned short>(GetGlobalValue(Key::TERRAIN_RAMP));
+  terrain.slope_shading = static_cast<SlopeShading>(
+    GetGlobalValue(Key::TERRAIN_SLOPE_SHADING));
+  terrain.contrast = PercentToByte(GetGlobalValue(Key::TERRAIN_CONTRAST));
+  terrain.brightness = PercentToByte(GetGlobalValue(Key::TERRAIN_BRIGHTNESS));
+  terrain.contours = static_cast<Contours>(
+    GetGlobalValue(Key::TERRAIN_CONTOURS));
 }
 
 void
@@ -163,20 +188,10 @@ TerrainDisplayConfigPanel::OnModified(DataField &df) noexcept
     const DataFieldBoolean &dfb = (const DataFieldBoolean &)df;
     const bool terrain_enabled = dfb.GetValue();
     terrain_settings.enable = terrain_enabled;
-    CommonInterface::SetMapSettings().terrain.enable = terrain_enabled;
-    Message::AddMessage(terrain_enabled
-                        ? _("Terrain shown")
-                        : _("Terrain hidden"));
-    ActionInterface::SendMapSettings(true);
     ShowTerrainControls();
   } else if (IsDataField(EnableTopography, df)) {
     const DataFieldBoolean &dfb = (const DataFieldBoolean &)df;
     const bool topography_enabled = dfb.GetValue();
-    CommonInterface::SetMapSettings().topography_enabled = topography_enabled;
-    Message::AddMessage(topography_enabled
-                        ? _("Topography shown")
-                        : _("Topography hidden"));
-    ActionInterface::SendMapSettings(true);
     if (have_terrain_preview)
       ((TerrainPreviewWindow &)GetRow(TerrainPreview))
         .SetTopographyEnabled(topography_enabled);
@@ -230,8 +245,9 @@ TerrainDisplayConfigPanel::Prepare(ContainerWindow &parent,
 
   RowFormWidget::Prepare(parent, rc);
 
-  const MapSettings &settings_map = CommonInterface::GetMapSettings();
-  const TerrainRendererSettings &terrain = settings_map.terrain;
+  TerrainRendererSettings terrain;
+  bool topography_enabled;
+  LoadGlobalTerrainSettings(terrain, topography_enabled);
 
   AddBoolean(_("Terrain Display"),
              _("Draw a digital elevation terrain on the map."),
@@ -240,7 +256,7 @@ TerrainDisplayConfigPanel::Prepare(ContainerWindow &parent,
 
   AddBoolean(_("Topography display"),
              _("Draw topographical features (roads, rivers, lakes etc.) on the map."),
-             settings_map.topography_enabled);
+             topography_enabled);
   GetDataField(EnableTopography).SetListener(this);
 
   static constexpr StaticEnumChoice terrain_ramp_list[] = {
@@ -339,7 +355,7 @@ TerrainDisplayConfigPanel::Prepare(ContainerWindow &parent,
       *data_components->terrain,
       data_components->topography.get(),
       map_look.topography,
-      settings_map.topography_enabled);
+      topography_enabled);
     preview->Create((ContainerWindow &)GetWindow(), {0, 0, 100, 100}, style);
     AddRemaining(std::move(preview));
   }
@@ -350,20 +366,17 @@ TerrainDisplayConfigPanel::Prepare(ContainerWindow &parent,
   /* Capture after UpdateTerrainPreview(): contrast/brightness go through
      ByteToPercent ↔ PercentToByte, which is lossy for some values. */
   initial_terrain_settings = terrain_settings;
+  initial_topography_enabled = topography_enabled;
 }
 
 bool
 TerrainDisplayConfigPanel::Save(bool &_changed) noexcept
 {
-  MapSettings &settings_map = CommonInterface::SetMapSettings();
-
   bool changed = false;
 
-  /* Always apply in-memory map settings (EnableTerrain may already
-     have updated settings_map live).  Persist only when values differ
-     from the panel-open snapshot so missing profile defaults stay
-     absent (#1793). */
-  settings_map.terrain = terrain_settings;
+  /* Persist only when values differ from the panel-open global snapshot so
+     missing profile defaults stay absent (#1793).  The reload below then
+     reapplies the active element set's overrides. */
   if (terrain_settings != initial_terrain_settings) {
     Profile::Set(ProfileKeys::DrawTerrain, terrain_settings.enable);
     Profile::Set(ProfileKeys::TerrainContrast, terrain_settings.contrast);
@@ -376,7 +389,12 @@ TerrainDisplayConfigPanel::Save(bool &_changed) noexcept
   }
 
   changed |= SaveValue(EnableTopography, ProfileKeys::DrawTopography,
-                       settings_map.topography_enabled);
+                       initial_topography_enabled);
+
+  if (changed) {
+    ReloadGlobalElementSetDisplaySettings();
+    ActionInterface::SendMapSettings(true);
+  }
 
   _changed |= changed;
 

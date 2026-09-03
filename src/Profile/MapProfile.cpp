@@ -4,27 +4,13 @@
 #include "MapProfile.hpp"
 #include "Current.hpp"
 #include "TerrainConfig.hpp"
+#include "OrientationConfig.hpp"
 #include "AirspaceConfig.hpp"
 #include "Map.hpp"
 #include "Keys.hpp"
 #include "MapSettings.hpp"
 
 #include <algorithm> // for std::clamp()
-
-static bool
-IsValidMapOrientation(unsigned value)
-{
-  switch (value) {
-  case (unsigned)MapOrientation::TRACK_UP:
-  case (unsigned)MapOrientation::NORTH_UP:
-  case (unsigned)MapOrientation::TARGET_UP:
-  case (unsigned)MapOrientation::HEADING_UP:
-  case (unsigned)MapOrientation::WIND_UP:
-    return true;
-  }
-
-  return false;
-}
 
 static void
 Load(const ProfileMap &map, FAITriangleSettings &settings)
@@ -63,51 +49,7 @@ Profile::Load(const ProfileMap &map, MapSettings &settings)
 
   map.Get(ProfileKeys::GliderScreenPosition, settings.glider_screen_position);
 
-  bool orientation_found = false;
-
-  if (unsigned Temp = (unsigned)MapOrientation::NORTH_UP;
-      map.Get(ProfileKeys::OrientationCircling, Temp)) {
-    orientation_found = true;
-
-    if (IsValidMapOrientation(Temp))
-      settings.circling_orientation = (MapOrientation)Temp;
-  }
-
-  
-  if (unsigned Temp = (unsigned)MapOrientation::NORTH_UP;
-      map.Get(ProfileKeys::OrientationCruise, Temp)) {
-    orientation_found = true;
-
-    if (IsValidMapOrientation(Temp))
-      settings.cruise_orientation = (MapOrientation)Temp;
-  }
-
-  if (!orientation_found) {
-    unsigned Temp = 1;
-    map.Get(ProfileKeys::DisplayUpValue, Temp);
-    switch (Temp) {
-    case 0:
-      settings.cruise_orientation = MapOrientation::TRACK_UP;
-      settings.circling_orientation = MapOrientation::TRACK_UP;
-      break;
-    case 1:
-      settings.cruise_orientation = MapOrientation::NORTH_UP;
-      settings.circling_orientation = MapOrientation::NORTH_UP;
-      break;
-    case 2:
-      settings.cruise_orientation = MapOrientation::TRACK_UP;
-      settings.circling_orientation = MapOrientation::NORTH_UP;
-      break;
-    case 3:
-      settings.cruise_orientation = MapOrientation::TRACK_UP;
-      settings.circling_orientation = MapOrientation::TARGET_UP;
-      break;
-    case 4:
-      settings.cruise_orientation = MapOrientation::NORTH_UP;
-      settings.circling_orientation = MapOrientation::TRACK_UP;
-      break;
-    }
-  }
+  LoadOrientationSettings(map, settings);
 
   if (double tmp; map.Get(ProfileKeys::ClimbMapScale, tmp))
     settings.circling_scale = std::clamp(tmp / 10000, 0.0003, 10.);

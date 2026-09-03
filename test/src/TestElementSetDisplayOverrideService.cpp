@@ -21,31 +21,53 @@ static unsigned final_count;
 static std::array<unsigned, 4> group_count;
 static std::array<DisplaySettingEffects, 4> group_effects;
 
-static DisplaySettingValue GetGlobalA() noexcept {
+static DisplaySettingValue GetGlobalA(DisplaySettingKey) noexcept {
   return DisplaySettingValue::Boolean(global_a);
 }
 
-static DisplaySettingValue GetGlobalB() noexcept {
+static DisplaySettingValue GetGlobalB(DisplaySettingKey) noexcept {
   return DisplaySettingValue::Integer(global_b);
 }
 
-static DisplaySettingValue GetGlobalOrientation() noexcept {
+static DisplaySettingValue GetGlobalOrientation(DisplaySettingKey) noexcept {
   return DisplaySettingValue::Boolean(global_orientation);
 }
 
-static void SetEffectiveA(DisplaySettingValue value) noexcept {
+static bool SetGlobalA(DisplaySettingKey, DisplaySettingValue value) noexcept {
+  global_a = value.AsBoolean();
+  return true;
+}
+
+static bool SetGlobalB(DisplaySettingKey, DisplaySettingValue value) noexcept {
+  global_b = value.value;
+  return true;
+}
+
+static bool SetGlobalOrientation(DisplaySettingKey,
+                                 DisplaySettingValue value) noexcept {
+  global_orientation = value.AsBoolean();
+  return true;
+}
+
+static bool SetEffectiveA(DisplaySettingKey,
+                          DisplaySettingValue value) noexcept {
   effective_a = value.AsBoolean();
   ++set_a_count;
+  return true;
 }
 
-static void SetEffectiveB(DisplaySettingValue value) noexcept {
+static bool SetEffectiveB(DisplaySettingKey,
+                          DisplaySettingValue value) noexcept {
   effective_b = value.value;
   ++set_b_count;
+  return true;
 }
 
-static void SetEffectiveOrientation(DisplaySettingValue value) noexcept {
+static bool SetEffectiveOrientation(DisplaySettingKey,
+                                    DisplaySettingValue value) noexcept {
   effective_orientation = value.AsBoolean();
   ++set_orientation_count;
+  return true;
 }
 
 static void
@@ -66,7 +88,7 @@ static constexpr DisplaySettingDescriptor descriptors[] = {
     "A", "A", nullptr, DisplaySettingValueType::BOOLEAN,
     DisplaySettingValue::Integer(0), DisplaySettingValue::Integer(1),
     nullptr, true, nullptr, 0, 1,
-    {GetGlobalA, SetEffectiveA},
+    {GetGlobalA, SetGlobalA, SetEffectiveA},
     ToDisplaySettingEffects(DisplaySettingEffect::REDRAW),
   },
   {
@@ -74,7 +96,7 @@ static constexpr DisplaySettingDescriptor descriptors[] = {
     "B", "B", nullptr, DisplaySettingValueType::INTEGER,
     DisplaySettingValue::Integer(0), DisplaySettingValue::Integer(100),
     nullptr, true, nullptr, 0, 1,
-    {GetGlobalB, SetEffectiveB},
+    {GetGlobalB, SetGlobalB, SetEffectiveB},
     ToDisplaySettingEffects(DisplaySettingEffect::TERRAIN_CACHE),
   },
   {
@@ -83,7 +105,7 @@ static constexpr DisplaySettingDescriptor descriptors[] = {
     DisplaySettingValueType::BOOLEAN,
     DisplaySettingValue::Integer(0), DisplaySettingValue::Integer(1),
     nullptr, true, nullptr, 0, 1,
-    {GetGlobalOrientation, SetEffectiveOrientation},
+    {GetGlobalOrientation, SetGlobalOrientation, SetEffectiveOrientation},
     ToDisplaySettingEffects(DisplaySettingEffect::PROJECTION),
   },
 };

@@ -23,6 +23,8 @@
 #include "util/StaticString.hxx"
 #include "Components.hpp"
 #include "BackendComponents.hpp"
+#include "MapDisplay/DisplaySettingCatalog.hpp"
+#include "MapDisplay/ElementSetDisplayOverrideGlue.hpp"
 
 static uint8_t last_unmuted_vario_volume = 80;
 
@@ -468,19 +470,23 @@ InputEvents::eventAirspaceDisplayMode(const char *misc)
 void
 InputEvents::eventOrientationCruise(const char *misc)
 {
-  MapSettings &settings_map = CommonInterface::SetMapSettings();
+  MapOrientation value;
 
-  if (StringIsEqual(misc, "northup")) {
-    settings_map.cruise_orientation = MapOrientation::NORTH_UP;
-  } else if (StringIsEqual(misc, "trackup")) {
-    settings_map.cruise_orientation = MapOrientation::TRACK_UP;
-  } else if (StringIsEqual(misc, "headingup")) {
-    settings_map.cruise_orientation = MapOrientation::HEADING_UP;
-  } else if (StringIsEqual(misc, "targetup")) {
-    settings_map.cruise_orientation = MapOrientation::TARGET_UP;
-  } else if (StringIsEqual(misc, "windup")) {
-    settings_map.cruise_orientation = MapOrientation::WIND_UP;
-  }
+  if (StringIsEqual(misc, "northup"))
+    value = MapOrientation::NORTH_UP;
+  else if (StringIsEqual(misc, "trackup"))
+    value = MapOrientation::TRACK_UP;
+  else if (StringIsEqual(misc, "headingup"))
+    value = MapOrientation::HEADING_UP;
+  else if (StringIsEqual(misc, "targetup"))
+    value = MapOrientation::TARGET_UP;
+  else if (StringIsEqual(misc, "windup"))
+    value = MapOrientation::WIND_UP;
+  else
+    return;
+
+  Profile::SetEnum(ProfileKeys::OrientationCruise, value);
+  ReloadGlobalElementSetDisplaySettings();
 
   ActionInterface::SendMapSettings(true);
 }
@@ -488,19 +494,23 @@ InputEvents::eventOrientationCruise(const char *misc)
 void
 InputEvents::eventOrientationCircling(const char *misc)
 {
-  MapSettings &settings_map = CommonInterface::SetMapSettings();
+  MapOrientation value;
 
-  if (StringIsEqual(misc, "northup")) {
-    settings_map.circling_orientation = MapOrientation::NORTH_UP;
-  } else if (StringIsEqual(misc, "trackup")) {
-    settings_map.circling_orientation = MapOrientation::TRACK_UP;
-  } else if (StringIsEqual(misc, "headingup")) {
-    settings_map.circling_orientation = MapOrientation::HEADING_UP;
-  } else if (StringIsEqual(misc, "targetup")) {
-    settings_map.circling_orientation = MapOrientation::TARGET_UP;
-  } else if (StringIsEqual(misc, "windup")) {
-    settings_map.circling_orientation = MapOrientation::WIND_UP;
-  }
+  if (StringIsEqual(misc, "northup"))
+    value = MapOrientation::NORTH_UP;
+  else if (StringIsEqual(misc, "trackup"))
+    value = MapOrientation::TRACK_UP;
+  else if (StringIsEqual(misc, "headingup"))
+    value = MapOrientation::HEADING_UP;
+  else if (StringIsEqual(misc, "targetup"))
+    value = MapOrientation::TARGET_UP;
+  else if (StringIsEqual(misc, "windup"))
+    value = MapOrientation::WIND_UP;
+  else
+    return;
+
+  Profile::SetEnum(ProfileKeys::OrientationCircling, value);
+  ReloadGlobalElementSetDisplaySettings();
 
   ActionInterface::SendMapSettings(true);
 }
@@ -519,69 +529,76 @@ InputEvents::eventOrientationCircling(const char *misc)
 void
 InputEvents::sub_TerrainTopography(int vswitch)
 {
-  MapSettings &settings_map = CommonInterface::SetMapSettings();
+  using namespace DisplaySettingCatalog;
+
+  bool topography_enabled =
+    GetGlobalElementSetDisplaySettingValueByKey(
+      Key::TOPOGRAPHY_DISPLAY).AsBoolean();
+  bool terrain_enabled =
+    GetGlobalElementSetDisplaySettingValueByKey(
+      Key::TERRAIN_DISPLAY).AsBoolean();
 
   if (vswitch == -1) {
     // toggle through 4 possible options
     char val = 0;
 
-    if (settings_map.topography_enabled)
+    if (topography_enabled)
       val++;
-    if (settings_map.terrain.enable)
+    if (terrain_enabled)
       val += (char)2;
 
     val++;
     if (val > 3)
       val = 0;
 
-    settings_map.topography_enabled = ((val & 0x01) == 0x01);
-    settings_map.terrain.enable = ((val & 0x02) == 0x02);
+    topography_enabled = ((val & 0x01) == 0x01);
+    terrain_enabled = ((val & 0x02) == 0x02);
 
     // Show current state after cycling
     StaticString<128> buf;
     buf.AppendFormat(_("%s / %s"),
-                     settings_map.topography_enabled ? _("On") : _("Off"),
-                     settings_map.terrain.enable ? _("On") : _("Off"));
+                     topography_enabled ? _("On") : _("Off"),
+                     terrain_enabled ? _("On") : _("Off"));
 
     Message::AddMessage(_("Topography/Terrain"), buf.c_str());
   } else if (vswitch == -2) {
     // toggle terrain
-    settings_map.terrain.enable = !settings_map.terrain.enable;
-    Message::AddMessage(settings_map.terrain.enable
+    terrain_enabled = !terrain_enabled;
+    Message::AddMessage(terrain_enabled
                         ? _("Terrain shown")
                         : _("Terrain hidden"));
   } else if (vswitch == -3) {
     // toggle topography
-    settings_map.topography_enabled = !settings_map.topography_enabled;
-    Message::AddMessage(settings_map.topography_enabled
+    topography_enabled = !topography_enabled;
+    Message::AddMessage(topography_enabled
                         ? _("Topography shown")
                         : _("Topography hidden"));
   } else if (vswitch == 1) {
     // Turn on topography
-    settings_map.topography_enabled = true;
+    topography_enabled = true;
     Message::AddMessage(_("Topography shown"));
   } else if (vswitch == 2) {
     // Turn off topography
-    settings_map.topography_enabled = false;
+    topography_enabled = false;
     Message::AddMessage(_("Topography hidden"));
   } else if (vswitch == 3) {
     // Turn on terrain
-    settings_map.terrain.enable = true;
+    terrain_enabled = true;
     Message::AddMessage(_("Terrain shown"));
   } else if (vswitch == 4) {
     // Turn off terrain
-    settings_map.terrain.enable = false;
+    terrain_enabled = false;
     Message::AddMessage(_("Terrain hidden"));
   } else if (vswitch == 0) {
     // Show terrain/topography
     // ARH Let user know what's happening
     char buf[128];
 
-    if (settings_map.topography_enabled)
+    if (topography_enabled)
       StringFormatUnsafe(buf, "\r\n%s / ", _("On"));
     else StringFormatUnsafe(buf, "\r\n%s / ", _("Off"));
 
-    strcat(buf, settings_map.terrain.enable
+    strcat(buf, terrain_enabled
             ? _("On") : _("Off"));
 
     Message::AddMessage(_("Topography/Terrain"), buf);
@@ -590,9 +607,10 @@ InputEvents::sub_TerrainTopography(int vswitch)
 
   /* save new values to profile */
   Profile::Set(ProfileKeys::DrawTopography,
-               settings_map.topography_enabled);
+               topography_enabled);
   Profile::Set(ProfileKeys::DrawTerrain,
-               settings_map.terrain.enable);
+               terrain_enabled);
 
+  ReloadGlobalElementSetDisplaySettings();
   XCSoarInterface::SendMapSettings(true);
 }

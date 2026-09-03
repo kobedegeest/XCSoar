@@ -2,6 +2,7 @@
 // Copyright The XCSoar Project
 
 #include "DisplaySettingCatalog.hpp"
+#include "DisplaySettingRuntime.hpp"
 
 #include "Engine/Airspace/AirspaceClass.hpp"
 #include "Engine/Waypoint/Waypoint.hpp"
@@ -56,6 +57,92 @@ Integer(DisplaySettingKey key, DisplaySettingGroup group,
   descriptor.integer_step = step;
   return descriptor;
 }
+
+template<std::size_t N>
+constexpr DisplaySettingDescriptor
+Choices(DisplaySettingDescriptor descriptor,
+        const DisplaySettingEnumChoice (&choices)[N]) noexcept
+{
+  descriptor.enum_choices = choices;
+  descriptor.enum_choice_count = static_cast<uint16_t>(N);
+  return descriptor;
+}
+
+constexpr DisplaySettingDescriptor
+Overwritable(DisplaySettingDescriptor descriptor,
+             DisplaySettingEffects effects) noexcept
+{
+  descriptor.element_set_overwritable = true;
+  descriptor.accessor = {
+    DisplaySettingRuntime::GetGlobalValue,
+    DisplaySettingRuntime::SetGlobalValue,
+    DisplaySettingRuntime::SetEffectiveValue,
+  };
+  descriptor.effects = effects;
+  return descriptor;
+}
+
+static constexpr DisplaySettingEffects TERRAIN_EFFECTS =
+  ToDisplaySettingEffects(DisplaySettingEffect::REDRAW) |
+  ToDisplaySettingEffects(DisplaySettingEffect::TERRAIN_CACHE);
+
+static constexpr DisplaySettingEffects ORIENTATION_EFFECTS =
+  ToDisplaySettingEffects(DisplaySettingEffect::REDRAW) |
+  ToDisplaySettingEffects(DisplaySettingEffect::PROJECTION);
+
+static constexpr DisplaySettingEnumChoice terrain_ramp_choices[] = {
+  {0, N_("Low lands"), nullptr},
+  {1, N_("Mountainous"), nullptr},
+  {2, N_("Imhof 7"), nullptr},
+  {3, N_("Imhof 4"), nullptr},
+  {4, N_("Imhof 12"), nullptr},
+  {5, N_("Imhof Atlas"), nullptr},
+  {6, N_("ICAO"), nullptr},
+  {9, N_("Vibrant"), nullptr},
+  {7, N_("Grey"), nullptr},
+  {8, N_("White"), nullptr},
+  {10, N_("Sandstone"), nullptr},
+  {11, N_("Pastel"), nullptr},
+  {12, N_("Italian Avioportolano VFR Chart"), nullptr},
+  {13, N_("German DFS VFR Chart"), nullptr},
+  {14, N_("French SIA VFR Chart"), nullptr},
+  {15, N_("High Contrast"), nullptr},
+  {16, N_("High Contrast low lands"), nullptr},
+  {17, N_("Very low lands"), nullptr},
+};
+
+static constexpr DisplaySettingEnumChoice slope_shading_choices[] = {
+  {0, N_("Off"), nullptr},
+  {1, N_("Fixed (North-West)"), nullptr},
+  {2, N_("Sun"), nullptr},
+  {3, N_("Wind"), nullptr},
+  {4, N_("Fixed (Top Left)"), nullptr},
+};
+
+static constexpr DisplaySettingEnumChoice contour_choices[] = {
+  {0, N_("Off"), N_("No contour lines")},
+  {1, N_("Mountains"), N_("For steep mountain terrain, 256m minimum spacing")},
+  {2, N_("Highlands"), N_("Medium density, with 64m minimum spacing")},
+  {3, N_("Lowlands"), N_("More line density for gentler slopes. 16m minimum spacing")},
+  {4, N_("Superfine"), N_("Maximum density contour lines down to 8m spacing")},
+  {5, N_("Fixed 256m"), N_("Fixed 256m spacing, no zoom dependence")},
+  {6, N_("Fixed 128m"), N_("Fixed 128m spacing, no zoom dependence")},
+  {7, N_("Fixed 64m"), N_("Fixed 64m spacing, no zoom dependence")},
+};
+
+static constexpr DisplaySettingEnumChoice orientation_choices[] = {
+  {0, N_("Track up"), N_("The moving map display will be rotated so the glider's track is oriented up.")},
+  {3, N_("Heading up"), N_("The moving map display will be rotated so the glider's heading is oriented up.")},
+  {1, N_("North up"), N_("The moving map display will always be orientated north to south and the glider icon will be rotated to show its course.")},
+  {2, N_("Target up"), N_("The moving map display will be rotated so the navigation target is oriented up.")},
+  {4, N_("Wind up"), N_("The moving map display will be rotated so the wind is always oriented up to down.")},
+};
+
+static constexpr DisplaySettingEnumChoice map_shift_bias_choices[] = {
+  {0, N_("None"), N_("Disable adjustments.")},
+  {1, N_("Track"), N_("Use a recent average of the ground track as basis.")},
+  {2, N_("Target"), N_("Use the current target waypoint as basis.")},
+};
 
 struct GeneratedSettingMetadata {
   unsigned source_value;
@@ -155,37 +242,72 @@ static const std::array<DisplaySettingDescriptor, COUNT> catalog = [] {
     result[n++] = descriptor;
   };
 
-  add(Boolean(Key::TERRAIN_DISPLAY, DisplaySettingGroup::TERRAIN,
-              "TerrainDisplay", N_("Terrain Display"),
-              N_("Draw a digital elevation terrain on the map.")));
-  add(Boolean(Key::TOPOGRAPHY_DISPLAY, DisplaySettingGroup::TERRAIN,
-              "TopographyDisplay", N_("Topography display"),
-              N_("Draw topographical features (roads, rivers, lakes etc.) on the map.")));
-  add(Enumeration(Key::TERRAIN_RAMP, DisplaySettingGroup::TERRAIN,
-                  "TerrainRamp", N_("Terrain colors"), 0, 17,
-                  N_("Defines the color ramp used in terrain rendering.")));
-  add(Enumeration(Key::TERRAIN_SLOPE_SHADING, DisplaySettingGroup::TERRAIN,
-                  "TerrainSlopeShading", N_("Slope shading"), 0, 4));
-  add(Integer(Key::TERRAIN_CONTRAST, DisplaySettingGroup::TERRAIN,
-              "TerrainContrast", N_("Terrain contrast"), 0, 100, 5));
-  add(Integer(Key::TERRAIN_BRIGHTNESS, DisplaySettingGroup::TERRAIN,
-              "TerrainBrightness", N_("Terrain brightness"), 0, 100, 5));
-  add(Enumeration(Key::TERRAIN_CONTOURS, DisplaySettingGroup::TERRAIN,
-                  "TerrainContours", N_("Contours"), 0, 7));
+  add(Overwritable(
+    Boolean(Key::TERRAIN_DISPLAY, DisplaySettingGroup::TERRAIN,
+            "TerrainDisplay", N_("Terrain Display"),
+            N_("Draw a digital elevation terrain on the map.")),
+    TERRAIN_EFFECTS));
+  add(Overwritable(
+    Boolean(Key::TOPOGRAPHY_DISPLAY, DisplaySettingGroup::TERRAIN,
+            "TopographyDisplay", N_("Topography display"),
+            N_("Draw topographical features (roads, rivers, lakes etc.) on the map.")),
+    TERRAIN_EFFECTS));
+  add(Overwritable(
+    Choices(Enumeration(Key::TERRAIN_RAMP, DisplaySettingGroup::TERRAIN,
+                        "TerrainRamp", N_("Terrain colors"), 0, 17,
+                        N_("Defines the color ramp used in terrain rendering.")),
+            terrain_ramp_choices),
+    TERRAIN_EFFECTS));
+  add(Overwritable(
+    Choices(Enumeration(Key::TERRAIN_SLOPE_SHADING,
+                        DisplaySettingGroup::TERRAIN,
+                        "TerrainSlopeShading", N_("Slope shading"), 0, 4),
+            slope_shading_choices),
+    TERRAIN_EFFECTS));
+  add(Overwritable(
+    Integer(Key::TERRAIN_CONTRAST, DisplaySettingGroup::TERRAIN,
+            "TerrainContrast", N_("Terrain contrast"), 0, 100, 5),
+    TERRAIN_EFFECTS));
+  add(Overwritable(
+    Integer(Key::TERRAIN_BRIGHTNESS, DisplaySettingGroup::TERRAIN,
+            "TerrainBrightness", N_("Terrain brightness"), 0, 100, 5),
+    TERRAIN_EFFECTS));
+  add(Overwritable(
+    Choices(Enumeration(Key::TERRAIN_CONTOURS,
+                        DisplaySettingGroup::TERRAIN,
+                        "TerrainContours", N_("Contours"), 0, 7),
+            contour_choices),
+    TERRAIN_EFFECTS));
 
-  add(Enumeration(Key::CRUISE_ORIENTATION, DisplaySettingGroup::ORIENTATION,
-                  "CruiseOrientation", N_("Cruise orientation"), 0, 4));
-  add(Enumeration(Key::CIRCLING_ORIENTATION,
-                  DisplaySettingGroup::ORIENTATION,
-                  "CirclingOrientation", N_("Circling orientation"), 0, 4));
-  add(Boolean(Key::CIRCLING_ZOOM, DisplaySettingGroup::ORIENTATION,
-              "CirclingZoom", N_("Circling zoom")));
-  add(Enumeration(Key::MAP_SHIFT_BIAS, DisplaySettingGroup::ORIENTATION,
-                  "MapShiftBias", N_("Map shift reference"), 0, 2));
-  add(Integer(Key::GLIDER_SCREEN_POSITION,
-              DisplaySettingGroup::ORIENTATION,
-              "GliderScreenPosition", N_("Glider position offset"),
-              10, 50, 5));
+  add(Overwritable(
+    Choices(Enumeration(Key::CRUISE_ORIENTATION,
+                        DisplaySettingGroup::ORIENTATION,
+                        "CruiseOrientation", N_("Cruise orientation"), 0, 4),
+            orientation_choices),
+    ORIENTATION_EFFECTS));
+  add(Overwritable(
+    Choices(Enumeration(Key::CIRCLING_ORIENTATION,
+                        DisplaySettingGroup::ORIENTATION,
+                        "CirclingOrientation", N_("Circling orientation"),
+                        0, 4),
+            orientation_choices),
+    ORIENTATION_EFFECTS));
+  add(Overwritable(
+    Boolean(Key::CIRCLING_ZOOM, DisplaySettingGroup::ORIENTATION,
+            "CirclingZoom", N_("Circling zoom")),
+    ORIENTATION_EFFECTS));
+  add(Overwritable(
+    Choices(Enumeration(Key::MAP_SHIFT_BIAS,
+                        DisplaySettingGroup::ORIENTATION,
+                        "MapShiftBias", N_("Map shift reference"), 0, 2),
+            map_shift_bias_choices),
+    ORIENTATION_EFFECTS));
+  add(Overwritable(
+    Integer(Key::GLIDER_SCREEN_POSITION,
+            DisplaySettingGroup::ORIENTATION,
+            "GliderScreenPosition", N_("Glider position offset"),
+            10, 50, 5),
+    ORIENTATION_EFFECTS));
 
   add(Enumeration(Key::WAYPOINT_LABEL_FORMAT, DisplaySettingGroup::WAYPOINTS,
                   "WaypointLabelFormat", N_("Label format"), 0, 7));

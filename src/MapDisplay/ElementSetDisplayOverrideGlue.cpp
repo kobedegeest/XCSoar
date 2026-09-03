@@ -3,15 +3,31 @@
 
 #include "ElementSetDisplayOverrideGlue.hpp"
 #include "DisplaySettingCatalog.hpp"
+#include "DisplaySettingRuntime.hpp"
 #include "ElementSetDisplayOverrideService.hpp"
+#include "TerrainOrientationDisplaySettings.hpp"
 
 static ElementSetDisplayOverrideService service{
   GetMapDisplaySettingCatalog(),
+  DisplaySettingRuntime::ApplyGroup,
 };
 
 bool
 InitialiseElementSetDisplayOverrides() noexcept
 {
+  RegisterTerrainOrientationDisplaySettings();
+  if (!DisplaySettingRuntime::LoadGlobalValues())
+    return false;
+
+  return service.Initialise();
+}
+
+bool
+ReloadGlobalElementSetDisplaySettings() noexcept
+{
+  if (!DisplaySettingRuntime::LoadGlobalValues())
+    return false;
+
   return service.Initialise();
 }
 
@@ -26,7 +42,13 @@ DisplaySettingValue
 GetGlobalElementSetDisplaySettingValue(
   const DisplaySettingDescriptor &descriptor) noexcept
 {
-  const auto *value = service.GetGlobalValue(descriptor.key);
+  return GetGlobalElementSetDisplaySettingValueByKey(descriptor.key);
+}
+
+DisplaySettingValue
+GetGlobalElementSetDisplaySettingValueByKey(DisplaySettingKey key) noexcept
+{
+  const auto *value = service.GetGlobalValue(key);
   return value != nullptr ? *value : DisplaySettingValue{};
 }
 

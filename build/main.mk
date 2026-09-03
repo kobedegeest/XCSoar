@@ -448,8 +448,10 @@ XCSOAR_SOURCES := \
 	$(SRC)/MapSettings.cpp \
 	$(SRC)/MapElementSettings.cpp \
 	$(SRC)/MapDisplay/DisplaySettingCatalog.cpp \
+	$(SRC)/MapDisplay/DisplaySettingRuntime.cpp \
 	$(SRC)/MapDisplay/ElementSetDisplayOverrideService.cpp \
 	$(SRC)/MapDisplay/ElementSetDisplayOverrideGlue.cpp \
+	$(SRC)/MapDisplay/TerrainOrientationDisplaySettings.cpp \
 	$(SRC)/SystemSettings.cpp \
 	$(SRC)/Audio/Settings.cpp \
 	$(SRC)/Audio/VarioSettings.cpp \
@@ -535,6 +537,7 @@ XCSOAR_SOURCES := \
 	$(SRC)/Profile/TaskProfile.cpp \
 	$(SRC)/Profile/ContestProfile.cpp \
 	$(SRC)/Profile/MapProfile.cpp \
+	$(SRC)/Profile/OrientationConfig.cpp \
 	$(SRC)/Profile/PageProfile.cpp \
 	$(SRC)/Profile/UIProfile.cpp \
 	$(SRC)/Profile/Settings.cpp \

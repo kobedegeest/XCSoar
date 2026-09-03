@@ -45,6 +45,7 @@ ElementSetDisplayOverrideService::Initialise() noexcept
 
     if (new_count == new_slots.size() ||
         descriptor.accessor.get_global == nullptr ||
+        descriptor.accessor.set_global == nullptr ||
         descriptor.accessor.set_effective == nullptr)
       return false;
 
@@ -52,7 +53,8 @@ ElementSetDisplayOverrideService::Initialise() noexcept
       if (new_slots[i].descriptor->key == descriptor.key)
         return false;
 
-    const DisplaySettingValue global = descriptor.accessor.get_global();
+    const DisplaySettingValue global =
+      descriptor.accessor.get_global(descriptor.key);
     if (!descriptor.IsValid(global))
       return false;
 
@@ -97,6 +99,9 @@ ElementSetDisplayOverrideService::SetGlobalValue(
   if (slot->global == value)
     return true;
 
+  if (!slot->descriptor->accessor.set_global(key, value))
+    return false;
+
   slot->global = value;
   Apply(active_overrides);
   return true;
@@ -128,7 +133,8 @@ ElementSetDisplayOverrideService::Apply(
     if (slot.effective_valid && slot.effective == next)
       continue;
 
-    descriptor.accessor.set_effective(next);
+    if (!descriptor.accessor.set_effective(descriptor.key, next))
+      return false;
     slot.effective = next;
     slot.effective_valid = true;
 
