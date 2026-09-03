@@ -2,10 +2,13 @@
 // Copyright The XCSoar Project
 
 #include "WaypointDisplayConfigPanel.hpp"
+#include "MapDisplay/ElementSetDisplayOverrideGlue.hpp"
 #include "Profile/Keys.hpp"
+#include "Renderer/WaypointRendererSettings.hpp"
+#include "Waypoint/MapFilterTypes.hpp"
+#include "ActionInterface.hpp"
 #include "Form/DataField/Enum.hpp"
 #include "Form/DataField/Listener.hpp"
-#include "Interface.hpp"
 #include "Language/Language.hpp"
 #include "Widget/RowFormWidget.hpp"
 #include "UIGlobals.hpp"
@@ -19,11 +22,15 @@ enum ControlIndex {
   MapWaypointIconScale,
   AppUseSWLandablesRendering,
   AppLandableRenderingScale,
-  AppScaleRunwayLength
+  AppScaleRunwayLength,
+  WAYPOINT_TYPE_SEPARATOR,
+  WAYPOINT_TYPE_DISPLAY_START,
 };
 
 class WaypointDisplayConfigPanel final
   : public RowFormWidget, DataFieldListener {
+  WaypointRendererSettings settings;
+
 public:
   WaypointDisplayConfigPanel()
     :RowFormWidget(UIGlobals::GetDialogLook()) {}
@@ -59,7 +66,8 @@ void
 WaypointDisplayConfigPanel::Prepare(ContainerWindow &parent,
                                     const PixelRect &rc) noexcept
 {
-  const WaypointRendererSettings &settings = CommonInterface::GetMapSettings().waypoint;
+  settings.SetDefaults();
+  settings.LoadFromProfile();
 
   RowFormWidget::Prepare(parent, rc);
 
@@ -191,6 +199,12 @@ WaypointDisplayConfigPanel::Prepare(ContainerWindow &parent,
              settings.scale_runway_length);
   SetExpertRow(AppScaleRunwayLength);
 
+  AddSpacer();
+  for (const auto &item : GetWaypointMapFilterTypes())
+    AddBoolean(gettext(item.label),
+               _("Display this waypoint type on the map."),
+               settings.display_types[static_cast<unsigned>(item.type)]);
+
   UpdateVisibilities();
 }
 
@@ -198,8 +212,6 @@ bool
 WaypointDisplayConfigPanel::Save(bool &_changed) noexcept
 {
   bool changed = false;
-
-  WaypointRendererSettings &settings = CommonInterface::SetMapSettings().waypoint;
 
   changed |= SaveValueEnum(WaypointLabels, ProfileKeys::DisplayText, settings.display_text_type);
 
@@ -225,6 +237,18 @@ WaypointDisplayConfigPanel::Save(bool &_changed) noexcept
 
   changed |= SaveValue(AppScaleRunwayLength, ProfileKeys::AppScaleRunwayLength,
                        settings.scale_runway_length);
+
+  unsigned row = WAYPOINT_TYPE_DISPLAY_START;
+  for (const auto &item : GetWaypointMapFilterTypes()) {
+    changed |= SaveValue(row++, item.global_profile_key,
+                         settings.display_types[
+                           static_cast<unsigned>(item.type)]);
+  }
+
+  if (changed) {
+    ReloadGlobalElementSetDisplaySettings();
+    ActionInterface::SendMapSettings(true);
+  }
 
   _changed |= changed;
 

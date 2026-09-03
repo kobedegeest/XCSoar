@@ -3,9 +3,13 @@
 
 #pragma once
 
+#include "Engine/Waypoint/Waypoint.hpp"
 #include "LabelShape.hpp"
+#include "Waypoint/MapFilterTypes.hpp"
 
 #include <cstdint>
+
+class ProfileMap;
 
 struct WaypointRendererSettings {
   /** What type of text to draw next to the waypoint icon */
@@ -61,6 +65,15 @@ struct WaypointRendererSettings {
    */
   int map_waypoint_icon_scale;
 
+  /** Per-#Waypoint::Type map-symbol visibility. */
+  bool display_types[WAYPOINT_TYPE_SLOT_COUNT];
+
+  [[gnu::pure]]
+  bool IsTypeDisplayed(Waypoint::Type type) const noexcept {
+    const auto index = static_cast<unsigned>(type);
+    return index >= WAYPOINT_TYPE_SLOT_COUNT || display_types[index];
+  }
+
   void SetDefaults() noexcept {
     display_text_type = DisplayTextType::SHORT_NAME;
     arrival_height_display = ArrivalHeightDisplay::GLIDE;
@@ -72,7 +85,11 @@ struct WaypointRendererSettings {
     scale_runway_length = false;
     landable_rendering_scale = 100;
     map_waypoint_icon_scale = 100;
+
+    for (bool &display : display_types)
+      display = true;
   }
 
   void LoadFromProfile() noexcept;
+  void LoadFromProfile(const ProfileMap &map) noexcept;
 };

@@ -406,6 +406,8 @@ InputEvents::eventAdjustForecastTemperature(const char *misc)
 void
 InputEvents::eventDeclutterLabels(const char *misc)
 {
+  using namespace DisplaySettingCatalog;
+
   static const char *const msg[] = {
     N_("All"),
     N_("Task & Landables"),
@@ -423,27 +425,36 @@ InputEvents::eventDeclutterLabels(const char *misc)
     "task+airfields",
   };
 
-  WaypointRendererSettings::LabelSelection &wls =
-    CommonInterface::SetMapSettings().waypoint.label_selection;
+  auto wls = static_cast<WaypointRendererSettings::LabelSelection>(
+    GetGlobalElementSetDisplaySettingValueByKey(
+      Key::WAYPOINT_LABEL_VISIBILITY).value);
   if (StringIsEqual(misc, "toggle")) {
     wls = WaypointRendererSettings::LabelSelection(((unsigned)wls + 1) %  n);
-    Profile::Set(ProfileKeys::WaypointLabelSelection, (int)wls);
   } else if (StringIsEqual(misc, "show")) {
     char tbuf[64];
     StringFormatUnsafe(tbuf, _("%s: %s"), _("Waypoint labels"),
                        gettext(msg[(unsigned)wls]));
     Message::AddMessage(tbuf);
+    return;
   }
   else {
+    bool found = false;
     for (unsigned int i=0; i<n; i++)
-      if (StringIsEqual(misc, actions[i]))
+      if (StringIsEqual(misc, actions[i])) {
         wls = (WaypointRendererSettings::LabelSelection)i;
+        found = true;
+        break;
+      }
+
+    if (!found)
+      return;
   }
 
   /* save new values to profile */
   Profile::Set(ProfileKeys::WaypointLabelSelection,
                EnumCast<WaypointRendererSettings::LabelSelection>()(wls));
 
+  ReloadGlobalElementSetDisplaySettings();
   ActionInterface::SendMapSettings(true);
 }
 

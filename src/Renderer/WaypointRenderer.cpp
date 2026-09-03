@@ -414,6 +414,9 @@ protected:
     if (waypoints.full())
       return;
 
+    if (!settings.IsTypeDisplayed(way_point->type))
+      return;
+
     if (!projection.WaypointInScaleFilter(*way_point) && !in_task)
       return;
 

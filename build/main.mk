@@ -300,6 +300,8 @@ XCSOAR_SOURCES := \
 	$(SRC)/Waypoint/WaypointList.cpp \
 	$(SRC)/Waypoint/WaypointListBuilder.cpp \
 	$(SRC)/Waypoint/WaypointFilter.cpp \
+	$(SRC)/Waypoint/MapFilterProfile.cpp \
+	$(SRC)/Waypoint/MapFilterTypes.cpp \
 	$(SRC)/Waypoint/WaypointGlue.cpp \
 	$(SRC)/Waypoint/SaveGlue.cpp \
 	$(SRC)/Waypoint/LastUsed.cpp \
@@ -452,6 +454,7 @@ XCSOAR_SOURCES := \
 	$(SRC)/MapDisplay/ElementSetDisplayOverrideService.cpp \
 	$(SRC)/MapDisplay/ElementSetDisplayOverrideGlue.cpp \
 	$(SRC)/MapDisplay/TerrainOrientationDisplaySettings.cpp \
+	$(SRC)/MapDisplay/WaypointDisplaySettings.cpp \
 	$(SRC)/SystemSettings.cpp \
 	$(SRC)/Audio/Settings.cpp \
 	$(SRC)/Audio/VarioSettings.cpp \

@@ -91,6 +91,7 @@ TEST_NAMES = \
 	TestElementSetDisplayOverrides \
 	TestElementSetDisplayOverrideService \
 	TestDisplaySettingProfile \
+	TestWaypointDisplaySettings \
 	TestAllocatedGrid \
 	TestRadixTree TestGeoBounds TestGeoClip \
 	TestLogger TestGRecord TestClimbAvCalc TestCirclingWind \
@@ -168,6 +169,7 @@ TESTS = $(call name-to-bin,$(TEST_NAMES))
 TEST_ELEMENT_SET_DISPLAY_OVERRIDES_SOURCES = \
 	$(SRC)/MapDisplay/DisplaySettingCatalog.cpp \
 	$(SRC)/MapDisplay/DisplaySettingRuntime.cpp \
+	$(SRC)/Waypoint/MapFilterTypes.cpp \
 	$(TEST_SRC_DIR)/tap.c \
 	$(TEST_SRC_DIR)/TestElementSetDisplayOverrides.cpp
 $(eval $(call link-program,TestElementSetDisplayOverrides,TEST_ELEMENT_SET_DISPLAY_OVERRIDES))
@@ -186,6 +188,15 @@ TEST_DISPLAY_SETTING_PROFILE_SOURCES = \
 	$(TEST_SRC_DIR)/TestDisplaySettingProfile.cpp
 TEST_DISPLAY_SETTING_PROFILE_DEPENDS = PROFILE
 $(eval $(call link-program,TestDisplaySettingProfile,TEST_DISPLAY_SETTING_PROFILE))
+
+TEST_WAYPOINT_DISPLAY_SETTINGS_SOURCES = \
+	$(SRC)/Renderer/WaypointRendererSettings.cpp \
+	$(SRC)/Waypoint/MapFilterProfile.cpp \
+	$(SRC)/Waypoint/MapFilterTypes.cpp \
+	$(TEST_SRC_DIR)/tap.c \
+	$(TEST_SRC_DIR)/TestWaypointDisplaySettings.cpp
+TEST_WAYPOINT_DISPLAY_SETTINGS_DEPENDS = PROFILE
+$(eval $(call link-program,TestWaypointDisplaySettings,TEST_WAYPOINT_DISPLAY_SETTINGS))
 
 TEST_HEX_STRING_SOURCES = \
 	$(TEST_SRC_DIR)/tap.c \
@@ -438,6 +449,7 @@ TEST_PROFILE_SOURCES = \
 	$(SRC)/LocalPath.cpp \
 	$(SRC)/MapDisplay/DisplaySettingCatalog.cpp \
 	$(SRC)/MapDisplay/DisplaySettingRuntime.cpp \
+	$(SRC)/Waypoint/MapFilterTypes.cpp \
 	$(SRC)/PageSettings.cpp \
 	$(SRC)/Profile/PageProfile.cpp \
 	$(SRC)/Profile/MapElementConfig.cpp \
@@ -2251,6 +2263,8 @@ RUN_MAP_WINDOW_SOURCES = \
 	$(SRC)/Renderer/WaypointIconRenderer.cpp \
 	$(SRC)/Renderer/WaypointRenderer.cpp \
 	$(SRC)/Renderer/WaypointRendererSettings.cpp \
+	$(SRC)/Waypoint/MapFilterProfile.cpp \
+	$(SRC)/Waypoint/MapFilterTypes.cpp \
 	$(SRC)/Renderer/WaypointLabelList.cpp \
 	$(SRC)/Renderer/WindArrowRenderer.cpp \
 	$(SRC)/Renderer/WaveRenderer.cpp \

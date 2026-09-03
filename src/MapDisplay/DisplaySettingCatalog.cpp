@@ -5,8 +5,8 @@
 #include "DisplaySettingRuntime.hpp"
 
 #include "Engine/Airspace/AirspaceClass.hpp"
-#include "Engine/Waypoint/Waypoint.hpp"
 #include "Language/Language.hpp"
+#include "Waypoint/MapFilterTypes.hpp"
 
 #include <array>
 #include <cassert>
@@ -14,6 +14,9 @@
 namespace {
 
 using namespace DisplaySettingCatalog;
+
+static_assert(::WAYPOINT_MAP_FILTER_TYPE_COUNT ==
+              DisplaySettingCatalog::WAYPOINT_TYPE_COUNT);
 
 constexpr DisplaySettingDescriptor
 Boolean(DisplaySettingKey key, DisplaySettingGroup group,
@@ -90,6 +93,13 @@ static constexpr DisplaySettingEffects ORIENTATION_EFFECTS =
   ToDisplaySettingEffects(DisplaySettingEffect::REDRAW) |
   ToDisplaySettingEffects(DisplaySettingEffect::PROJECTION);
 
+static constexpr DisplaySettingEffects WAYPOINT_EFFECTS =
+  ToDisplaySettingEffects(DisplaySettingEffect::REDRAW);
+
+static constexpr DisplaySettingEffects WAYPOINT_LOOK_EFFECTS =
+  WAYPOINT_EFFECTS |
+  ToDisplaySettingEffects(DisplaySettingEffect::WAYPOINT_LOOK);
+
 static constexpr DisplaySettingEnumChoice terrain_ramp_choices[] = {
   {0, N_("Low lands"), nullptr},
   {1, N_("Mountainous"), nullptr},
@@ -144,36 +154,62 @@ static constexpr DisplaySettingEnumChoice map_shift_bias_choices[] = {
   {2, N_("Target"), N_("Use the current target waypoint as basis.")},
 };
 
+static constexpr DisplaySettingEnumChoice waypoint_label_format_choices[] = {
+  {0, N_("Full name"),
+   N_("The full name of each waypoint is displayed.")},
+  {6, N_("First word of name"),
+   N_("The first word of the waypoint name is displayed.")},
+  {4, N_("First 3 letters"),
+   N_("The first 3 letters of the waypoint name are displayed.")},
+  {2, N_("First 5 letters"),
+   N_("The first 5 letters of the waypoint name are displayed.")},
+  {3, N_("None"), N_("No waypoint name is displayed.")},
+  {7, N_("Short Name"),
+   N_("The short name of each waypoint is displayed. If unavailable, "
+      "the first five letters of the full name are displayed.")},
+};
+
+static constexpr DisplaySettingEnumChoice waypoint_arrival_choices[] = {
+  {0, N_("None"), N_("No arrival height is displayed.")},
+  {1, N_("Straight glide"),
+   N_("Straight glide arrival height (no terrain is considered).")},
+  {2, N_("Terrain avoidance glide"),
+   N_("Arrival height considering terrain avoidance.")},
+  {3, N_("Straight & terrain glide"),
+   N_("Both arrival heights are displayed.")},
+  {4, N_("Required glide ratio"), nullptr},
+  {5, N_("Required GR & terrain glide"),
+   N_("Both required glide ratio and terrain avoidance height are displayed.")},
+};
+
+static constexpr DisplaySettingEnumChoice waypoint_label_style_choices[] = {
+  {5, N_("Rounded rectangle"), nullptr},
+  {3, N_("Outlined"), nullptr},
+};
+
+static constexpr DisplaySettingEnumChoice waypoint_visibility_choices[] = {
+  {0, N_("All"), N_("All labels will be displayed.")},
+  {4, N_("Task waypoints & airfields"),
+   N_("All task waypoints and airfields will be displayed.")},
+  {1, N_("Task waypoints & landables"),
+   N_("All task waypoints and landables will be displayed.")},
+  {2, N_("Task waypoints"),
+   N_("All waypoints in the task will be displayed.")},
+  {3, N_("None"), N_("No labels will be displayed.")},
+};
+
+static constexpr DisplaySettingEnumChoice waypoint_landable_choices[] = {
+  {0, N_("Purple circle"), nullptr},
+  {1, N_("B/W"), nullptr},
+  {2, N_("Traffic lights"), nullptr},
+};
+
 struct GeneratedSettingMetadata {
   unsigned source_value;
   DisplaySettingKey key;
   const char *profile_suffix;
   const char *label;
 };
-
-static constexpr GeneratedSettingMetadata waypoint_types[] = {
-  {unsigned(Waypoint::Type::NORMAL), {0x3101}, "WaypointTypeNormal", N_("Turnpoint")},
-  {unsigned(Waypoint::Type::AIRFIELD), {0x3102}, "WaypointTypeAirfield", N_("Airport")},
-  {unsigned(Waypoint::Type::OUTLANDING), {0x3103}, "WaypointTypeOutlanding", N_("Landable")},
-  {unsigned(Waypoint::Type::MOUNTAIN_PASS), {0x3104}, "WaypointTypeMountainPass", N_("Mountain Pass")},
-  {unsigned(Waypoint::Type::MOUNTAIN_TOP), {0x3105}, "WaypointTypeMountainTop", N_("Mountain Top")},
-  {unsigned(Waypoint::Type::OBSTACLE), {0x3106}, "WaypointTypeObstacle", N_("Transmitter Mast")},
-  {unsigned(Waypoint::Type::VOR), {0x3107}, "WaypointTypeVOR", N_("VOR")},
-  {unsigned(Waypoint::Type::NDB), {0x3108}, "WaypointTypeNDB", N_("NDB")},
-  {unsigned(Waypoint::Type::TOWER), {0x3109}, "WaypointTypeTower", N_("Tower")},
-  {unsigned(Waypoint::Type::DAM), {0x310a}, "WaypointTypeDam", N_("Dam")},
-  {unsigned(Waypoint::Type::TUNNEL), {0x310b}, "WaypointTypeTunnel", N_("Tunnel")},
-  {unsigned(Waypoint::Type::BRIDGE), {0x310c}, "WaypointTypeBridge", N_("Bridge")},
-  {unsigned(Waypoint::Type::POWERPLANT), {0x310d}, "WaypointTypePowerPlant", N_("Power Plant")},
-  {unsigned(Waypoint::Type::CASTLE), {0x310e}, "WaypointTypeCastle", N_("Castle")},
-  {unsigned(Waypoint::Type::INTERSECTION), {0x310f}, "WaypointTypeIntersection", N_("Intersection")},
-  {unsigned(Waypoint::Type::MARKER), {0x3110}, "WaypointTypeMarker", N_("Marker")},
-  {unsigned(Waypoint::Type::REPORTING_POINT), {0x3111}, "WaypointTypeReportingPoint", N_("Control Point")},
-  {unsigned(Waypoint::Type::PGTAKEOFF), {0x3112}, "WaypointTypePGTakeoff", N_("PG Take Off")},
-  {unsigned(Waypoint::Type::PGLANDING), {0x3113}, "WaypointTypePGLanding", N_("PG Landing Zone")},
-};
-
-static_assert(std::size(waypoint_types) == WAYPOINT_TYPE_COUNT);
 
 static constexpr GeneratedSettingMetadata airspace_classes[] = {
   {unsigned(RESTRICTED), {0x4101}, "AirspaceClassRestricted", N_("Restricted")},
@@ -309,33 +345,63 @@ static const std::array<DisplaySettingDescriptor, COUNT> catalog = [] {
             10, 50, 5),
     ORIENTATION_EFFECTS));
 
-  add(Enumeration(Key::WAYPOINT_LABEL_FORMAT, DisplaySettingGroup::WAYPOINTS,
-                  "WaypointLabelFormat", N_("Label format"), 0, 7));
-  add(Enumeration(Key::WAYPOINT_ARRIVAL_HEIGHT,
-                  DisplaySettingGroup::WAYPOINTS,
-                  "WaypointArrivalHeight", N_("Arrival height"), 0, 5));
-  add(Enumeration(Key::WAYPOINT_LABEL_STYLE, DisplaySettingGroup::WAYPOINTS,
-                  "WaypointLabelStyle", N_("Label style"), 0, 5));
-  add(Enumeration(Key::WAYPOINT_LABEL_VISIBILITY,
-                  DisplaySettingGroup::WAYPOINTS,
-                  "WaypointLabelVisibility", N_("Label visibility"), 0, 4));
-  add(Enumeration(Key::WAYPOINT_LANDABLE_SYMBOLS,
-                  DisplaySettingGroup::WAYPOINTS,
-                  "WaypointLandableSymbols", N_("Landable symbols"), 0, 2));
-  add(Integer(Key::WAYPOINT_ICON_SCALE, DisplaySettingGroup::WAYPOINTS,
-              "WaypointIconScale", N_("Waypoint icon size"), 50, 200, 10));
-  add(Boolean(Key::WAYPOINT_DETAILED_LANDABLES,
+  add(Overwritable(
+    Choices(Enumeration(Key::WAYPOINT_LABEL_FORMAT,
+                        DisplaySettingGroup::WAYPOINTS,
+                        "WaypointLabelFormat", N_("Label format"), 0, 7),
+            waypoint_label_format_choices),
+    WAYPOINT_EFFECTS));
+  add(Overwritable(
+    Choices(Enumeration(Key::WAYPOINT_ARRIVAL_HEIGHT,
+                        DisplaySettingGroup::WAYPOINTS,
+                        "WaypointArrivalHeight", N_("Arrival height"), 0, 5),
+            waypoint_arrival_choices),
+    WAYPOINT_EFFECTS));
+  add(Overwritable(
+    Choices(Enumeration(Key::WAYPOINT_LABEL_STYLE,
+                        DisplaySettingGroup::WAYPOINTS,
+                        "WaypointLabelStyle", N_("Label style"), 0, 5),
+            waypoint_label_style_choices),
+    WAYPOINT_EFFECTS));
+  add(Overwritable(
+    Choices(Enumeration(Key::WAYPOINT_LABEL_VISIBILITY,
+                        DisplaySettingGroup::WAYPOINTS,
+                        "WaypointLabelVisibility", N_("Label visibility"),
+                        0, 4),
+            waypoint_visibility_choices),
+    WAYPOINT_EFFECTS));
+  add(Overwritable(
+    Choices(Enumeration(Key::WAYPOINT_LANDABLE_SYMBOLS,
+                        DisplaySettingGroup::WAYPOINTS,
+                        "WaypointLandableSymbols", N_("Landable symbols"),
+                        0, 2),
+            waypoint_landable_choices),
+    WAYPOINT_LOOK_EFFECTS));
+  add(Overwritable(
+    Integer(Key::WAYPOINT_ICON_SCALE, DisplaySettingGroup::WAYPOINTS,
+            "WaypointIconScale", N_("Waypoint icon size"), 50, 200, 10),
+    WAYPOINT_EFFECTS));
+  add(Overwritable(
+    Boolean(Key::WAYPOINT_DETAILED_LANDABLES,
+            DisplaySettingGroup::WAYPOINTS,
+            "WaypointDetailedLandables", N_("Detailed landables")),
+    WAYPOINT_EFFECTS));
+  add(Overwritable(
+    Integer(Key::WAYPOINT_LANDABLE_SIZE, DisplaySettingGroup::WAYPOINTS,
+            "WaypointLandableSize", N_("Landable size"), 50, 200, 10),
+    WAYPOINT_EFFECTS));
+  add(Overwritable(
+    Boolean(Key::WAYPOINT_SCALE_RUNWAY_LENGTH,
+            DisplaySettingGroup::WAYPOINTS,
+            "WaypointScaleRunwayLength", N_("Scale runway length")),
+    WAYPOINT_EFFECTS));
+  for (const auto &item : GetWaypointMapFilterTypes())
+    add(Overwritable(
+      Boolean(DisplaySettingKey{item.display_setting_key},
               DisplaySettingGroup::WAYPOINTS,
-              "WaypointDetailedLandables", N_("Detailed landables")));
-  add(Integer(Key::WAYPOINT_LANDABLE_SIZE, DisplaySettingGroup::WAYPOINTS,
-              "WaypointLandableSize", N_("Landable size"), 50, 200, 10));
-  add(Boolean(Key::WAYPOINT_SCALE_RUNWAY_LENGTH,
-              DisplaySettingGroup::WAYPOINTS,
-              "WaypointScaleRunwayLength", N_("Scale runway length")));
-  for (const auto &item : waypoint_types)
-    add(Boolean(item.key, DisplaySettingGroup::WAYPOINTS,
-                item.profile_suffix, item.label,
-                N_("Display this waypoint type on the map.")));
+              item.override_profile_suffix, item.label,
+              N_("Display this waypoint type on the map.")),
+      WAYPOINT_EFFECTS));
 
   add(Enumeration(Key::AIRSPACE_DISPLAY, DisplaySettingGroup::AIRSPACE,
                   "AirspaceDisplay", N_("Airspace display"), 0, 3));

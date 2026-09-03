@@ -6,6 +6,7 @@
 #include "DisplaySettingRuntime.hpp"
 #include "ElementSetDisplayOverrideService.hpp"
 #include "TerrainOrientationDisplaySettings.hpp"
+#include "WaypointDisplaySettings.hpp"
 
 static ElementSetDisplayOverrideService service{
   GetMapDisplaySettingCatalog(),
@@ -16,6 +17,7 @@ bool
 InitialiseElementSetDisplayOverrides() noexcept
 {
   RegisterTerrainOrientationDisplaySettings();
+  RegisterWaypointDisplaySettings();
   if (!DisplaySettingRuntime::LoadGlobalValues())
     return false;
 
