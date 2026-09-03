@@ -9,6 +9,7 @@
 #include "Form/Button.hpp"
 #include "Form/DataField/Enum.hpp"
 #include "Language/Language.hpp"
+#include "Look/DialogLook.hpp"
 #include "Renderer/TwoTextRowsRenderer.hpp"
 #include "UIGlobals.hpp"
 #include "Widget/ListWidget.hpp"
