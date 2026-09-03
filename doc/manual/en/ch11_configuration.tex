@@ -839,6 +839,28 @@ The right side of the dialogue always gives the overview on the composed set.
 When composing at the PC you can use the mouse to select the individual boxes 
 right from the overview.
 
+
+%%%%%%%%%%%%%%%%%%
+\section{Look / Map Element Sets}\label{sec:map-element-sets}
+
+Map Element Sets are reusable collections of map overlays and controls.  The
+three predefined sets are Circling, Cruise, and Final Glide; experts can also
+name and configure five auxiliary sets.  A map page can select one set
+directly, or select \emph{Auto} to follow the current flight mode.
+
+Selecting a set opens its scrollable element list.  The
+\button{Setting overrides} button at the bottom opens the optional display
+settings owned by that set.  An empty override list inherits every global map
+display setting.  Adding an override copies the current global value and then
+allows a different value to be selected; removing it restores inheritance.
+
+Overrides are available for terrain, map orientation, waypoint display, and
+airspace display.  Waypoint-type and airspace-class overrides control display
+only.  In particular, hiding an airspace class does not change its warning
+policy, colours, borders, or fill style.  Changing a global setting immediately
+updates sets which inherit it, while an explicit set override continues to win.
+Copying and pasting a Map Element Set includes its setting overrides.
+
 See Section~\ref{cha:infobox} for a description of the InfoBox types and their meanings.
 
 To change a set press on one of the InfoBoxes labeled with it's current content.

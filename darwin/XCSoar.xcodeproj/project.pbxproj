@@ -7066,6 +7066,40 @@
 		5CE4B8EF2F06E03200DC2994 /* Sync.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Sync.cpp; sourceTree = "<group>"; };
 		5CE4B8F02F06E03200DC2994 /* AirspaceSync.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = AirspaceSync.hpp; sourceTree = "<group>"; };
 		5CE4B8F12F06E03200DC2994 /* AirspaceSync.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = AirspaceSync.cpp; sourceTree = "<group>"; };
+		D15F00000000000000000001 /* AirspaceClassDisplay.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = AirspaceClassDisplay.hpp; sourceTree = "<group>"; };
+		D15F00000000000000000002 /* AirspaceClassDisplay.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = AirspaceClassDisplay.cpp; sourceTree = "<group>"; };
+		D15F00000000000000000003 /* ElementSetDisplayOverridesDialog.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ElementSetDisplayOverridesDialog.hpp; sourceTree = "<group>"; };
+		D15F00000000000000000004 /* ElementSetDisplayOverridesDialog.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ElementSetDisplayOverridesDialog.cpp; sourceTree = "<group>"; };
+		D15F00000000000000000005 /* MapElementSetsConfigPanel.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = MapElementSetsConfigPanel.hpp; sourceTree = "<group>"; };
+		D15F00000000000000000006 /* MapElementSetsConfigPanel.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = MapElementSetsConfigPanel.cpp; sourceTree = "<group>"; };
+		D15F00000000000000000007 /* dlgConfigMapElements.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = dlgConfigMapElements.hpp; sourceTree = "<group>"; };
+		D15F00000000000000000008 /* dlgConfigMapElements.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = dlgConfigMapElements.cpp; sourceTree = "<group>"; };
+		D15F00000000000000000009 /* AirspaceDisplaySettings.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = AirspaceDisplaySettings.hpp; sourceTree = "<group>"; };
+		D15F0000000000000000000A /* AirspaceDisplaySettings.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = AirspaceDisplaySettings.cpp; sourceTree = "<group>"; };
+		D15F0000000000000000000B /* DisplaySettingCatalog.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = DisplaySettingCatalog.hpp; sourceTree = "<group>"; };
+		D15F0000000000000000000C /* DisplaySettingCatalog.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = DisplaySettingCatalog.cpp; sourceTree = "<group>"; };
+		D15F0000000000000000000D /* DisplaySettingRuntime.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = DisplaySettingRuntime.hpp; sourceTree = "<group>"; };
+		D15F0000000000000000000E /* DisplaySettingRuntime.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = DisplaySettingRuntime.cpp; sourceTree = "<group>"; };
+		D15F0000000000000000000F /* ElementSetDisplayOverrideGlue.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ElementSetDisplayOverrideGlue.hpp; sourceTree = "<group>"; };
+		D15F00000000000000000010 /* ElementSetDisplayOverrideGlue.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ElementSetDisplayOverrideGlue.cpp; sourceTree = "<group>"; };
+		D15F00000000000000000011 /* ElementSetDisplayOverrideService.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ElementSetDisplayOverrideService.hpp; sourceTree = "<group>"; };
+		D15F00000000000000000012 /* ElementSetDisplayOverrideService.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ElementSetDisplayOverrideService.cpp; sourceTree = "<group>"; };
+		D15F00000000000000000013 /* ElementSetDisplayOverrides.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ElementSetDisplayOverrides.hpp; sourceTree = "<group>"; };
+		D15F00000000000000000014 /* TerrainOrientationDisplaySettings.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = TerrainOrientationDisplaySettings.hpp; sourceTree = "<group>"; };
+		D15F00000000000000000015 /* TerrainOrientationDisplaySettings.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = TerrainOrientationDisplaySettings.cpp; sourceTree = "<group>"; };
+		D15F00000000000000000016 /* WaypointDisplaySettings.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = WaypointDisplaySettings.hpp; sourceTree = "<group>"; };
+		D15F00000000000000000017 /* WaypointDisplaySettings.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = WaypointDisplaySettings.cpp; sourceTree = "<group>"; };
+		D15F00000000000000000018 /* OrientationConfig.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = OrientationConfig.hpp; sourceTree = "<group>"; };
+		D15F00000000000000000019 /* OrientationConfig.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = OrientationConfig.cpp; sourceTree = "<group>"; };
+		D15F0000000000000000001A /* MapFilterProfile.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = MapFilterProfile.hpp; sourceTree = "<group>"; };
+		D15F0000000000000000001B /* MapFilterProfile.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = MapFilterProfile.cpp; sourceTree = "<group>"; };
+		D15F0000000000000000001C /* MapFilterTypes.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = MapFilterTypes.hpp; sourceTree = "<group>"; };
+		D15F0000000000000000001D /* MapFilterTypes.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = MapFilterTypes.cpp; sourceTree = "<group>"; };
+		D15F0000000000000000001E /* TestAirspaceDisplaySettings.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = TestAirspaceDisplaySettings.cpp; sourceTree = "<group>"; };
+		D15F0000000000000000001F /* TestDisplaySettingProfile.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = TestDisplaySettingProfile.cpp; sourceTree = "<group>"; };
+		D15F00000000000000000020 /* TestElementSetDisplayOverrideService.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = TestElementSetDisplayOverrideService.cpp; sourceTree = "<group>"; };
+		D15F00000000000000000021 /* TestElementSetDisplayOverrides.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = TestElementSetDisplayOverrides.cpp; sourceTree = "<group>"; };
+		D15F00000000000000000022 /* TestWaypointDisplaySettings.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = TestWaypointDisplaySettings.cpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -14882,6 +14916,8 @@
 			children = (
 				5CBFDF992D742FA600F05795 /* ActivePredicate.hpp */,
 				5CBFDF9A2D742FA600F05795 /* ActivePredicate.cpp */,
+				D15F00000000000000000001 /* AirspaceClassDisplay.hpp */,
+				D15F00000000000000000002 /* AirspaceClassDisplay.cpp */,
 				5CBFDF9B2D742FA600F05795 /* AirspaceComputerSettings.hpp */,
 				5CBFDF9C2D742FA600F05795 /* AirspaceComputerSettings.cpp */,
 				5CBFDF9D2D742FA600F05795 /* AirspaceGlue.hpp */,
@@ -15819,6 +15855,8 @@
 				5CBFE2352D742FA600F05795 /* LoggerConfigPanel.cpp */,
 				5CBFE2362D742FA600F05795 /* MapDisplayConfigPanel.hpp */,
 				5CBFE2372D742FA600F05795 /* MapDisplayConfigPanel.cpp */,
+				D15F00000000000000000005 /* MapElementSetsConfigPanel.hpp */,
+				D15F00000000000000000006 /* MapElementSetsConfigPanel.cpp */,
 				5CBFE2382D742FA600F05795 /* PagesConfigPanel.hpp */,
 				5CBFE2392D742FA600F05795 /* PagesConfigPanel.cpp */,
 				5CBFE23A2D742FA600F05795 /* RouteConfigPanel.hpp */,
@@ -15861,7 +15899,11 @@
 			isa = PBXGroup;
 			children = (
 				5CBFE25A2D742FA600F05795 /* Panels */,
+				D15F00000000000000000003 /* ElementSetDisplayOverridesDialog.hpp */,
+				D15F00000000000000000004 /* ElementSetDisplayOverridesDialog.cpp */,
 				5CBFE25B2D742FA600F05795 /* dlgBasicSettings.cpp */,
+				D15F00000000000000000007 /* dlgConfigMapElements.hpp */,
+				D15F00000000000000000008 /* dlgConfigMapElements.cpp */,
 				5CBFE25C2D742FA600F05795 /* dlgConfigInfoboxes.hpp */,
 				5CBFE25D2D742FA600F05795 /* dlgConfigInfoboxes.cpp */,
 				5CBFE25E2D742FA600F05795 /* dlgConfiguration.cpp */,
@@ -17727,6 +17769,28 @@
 			path = MapWindow;
 			sourceTree = "<group>";
 		};
+		D15D00000000000000000001 /* MapDisplay */ = {
+			isa = PBXGroup;
+			children = (
+				D15F00000000000000000009 /* AirspaceDisplaySettings.hpp */,
+				D15F0000000000000000000A /* AirspaceDisplaySettings.cpp */,
+				D15F0000000000000000000B /* DisplaySettingCatalog.hpp */,
+				D15F0000000000000000000C /* DisplaySettingCatalog.cpp */,
+				D15F0000000000000000000D /* DisplaySettingRuntime.hpp */,
+				D15F0000000000000000000E /* DisplaySettingRuntime.cpp */,
+				D15F0000000000000000000F /* ElementSetDisplayOverrideGlue.hpp */,
+				D15F00000000000000000010 /* ElementSetDisplayOverrideGlue.cpp */,
+				D15F00000000000000000011 /* ElementSetDisplayOverrideService.hpp */,
+				D15F00000000000000000012 /* ElementSetDisplayOverrideService.cpp */,
+				D15F00000000000000000013 /* ElementSetDisplayOverrides.hpp */,
+				D15F00000000000000000014 /* TerrainOrientationDisplaySettings.hpp */,
+				D15F00000000000000000015 /* TerrainOrientationDisplaySettings.cpp */,
+				D15F00000000000000000016 /* WaypointDisplaySettings.hpp */,
+				D15F00000000000000000017 /* WaypointDisplaySettings.cpp */,
+			);
+			path = MapDisplay;
+			sourceTree = "<group>";
+		};
 		5CBFE7AD2D742FA600F05795 /* Markers */ = {
 			isa = PBXGroup;
 			children = (
@@ -18069,6 +18133,8 @@
 				5CBFE89C2D742FA600F05795 /* MapProfile.hpp */,
 				5CBFE89D2D742FA600F05795 /* MapProfile.cpp */,
 				5CBFE89E2D742FA600F05795 /* NumericValue.cpp */,
+				D15F00000000000000000018 /* OrientationConfig.hpp */,
+				D15F00000000000000000019 /* OrientationConfig.cpp */,
 				5CBFE89F2D742FA600F05795 /* PageProfile.hpp */,
 				5CBFE8A02D742FA600F05795 /* PageProfile.cpp */,
 				5CBFE8A12D742FA600F05795 /* PathValue.cpp */,
@@ -19579,6 +19645,10 @@
 				5CBFEC902D742FA600F05795 /* HomeGlue.cpp */,
 				5CBFEC912D742FA600F05795 /* LastUsed.hpp */,
 				5CBFEC922D742FA600F05795 /* LastUsed.cpp */,
+				D15F0000000000000000001A /* MapFilterProfile.hpp */,
+				D15F0000000000000000001B /* MapFilterProfile.cpp */,
+				D15F0000000000000000001C /* MapFilterTypes.hpp */,
+				D15F0000000000000000001D /* MapFilterTypes.cpp */,
 				5CBFEC932D742FA600F05795 /* Patterns.hpp */,
 				5CBFEC942D742FA600F05795 /* SaveGlue.cpp */,
 				5CBFEC952D742FA600F05795 /* WaypointDetailsReader.hpp */,
@@ -19821,6 +19891,7 @@
 				5CBFE6F52D742FA600F05795 /* Logger */,
 				5CBFE73F2D742FA600F05795 /* Look */,
 				5CBFE77D2D742FA600F05795 /* lua */,
+				D15D00000000000000000001 /* MapDisplay */,
 				5CBFE7AA2D742FA600F05795 /* MapWindow */,
 				5CBFE7AD2D742FA600F05795 /* Markers */,
 				5CBFE7DE2D742FA600F05795 /* Math */,
@@ -20334,6 +20405,7 @@
 				5CBFEEB82D742FA600F05795 /* test_troute.cpp */,
 				5CBFEEB92D742FA600F05795 /* test_vopt.cpp */,
 				5CBFEEBA2D742FA600F05795 /* TestAATPoint.cpp */,
+				D15F0000000000000000001E /* TestAirspaceDisplaySettings.cpp */,
 				5CBFEEBB2D742FA600F05795 /* TestAirspaceParser.cpp */,
 				5CBFEEBC2D742FA600F05795 /* testall.pl */,
 				5CBFEEBD2D742FA600F05795 /* TestAllocatedGrid.cpp */,
@@ -20347,6 +20419,7 @@
 				5CBFEEC52D742FA600F05795 /* TestCSVLine.cpp */,
 				5CBFEEC62D742FA600F05795 /* TestDateTime.cpp */,
 				5CBFEEC72D742FA600F05795 /* TestDiffFilter.cpp */,
+				D15F0000000000000000001F /* TestDisplaySettingProfile.cpp */,
 				5CBFEEC82D742FA600F05795 /* TestDriver.cpp */,
 				5CBFEEC92D742FA600F05795 /* TestEarth.cpp */,
 				5CBFEECA2D742FA600F05795 /* TestFileUtil.cpp */,
@@ -20365,6 +20438,8 @@
 				5CBFEED72D742FA600F05795 /* TestHexString.cpp */,
 				5CBFEED82D742FA600F05795 /* TestIGCFilenameFormatter.cpp */,
 				5CBFEED92D742FA600F05795 /* TestIGCParser.cpp */,
+				D15F00000000000000000020 /* TestElementSetDisplayOverrideService.cpp */,
+				D15F00000000000000000021 /* TestElementSetDisplayOverrides.cpp */,
 				5CBFEEDA2D742FA600F05795 /* TestLeastSquares.cpp */,
 				5CBFEEDB2D742FA600F05795 /* TestLine2D.cpp */,
 				5CBFEEDC2D742FA600F05795 /* TestLogger.cpp */,
@@ -20405,6 +20480,7 @@
 				5CBFEEFF2D742FA600F05795 /* TestUTM.cpp */,
 				5CBFEF002D742FA600F05795 /* TestValidity.cpp */,
 				5CBFEF012D742FA600F05795 /* TestVersionNumber.cpp */,
+				D15F00000000000000000022 /* TestWaypointDisplaySettings.cpp */,
 				5CBFEF022D742FA600F05795 /* TestWaypointReader.cpp */,
 				5CBFEF032D742FA600F05795 /* TestWaypoints.cpp */,
 				5CBFEF042D742FA600F05795 /* TestWrapClock.cpp */,

@@ -30,6 +30,9 @@ Version 7.46 - not yet released
   - fix choosing SkySight as a page overlay with no layers available
     silently switching back to None
 * map
+  - let each Map Element Set optionally override terrain, orientation,
+    waypoint, and airspace display settings while inheriting all other
+    global display settings
   - fix the ragged white halo behind map labels on high-DPI screens
     #2879
   - fix the map scale arrows: draw them at the height of the scale box
