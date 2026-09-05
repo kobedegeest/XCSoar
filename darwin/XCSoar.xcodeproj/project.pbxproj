@@ -3953,8 +3953,6 @@
 		5CBFE2512D742FA600F05795 /* VarioConfigPanel.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = VarioConfigPanel.cpp; sourceTree = "<group>"; };
 		5CBFE2522D742FA600F05795 /* WaypointDisplayConfigPanel.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = WaypointDisplayConfigPanel.hpp; sourceTree = "<group>"; };
 		5CBFE2532D742FA600F05795 /* WaypointDisplayConfigPanel.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = WaypointDisplayConfigPanel.cpp; sourceTree = "<group>"; };
-		5CBFE2542D742FA600F05795 /* WeatherConfigPanel.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = WeatherConfigPanel.hpp; sourceTree = "<group>"; };
-		5CBFE2552D742FA600F05795 /* WeatherConfigPanel.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = WeatherConfigPanel.cpp; sourceTree = "<group>"; };
 		5CBFE2562D742FA600F05795 /* WeGlideConfigPanel.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = WeGlideConfigPanel.hpp; sourceTree = "<group>"; };
 		5CBFE2572D742FA600F05795 /* WeGlideConfigPanel.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = WeGlideConfigPanel.cpp; sourceTree = "<group>"; };
 		5CBFE2582D742FA600F05795 /* WindConfigPanel.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = WindConfigPanel.hpp; sourceTree = "<group>"; };
@@ -7100,6 +7098,11 @@
 		D15F00000000000000000020 /* TestElementSetDisplayOverrideService.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = TestElementSetDisplayOverrideService.cpp; sourceTree = "<group>"; };
 		D15F00000000000000000021 /* TestElementSetDisplayOverrides.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = TestElementSetDisplayOverrides.cpp; sourceTree = "<group>"; };
 		D15F00000000000000000022 /* TestWaypointDisplaySettings.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = TestWaypointDisplaySettings.cpp; sourceTree = "<group>"; };
+		D15F00000000000000000023 /* ThermalAssistantSettings.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ThermalAssistantSettings.hpp; sourceTree = "<group>"; };
+		D15F00000000000000000024 /* MapElementSettings.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = MapElementSettings.hpp; sourceTree = "<group>"; };
+		D15F00000000000000000025 /* MapElementSettings.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = MapElementSettings.cpp; sourceTree = "<group>"; };
+		D15F00000000000000000026 /* MapElementConfig.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = MapElementConfig.hpp; sourceTree = "<group>"; };
+		D15F00000000000000000027 /* MapElementConfig.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = MapElementConfig.cpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -15885,8 +15888,6 @@
 				5CBFE2512D742FA600F05795 /* VarioConfigPanel.cpp */,
 				5CBFE2522D742FA600F05795 /* WaypointDisplayConfigPanel.hpp */,
 				5CBFE2532D742FA600F05795 /* WaypointDisplayConfigPanel.cpp */,
-				5CBFE2542D742FA600F05795 /* WeatherConfigPanel.hpp */,
-				5CBFE2552D742FA600F05795 /* WeatherConfigPanel.cpp */,
 				5CBFE2562D742FA600F05795 /* WeGlideConfigPanel.hpp */,
 				5CBFE2572D742FA600F05795 /* WeGlideConfigPanel.cpp */,
 				5CBFE2582D742FA600F05795 /* WindConfigPanel.hpp */,
@@ -16944,6 +16945,7 @@
 				5CBFE5412D742FA600F05795 /* TaskView.cpp */,
 				5CBFE5422D742FA600F05795 /* ThermalAssistantRenderer.hpp */,
 				5CBFE5432D742FA600F05795 /* ThermalAssistantRenderer.cpp */,
+				D15F00000000000000000023 /* ThermalAssistantSettings.hpp */,
 				5CBFE5442D742FA600F05795 /* ThermalAssistantWindow.hpp */,
 				5CBFE5452D742FA600F05795 /* ThermalAssistantWindow.cpp */,
 				5CBFE5462D742FA600F05795 /* TrafficSettings.hpp */,
@@ -18130,6 +18132,8 @@
 				5CBFE8992D742FA600F05795 /* Keys.hpp */,
 				5CBFE89A2D742FA600F05795 /* Map.hpp */,
 				5CBFE89B2D742FA600F05795 /* Map.cpp */,
+				D15F00000000000000000026 /* MapElementConfig.hpp */,
+				D15F00000000000000000027 /* MapElementConfig.cpp */,
 				5CBFE89C2D742FA600F05795 /* MapProfile.hpp */,
 				5CBFE89D2D742FA600F05795 /* MapProfile.cpp */,
 				5CBFE89E2D742FA600F05795 /* NumericValue.cpp */,
@@ -19976,6 +19980,8 @@
 				5CBFED622D742FA600F05795 /* LogFile.cpp */,
 				5CBFED632D742FA600F05795 /* MainWindow.hpp */,
 				5CBFED642D742FA600F05795 /* MainWindow.cpp */,
+				D15F00000000000000000024 /* MapElementSettings.hpp */,
+				D15F00000000000000000025 /* MapElementSettings.cpp */,
 				5CBFED652D742FA600F05795 /* MapSettings.hpp */,
 				5CBFED662D742FA600F05795 /* MapSettings.cpp */,
 				5CBFED672D742FA600F05795 /* MergeThread.hpp */,
