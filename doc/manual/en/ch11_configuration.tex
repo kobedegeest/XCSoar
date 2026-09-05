@@ -851,8 +851,17 @@ directly, or select \emph{Auto} to follow the current flight mode.
 Selecting a set opens its scrollable element list.  The
 \button{Setting overrides} button at the bottom opens the optional display
 settings owned by that set.  An empty override list inherits every global map
-display setting.  Adding an override copies the current global value and then
-allows a different value to be selected; removing it restores inheritance.
+display setting.  Press \button{Add} to choose a submenu (Orientation,
+Waypoints, Terrain, or Airspace), then check one or more settings and press
+\button{Add} again.  \button{Select all} and \button{Clear} change the whole
+selection within that submenu.  New overrides copy their current global values.
+
+The override list shows each setting beside its editable input field, using
+the same controls as the main configuration menu.  Press \button{Remove},
+choose a submenu, and check the overrides to remove to restore inheritance.
+\button{OK} accepts the changes; \button{Cancel} discards all additions,
+removals, and value changes made in this override editor.  The enclosing
+Map Element Set dialogue must also be accepted to save the set.
 
 Overrides are available for terrain, map orientation, waypoint display, and
 airspace display.  Waypoint-type and airspace-class overrides control display

@@ -10,16 +10,30 @@
 #include "Form/DataField/Enum.hpp"
 #include "Language/Language.hpp"
 #include "Look/DialogLook.hpp"
-#include "Renderer/TwoTextRowsRenderer.hpp"
+#include "Renderer/TextRowRenderer.hpp"
+#include "Screen/Layout.hpp"
 #include "UIGlobals.hpp"
-#include "Widget/ListWidget.hpp"
+#include "Widget/LargeTextWidget.hpp"
+#include "Widget/MultiSelectListWidget.hpp"
 #include "Widget/RowFormWidget.hpp"
-#include "util/StaticString.hxx"
+#include "Widget/TwoWidgets.hpp"
+#include "Widget/VScrollWidget.hpp"
 
 #include <algorithm>
 #include <cassert>
 #include <memory>
+#include <utility>
 #include <vector>
+
+using SettingList = std::vector<const DisplaySettingDescriptor *>;
+
+// Keep the labels and order of the corresponding Map Display config pages.
+static constexpr DisplaySettingGroup groups[] = {
+  DisplaySettingGroup::ORIENTATION,
+  DisplaySettingGroup::WAYPOINTS,
+  DisplaySettingGroup::TERRAIN,
+  DisplaySettingGroup::AIRSPACE,
+};
 
 static const char *
 GetGroupLabel(DisplaySettingGroup group) noexcept
@@ -47,393 +61,380 @@ GetHelp(const DisplaySettingDescriptor &descriptor) noexcept
   return descriptor.help != nullptr ? gettext(descriptor.help) : nullptr;
 }
 
-static const DisplaySettingEnumChoice *
-FindEnumChoice(const DisplaySettingDescriptor &descriptor,
-               DisplaySettingValue value) noexcept
-{
-  for (uint16_t i = 0; i < descriptor.enum_choice_count; ++i)
-    if (descriptor.enum_choices[i].value == value.value)
-      return &descriptor.enum_choices[i];
-
-  return nullptr;
-}
-
-static const char *
-FormatValue(const DisplaySettingDescriptor &descriptor,
-            DisplaySettingValue value, StaticString<64> &buffer) noexcept
-{
-  switch (descriptor.value_type) {
-  case DisplaySettingValueType::BOOLEAN:
-    return value.AsBoolean() ? _("Yes") : _("No");
-
-  case DisplaySettingValueType::ENUM:
-    if (const auto *choice = FindEnumChoice(descriptor, value))
-      return gettext(choice->label);
-
-    [[fallthrough]];
-
-  case DisplaySettingValueType::INTEGER:
-    buffer.Format("%d", value.value);
-    return buffer.c_str();
-  }
-
-  return "";
-}
-
-class DisplaySettingValueWidget final : public RowFormWidget {
-  const DisplaySettingDescriptor &descriptor;
-  DisplaySettingValue value;
+/** A section of the override list, using the main config menu's controls. */
+class DisplaySettingsWidget final : public RowFormWidget {
+  ElementSetDisplayOverrides &overrides;
+  const SettingList items;
 
 public:
-  DisplaySettingValueWidget(const DialogLook &look,
-                            const DisplaySettingDescriptor &_descriptor,
-                            DisplaySettingValue _value) noexcept
-    : RowFormWidget(look), descriptor(_descriptor), value(_value) {}
+  // Reserve one of RowFormWidget's 32 rows for the submenu heading.
+  static constexpr unsigned MAX_ITEMS = 31;
 
-  DisplaySettingValue GetValue() const noexcept {
-    return value;
+  DisplaySettingsWidget(const DialogLook &look,
+                        ElementSetDisplayOverrides &_overrides,
+                        SettingList _items) noexcept
+    : RowFormWidget(look), overrides(_overrides), items(std::move(_items)) {
+    assert(!items.empty() && items.size() <= MAX_ITEMS);
   }
 
   void Prepare(ContainerWindow &parent,
                const PixelRect &rc) noexcept override;
   bool Save(bool &changed) noexcept override;
+
+  PixelSize GetMinimumSize() const noexcept override {
+    auto size = RowFormWidget::GetMinimumSize();
+    size.height = RowFormWidget::GetMaximumSize().height;
+    return size;
+  }
 };
 
 void
-DisplaySettingValueWidget::Prepare(
-  [[maybe_unused]] ContainerWindow &parent,
-  [[maybe_unused]] const PixelRect &rc) noexcept
+DisplaySettingsWidget::Prepare(ContainerWindow &parent,
+                               const PixelRect &rc) noexcept
 {
-  const char *help = GetHelp(descriptor);
+  RowFormWidget::Prepare(parent, rc);
+  AddReadOnly(GetGroupLabel(items.front()->group));
 
-  switch (descriptor.value_type) {
-  case DisplaySettingValueType::BOOLEAN:
-    AddBoolean(_("Value"), help, value.AsBoolean());
-    break;
+  for (const auto *item : items) {
+    const auto &descriptor = *item;
+    const auto value = *overrides.Get(descriptor.key);
+    const char *label = gettext(descriptor.label);
+    const char *help = GetHelp(descriptor);
 
-  case DisplaySettingValueType::ENUM: {
-    auto *control = AddEnum(_("Value"), help);
-    auto &field = static_cast<DataFieldEnum &>(*control->GetDataField());
-    for (uint16_t i = 0; i < descriptor.enum_choice_count; ++i) {
-      const auto &choice = descriptor.enum_choices[i];
-      const char *choice_help = choice.help != nullptr
-        ? gettext(choice.help)
-        : nullptr;
-      field.AddChoice(static_cast<unsigned>(choice.value),
-                      gettext(choice.label), nullptr, choice_help);
+    switch (descriptor.value_type) {
+    case DisplaySettingValueType::BOOLEAN:
+      AddBoolean(label, help, value.AsBoolean());
+      break;
+
+    case DisplaySettingValueType::ENUM: {
+      auto *control = AddEnum(label, help);
+      auto &field = static_cast<DataFieldEnum &>(*control->GetDataField());
+      for (uint16_t i = 0; i < descriptor.enum_choice_count; ++i) {
+        const auto &choice = descriptor.enum_choices[i];
+        field.AddChoice(static_cast<unsigned>(choice.value),
+                        gettext(choice.label), nullptr,
+                        choice.help != nullptr ? gettext(choice.help) : nullptr);
+      }
+
+      field.SetValue(static_cast<unsigned>(value.value));
+      control->RefreshDisplay();
+      break;
     }
 
-    field.SetValue(static_cast<unsigned>(value.value));
-    control->RefreshDisplay();
-    break;
-  }
-
-  case DisplaySettingValueType::INTEGER:
-    AddInteger(_("Value"), help, "%d", "%d",
-               descriptor.minimum.value, descriptor.maximum.value,
-               std::max(descriptor.integer_step, int32_t{1}), value.value);
-    break;
+    case DisplaySettingValueType::INTEGER:
+      AddInteger(label, help, "%d", "%d",
+                 descriptor.minimum.value, descriptor.maximum.value,
+                 std::max(descriptor.integer_step, int32_t{1}), value.value);
+      break;
+    }
   }
 }
 
 bool
-DisplaySettingValueWidget::Save(bool &changed) noexcept
+DisplaySettingsWidget::Save(bool &changed) noexcept
 {
-  DisplaySettingValue candidate{};
-  switch (descriptor.value_type) {
-  case DisplaySettingValueType::BOOLEAN:
-    candidate = DisplaySettingValue::Boolean(GetValueBoolean(0));
-    break;
+  auto candidate = overrides;
+  for (unsigned i = 0; i < items.size(); ++i) {
+    const auto &descriptor = *items[i];
+    const unsigned row = i + 1;
+    DisplaySettingValue value{};
 
-  case DisplaySettingValueType::ENUM:
-    candidate = DisplaySettingValue::Enum(
-      static_cast<int32_t>(GetValueEnum(0)));
-    break;
+    switch (descriptor.value_type) {
+    case DisplaySettingValueType::BOOLEAN:
+      value = DisplaySettingValue::Boolean(GetValueBoolean(row));
+      break;
 
-  case DisplaySettingValueType::INTEGER:
-    candidate = DisplaySettingValue::Integer(GetValueInteger(0));
-    break;
+    case DisplaySettingValueType::ENUM:
+      value = DisplaySettingValue::Enum(
+        static_cast<int32_t>(GetValueEnum(row)));
+      break;
+
+    case DisplaySettingValueType::INTEGER:
+      value = DisplaySettingValue::Integer(GetValueInteger(row));
+      break;
+    }
+
+    if (!descriptor.IsValid(value))
+      return false;
+
+    candidate.Set(descriptor, value);
   }
 
-  if (!descriptor.IsValid(candidate))
-    return false;
-
-  if (candidate != value) {
-    value = candidate;
-    changed = true;
-  }
-
+  changed |= candidate != overrides;
+  overrides = candidate;
   return true;
 }
 
-enum class ValueDialogResult {
-  CANCEL,
-  SAVE,
-  REMOVE,
-};
-
-static ValueDialogResult
-ShowValueDialog(UI::SingleWindow &parent, const DialogLook &look,
-                const DisplaySettingDescriptor &descriptor,
-                DisplaySettingValue &value, bool allow_remove)
-{
-  auto widget = std::make_unique<DisplaySettingValueWidget>(
-    look, descriptor, value);
-  auto *const widget_ptr = widget.get();
-
-  WidgetDialog dialog(WidgetDialog::Auto{}, parent, look,
-                      gettext(descriptor.label), widget.release());
-  if (allow_remove)
-    dialog.AddButton(_("Remove"), mrExtra);
-  dialog.AddButton(_("OK"), mrOK);
-  dialog.AddButton(_("Cancel"), mrCancel);
-
-  const int result = dialog.ShowModal();
-  if (result == mrExtra)
-    return ValueDialogResult::REMOVE;
-  if (result != mrOK)
-    return ValueDialogResult::CANCEL;
-
-  value = widget_ptr->GetValue();
-  return ValueDialogResult::SAVE;
-}
-
-class AddableSettingRenderer final : public ListItemRenderer {
-  const std::vector<const DisplaySettingDescriptor *> &items;
-  TwoTextRowsRenderer row_renderer;
+class SettingSelectionWidget final : public MultiSelectListWidget {
+  const SettingList &items;
+  Button *apply_button = nullptr;
 
 public:
-  explicit AddableSettingRenderer(
-    const std::vector<const DisplaySettingDescriptor *> &_items) noexcept
+  explicit SettingSelectionWidget(const SettingList &_items) noexcept
     : items(_items) {}
 
-  unsigned CalculateLayout(const DialogLook &look) noexcept {
-    return row_renderer.CalculateLayout(*look.list.font_bold,
-                                        look.small_font);
+  void SetApplyButton(Button &button) noexcept {
+    apply_button = &button;
+    apply_button->SetEnabled(false);
   }
-
-  unsigned OnListResized() noexcept override {
-    const auto &look = UIGlobals::GetDialogLook();
-    return row_renderer.CalculateLayout(*look.list.font_bold,
-                                        look.small_font);
-  }
-
-  void OnPaintItem(Canvas &canvas, const PixelRect rc,
-                   unsigned index) noexcept override {
-    assert(index < items.size());
-    row_renderer.DrawFirstRow(canvas, rc, gettext(items[index]->label));
-    row_renderer.DrawSecondRow(canvas, rc,
-                               GetGroupLabel(items[index]->group));
-  }
-};
-
-class ElementSetDisplayOverridesWidget final : public ListWidget {
-  ElementSetDisplayOverrides &overrides;
-  const std::span<const DisplaySettingDescriptor> catalog;
-  const GlobalDisplaySettingValueGetter get_global_value;
-
-  std::vector<const DisplaySettingDescriptor *> items;
-  TwoTextRowsRenderer row_renderer;
-
-  Button *edit_button = nullptr;
-  Button *add_button = nullptr;
-  Button *remove_button = nullptr;
-
-  void UpdateList();
-  void UpdateButtons() noexcept;
-  bool CanAdd() const noexcept;
-  void EditClicked();
-  void AddClicked();
-  void RemoveClicked() noexcept;
-
-public:
-  ElementSetDisplayOverridesWidget(
-    ElementSetDisplayOverrides &_overrides,
-    std::span<const DisplaySettingDescriptor> _catalog,
-    GlobalDisplaySettingValueGetter _get_global_value) noexcept
-    : overrides(_overrides), catalog(_catalog),
-      get_global_value(_get_global_value) {}
-
-  void CreateButtons(WidgetDialog &dialog);
 
   void Prepare(ContainerWindow &parent,
-               const PixelRect &rc) noexcept override;
-  bool Save([[maybe_unused]] bool &changed) noexcept override {
-    return true;
+               const PixelRect &rc) noexcept override {
+    CreateList(parent, UIGlobals::GetDialogLook(), rc,
+               Layout::GetMaximumControlHeight());
+    SetLengthWithSelection(items.size());
+    MultiSelectListWidget::Prepare(parent, rc);
   }
 
 protected:
   void OnPaintItem(Canvas &canvas, const PixelRect rc,
-                   unsigned index) noexcept override;
-  void OnCursorMoved([[maybe_unused]] unsigned index) noexcept override {
-    UpdateButtons();
+                   unsigned index) noexcept override {
+    assert(index < items.size());
+    DrawCheckboxText(canvas, rc, gettext(items[index]->label),
+                     IsSelected(index));
   }
-  bool CanActivateItem([[maybe_unused]] unsigned index) const noexcept override {
-    return !items.empty();
-  }
-  void OnActivateItem([[maybe_unused]] unsigned index) noexcept override {
-    EditClicked();
+
+  void OnSelectionChanged() noexcept override {
+    if (apply_button != nullptr)
+      apply_button->SetEnabled(GetSelectedCount() > 0);
   }
 };
 
-void
-ElementSetDisplayOverridesWidget::CreateButtons(WidgetDialog &dialog)
+/** The result remains empty on Cancel, including after checking items. */
+static SettingList
+SelectSettings(UI::SingleWindow &parent, const DialogLook &look,
+               const char *caption, const char *action,
+               const SettingList &items)
 {
-  edit_button = dialog.AddButton(_("Edit"), [this](){ EditClicked(); });
-  add_button = dialog.AddButton(C_("Button", "Add"),
-                                [this](){ AddClicked(); });
-  remove_button = dialog.AddButton(_("Remove"),
-                                   [this](){ RemoveClicked(); });
+  auto picker = std::make_unique<SettingSelectionWidget>(items);
+  auto *const picker_ptr = picker.get();
+  WidgetDialog dialog(WidgetDialog::Full{}, parent, look, caption,
+                      picker.release());
+  picker_ptr->SetApplyButton(*dialog.AddButton(action, mrOK));
+  dialog.AddButton(_("Select all"), [picker_ptr](){ picker_ptr->SelectAll(); });
+  dialog.AddButton(_("Clear"), [picker_ptr](){ picker_ptr->ClearSelection(); });
+  dialog.AddButton(_("Cancel"), mrCancel);
+  dialog.EnableCursorSelection();
+
+  SettingList selected;
+  if (dialog.ShowModal() == mrOK)
+    for (const auto i : picker_ptr->GetSelectedIndices())
+      selected.push_back(items[i]);
+
+  return selected;
 }
 
-void
-ElementSetDisplayOverridesWidget::Prepare(ContainerWindow &parent,
-                                           const PixelRect &rc) noexcept
-{
-  const auto &look = UIGlobals::GetDialogLook();
-  CreateList(parent, look, rc,
-             row_renderer.CalculateLayout(*look.list.font_bold,
-                                          look.small_font));
-  UpdateList();
-}
+class SettingGroupRenderer final : public ListItemRenderer {
+  const std::vector<DisplaySettingGroup> &items;
+  TextRowRenderer renderer;
 
-bool
-ElementSetDisplayOverridesWidget::CanAdd() const noexcept
-{
-  if (get_global_value == nullptr ||
-      overrides.Size() == overrides.Capacity())
-    return false;
+public:
+  explicit SettingGroupRenderer(
+    const std::vector<DisplaySettingGroup> &_items) noexcept
+    : items(_items) {}
 
-  return std::any_of(catalog.begin(), catalog.end(), [this](const auto &item) {
-    return item.element_set_overwritable && overrides.Get(item.key) == nullptr;
-  });
-}
+  unsigned OnListResized() noexcept override {
+    return renderer.CalculateLayout(*UIGlobals::GetDialogLook().list.font);
+  }
 
-void
-ElementSetDisplayOverridesWidget::UpdateButtons() noexcept
-{
-  const bool has_items = !items.empty();
-  edit_button->SetEnabled(has_items);
-  remove_button->SetEnabled(has_items);
-  add_button->SetEnabled(CanAdd());
-}
+  void OnPaintItem(Canvas &canvas, const PixelRect rc,
+                   unsigned index) noexcept override {
+    renderer.DrawTextRow(canvas, rc, GetGroupLabel(items[index]));
+  }
+};
 
-void
-ElementSetDisplayOverridesWidget::UpdateList()
+class ElementSetDisplayOverridesDialog final : public WidgetDialog {
+  UI::SingleWindow &parent;
+  const DialogLook &look;
+  ElementSetDisplayOverrides &overrides;
+  const std::span<const DisplaySettingDescriptor> catalog;
+  const GlobalDisplaySettingValueGetter get_global_value;
+
+  Button *add_button;
+  Button *remove_button;
+
+  SettingList GetItems(DisplaySettingGroup group, bool adding) const;
+  std::unique_ptr<Widget> CreateForm();
+  void UpdateButtons() noexcept;
+  void Refresh();
+  void AddClicked();
+  void RemoveClicked();
+
+public:
+  ElementSetDisplayOverridesDialog(
+    UI::SingleWindow &_parent, const DialogLook &_look,
+    ElementSetDisplayOverrides &_overrides,
+    std::span<const DisplaySettingDescriptor> _catalog,
+    GlobalDisplaySettingValueGetter _get_global_value)
+    : WidgetDialog(Full{}, _parent, _look, _("Setting overrides")),
+      parent(_parent), look(_look), overrides(_overrides), catalog(_catalog),
+      get_global_value(_get_global_value) {
+    add_button = AddButton(C_("Button", "Add"), [this](){ AddClicked(); });
+    remove_button = AddButton(_("Remove"), [this](){ RemoveClicked(); });
+    AddButton(_("OK"), mrOK);
+    AddButton(_("Cancel"), mrCancel);
+    FinishPreliminary(CreateForm());
+    UpdateButtons();
+  }
+};
+
+SettingList
+ElementSetDisplayOverridesDialog::GetItems(DisplaySettingGroup group,
+                                           bool adding) const
 {
-  items.clear();
+  SettingList items;
   for (const auto &descriptor : catalog)
-    if (overrides.Get(descriptor.key) != nullptr)
+    if (descriptor.group == group && descriptor.element_set_overwritable &&
+        (overrides.Get(descriptor.key) == nullptr) == adding)
       items.push_back(&descriptor);
 
-  auto &list = GetList();
-  list.SetLength(std::max(items.size(), std::size_t{1}));
-  list.Invalidate();
+  return items;
+}
+
+std::unique_ptr<Widget>
+ElementSetDisplayOverridesDialog::CreateForm()
+{
+  std::unique_ptr<Widget> form;
+  for (const auto group : groups) {
+    const auto items = GetItems(group, false);
+    for (std::size_t i = 0; i < items.size();
+         i += DisplaySettingsWidget::MAX_ITEMS) {
+      const auto end = std::min(items.size(),
+                               i + DisplaySettingsWidget::MAX_ITEMS);
+      auto section = std::make_unique<DisplaySettingsWidget>(
+        look, overrides, SettingList(items.begin() + i, items.begin() + end));
+
+      // Compose bounded forms instead of exceeding RowFormWidget's capacity.
+      if (form)
+        form = std::make_unique<TwoWidgets>(std::move(form), std::move(section));
+      else
+        form = std::move(section);
+    }
+  }
+
+  if (!form)
+    return std::make_unique<LargeTextWidget>(
+      look, _("This element set inherits all display settings. "
+              "Choose Add, then a submenu, to select setting overrides."));
+
+  return std::make_unique<VScrollWidget>(std::move(form), look);
+}
+
+void
+ElementSetDisplayOverridesDialog::UpdateButtons() noexcept
+{
+  add_button->SetEnabled(get_global_value != nullptr &&
+                        overrides.Size() < overrides.Capacity() &&
+                        std::any_of(catalog.begin(), catalog.end(),
+                                    [this](const auto &item) {
+    return item.element_set_overwritable && overrides.Get(item.key) == nullptr;
+  }));
+  remove_button->SetEnabled(!overrides.IsEmpty());
+}
+
+void
+ElementSetDisplayOverridesDialog::Refresh()
+{
+  widget.Set(CreateForm());
+  widget.Show();
   UpdateButtons();
+  widget.SetFocus();
 }
 
 void
-ElementSetDisplayOverridesWidget::OnPaintItem(
-  Canvas &canvas, const PixelRect rc, unsigned index) noexcept
+ElementSetDisplayOverridesDialog::AddClicked()
 {
-  if (items.empty()) {
-    assert(index == 0);
-    row_renderer.DrawFirstRow(canvas, rc, _("No setting overrides"));
-    row_renderer.DrawSecondRow(
-      canvas, rc, _("This element set inherits all display settings."));
+  bool changed = false;
+  if (get_global_value == nullptr || !widget.Save(changed))
+    return;
+
+  std::vector<DisplaySettingGroup> available_groups;
+  for (const auto group : groups)
+    if (!GetItems(group, true).empty())
+      available_groups.push_back(group);
+  if (available_groups.empty())
+    return;
+
+  unsigned cursor = 0;
+  while (true) {
+    SettingGroupRenderer renderer(available_groups);
+    const int selected = ListPicker(
+      _("Add setting override"), available_groups.size(), cursor,
+      renderer.OnListResized(), renderer, false,
+      _("Choose a submenu, then check the settings to add. "
+        "New overrides start with their current global values."));
+    if (selected < 0)
+      return;
+
+    cursor = selected;
+    const auto group = available_groups[selected];
+    const auto selected_items = SelectSettings(
+      parent, look, GetGroupLabel(group), C_("Button", "Add"),
+      GetItems(group, true));
+    if (selected_items.empty())
+      continue;
+
+    // Add the whole selection atomically: a full set or invalid global value
+    // must not leave only part of the checked settings added.
+    auto candidate = overrides;
+    bool valid = true;
+    for (const auto *item : selected_items) {
+      const auto value = get_global_value(*item);
+      if (!item->IsValid(value)) {
+        ShowMessageBox(_("The current global value is not valid for this setting."),
+                       gettext(item->label), MB_OK | MB_ICONEXCLAMATION);
+        valid = false;
+        break;
+      }
+
+      if (candidate.Set(*item, value) == SetDisplayOverrideResult::FULL) {
+        ShowMessageBox(_("No more setting overrides can be added."),
+                       _("Setting override"), MB_OK | MB_ICONEXCLAMATION);
+        valid = false;
+        break;
+      }
+    }
+
+    if (!valid)
+      continue;
+
+    overrides = candidate;
+    Refresh();
     return;
   }
-
-  assert(index < items.size());
-  const auto &descriptor = *items[index];
-  const auto *value = overrides.Get(descriptor.key);
-  assert(value != nullptr);
-
-  StaticString<64> value_buffer;
-  row_renderer.DrawFirstRow(canvas, rc, gettext(descriptor.label));
-  row_renderer.DrawSecondRow(canvas, rc, GetGroupLabel(descriptor.group));
-  row_renderer.DrawRightSecondRow(canvas, rc,
-                                  FormatValue(descriptor, *value,
-                                              value_buffer));
 }
 
 void
-ElementSetDisplayOverridesWidget::EditClicked()
+ElementSetDisplayOverridesDialog::RemoveClicked()
 {
-  if (items.empty())
+  bool changed = false;
+  if (!widget.Save(changed))
     return;
 
-  const auto &descriptor = *items[GetList().GetCursorIndex()];
-  DisplaySettingValue value = *overrides.Get(descriptor.key);
-  switch (ShowValueDialog(UIGlobals::GetMainWindow(),
-                          UIGlobals::GetDialogLook(), descriptor,
-                          value, true)) {
-  case ValueDialogResult::CANCEL:
+  std::vector<DisplaySettingGroup> available_groups;
+  for (const auto group : groups)
+    if (!GetItems(group, false).empty())
+      available_groups.push_back(group);
+  if (available_groups.empty())
     return;
 
-  case ValueDialogResult::SAVE:
-    overrides.Set(descriptor, value);
-    break;
-
-  case ValueDialogResult::REMOVE:
-    overrides.Remove(descriptor.key);
-    break;
-  }
-
-  UpdateList();
-}
-
-void
-ElementSetDisplayOverridesWidget::AddClicked()
-{
-  if (!CanAdd())
-    return;
-
-  std::vector<const DisplaySettingDescriptor *> addable;
-  for (const auto &descriptor : catalog)
-    if (descriptor.element_set_overwritable &&
-        overrides.Get(descriptor.key) == nullptr)
-      addable.push_back(&descriptor);
-
-  AddableSettingRenderer renderer(addable);
-  const auto &look = UIGlobals::GetDialogLook();
+  SettingGroupRenderer renderer(available_groups);
   const int selected = ListPicker(
-    _("Add setting override"), addable.size(), 0,
-    renderer.CalculateLayout(look), renderer, false,
-    _("The new override starts with the current global value."));
+    _("Remove setting overrides"), available_groups.size(), 0,
+    renderer.OnListResized(), renderer, false,
+    _("Removed overrides inherit their global settings again."));
   if (selected < 0)
     return;
 
-  const auto &descriptor = *addable[selected];
-  DisplaySettingValue value = get_global_value(descriptor);
-  if (!descriptor.IsValid(value)) {
-    ShowMessageBox(_("The current global value is not valid for this setting."),
-                   _("Setting override"), MB_OK | MB_ICONEXCLAMATION);
-    return;
-  }
-
-  if (ShowValueDialog(UIGlobals::GetMainWindow(), look, descriptor,
-                      value, false) != ValueDialogResult::SAVE)
+  const auto group = available_groups[selected];
+  const auto selected_items = SelectSettings(
+    parent, look, GetGroupLabel(group), _("Remove"), GetItems(group, false));
+  if (selected_items.empty())
     return;
 
-  if (overrides.Set(descriptor, value) == SetDisplayOverrideResult::FULL) {
-    ShowMessageBox(_("No more setting overrides can be added."),
-                   _("Setting override"), MB_OK | MB_ICONEXCLAMATION);
-    return;
-  }
-
-  UpdateList();
-}
-
-void
-ElementSetDisplayOverridesWidget::RemoveClicked() noexcept
-{
-  if (items.empty())
-    return;
-
-  const auto &descriptor = *items[GetList().GetCursorIndex()];
-  overrides.Remove(descriptor.key);
-  UpdateList();
+  for (const auto *item : selected_items)
+    overrides.Remove(item->key);
+  Refresh();
 }
 
 bool
@@ -444,17 +445,8 @@ ShowElementSetDisplayOverridesDialog(
   GlobalDisplaySettingValueGetter get_global_value)
 {
   ElementSetDisplayOverrides working = overrides;
-  auto widget = std::make_unique<ElementSetDisplayOverridesWidget>(
-    working, catalog, get_global_value);
-  auto *const widget_ptr = widget.get();
-
-  WidgetDialog dialog(WidgetDialog::Full{}, parent, look,
-                      _("Setting overrides"), widget.release());
-  widget_ptr->CreateButtons(dialog);
-  dialog.AddButton(_("OK"), mrOK);
-  dialog.AddButton(_("Cancel"), mrCancel);
-  dialog.EnableCursorSelection();
-
+  ElementSetDisplayOverridesDialog dialog(parent, look, working, catalog,
+                                         get_global_value);
   if (dialog.ShowModal() != mrOK || working == overrides)
     return false;
 
