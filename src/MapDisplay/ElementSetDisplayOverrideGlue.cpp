@@ -55,10 +55,3 @@ GetGlobalElementSetDisplaySettingValueByKey(DisplaySettingKey key) noexcept
   const auto *value = service.GetGlobalValue(key);
   return value != nullptr ? *value : DisplaySettingValue{};
 }
-
-bool
-SetGlobalElementSetDisplaySettingValue(
-  DisplaySettingKey key, DisplaySettingValue value) noexcept
-{
-  return service.SetGlobalValue(key, value);
-}

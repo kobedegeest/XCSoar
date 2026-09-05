@@ -21,7 +21,3 @@ DisplaySettingValue GetGlobalElementSetDisplaySettingValue(
 
 DisplaySettingValue GetGlobalElementSetDisplaySettingValueByKey(
   DisplaySettingKey key) noexcept;
-
-/** Writer entry point for global configuration panels and quick actions. */
-bool SetGlobalElementSetDisplaySettingValue(
-  DisplaySettingKey key, DisplaySettingValue value) noexcept;

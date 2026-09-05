@@ -11,6 +11,7 @@ XCSoar
    policy
    release
    architecture
+   map_element_sets
    weather_overlays
    data_directory
    input_events
