@@ -794,6 +794,11 @@ When editing a page, the following options are available for map pages:
 \item[Main area]  The primary content of the page, for example \emph{Map}
   or \emph{Map (north-up)}.
 \item[InfoBoxes]  Which InfoBox set is shown alongside the main area.
+\item[Map elements]  Which Map Element Set supplies the page's overlays,
+  controls, and setting overrides.  Select a named set to keep it fixed, or
+  \emph{Auto} to follow the Circling, Cruise, or Final Glide flight mode.
+  Configure the sets under \emph{Look / Map Element Sets} (see
+  Section~\ref{sec:map-element-sets}).
 \item[Bottom area]  Optional panel below the main area.  Select
   \emph{Weather controls} to show in-flight RASP, EDL, or XC Therm forecast
   controls when the page uses a weather overlay.
@@ -840,36 +845,6 @@ When composing at the PC you can use the mouse to select the individual boxes
 right from the overview.
 
 
-%%%%%%%%%%%%%%%%%%
-\section{Look / Map Element Sets}\label{sec:map-element-sets}
-
-Map Element Sets are reusable collections of map overlays and controls.  The
-three predefined sets are Circling, Cruise, and Final Glide; experts can also
-name and configure five auxiliary sets.  A map page can select one set
-directly, or select \emph{Auto} to follow the current flight mode.
-
-Selecting a set opens its scrollable element list.  The
-\button{Setting overrides} button at the bottom opens the optional display
-settings owned by that set.  An empty override list inherits every global map
-display setting.  Press \button{Add} to choose a submenu (Orientation,
-Waypoints, Terrain, or Airspace), then check one or more settings and press
-\button{Add} again.  \button{Select all} and \button{Clear} change the whole
-selection within that submenu.  New overrides copy their current global values.
-
-The override list shows each setting beside its editable input field, using
-the same controls as the main configuration menu.  Press \button{Remove},
-choose a submenu, and check the overrides to remove to restore inheritance.
-\button{OK} accepts the changes; \button{Cancel} discards all additions,
-removals, and value changes made in this override editor.  The enclosing
-Map Element Set dialogue must also be accepted to save the set.
-
-Overrides are available for terrain, map orientation, waypoint display, and
-airspace display.  Waypoint-type and airspace-class overrides control display
-only.  In particular, hiding an airspace class does not change its warning
-policy, colours, borders, or fill style.  Changing a global setting immediately
-updates sets which inherit it, while an explicit set override continues to win.
-Copying and pasting a Map Element Set includes its setting overrides.
-
 See Section~\ref{cha:infobox} for a description of the InfoBox types and their meanings.
 
 To change a set press on one of the InfoBoxes labeled with it's current content.
@@ -904,6 +879,49 @@ landscape and portrait screen layout.
 \end{tabular}
 \end{multicols}
 
+
+%%%%%%%%%%%%%%%%%%
+\section{Look / Map Element Sets}\label{sec:map-element-sets}
+
+Map Element Sets are reusable collections of map overlays and controls.  The
+three predefined sets are Circling, Cruise, and Final Glide; experts can also
+name and configure five auxiliary sets.  A map page can select one set
+directly, or select \emph{Auto} to follow the current flight mode.
+
+Map overlays and controls formerly configured under Elements, Gauges, Layout,
+Route, Safety Factors, Wind, Cloud, and Weather are now configured here for
+each set.  These include the trail, final glide bar, reach display, wind arrow,
+thermal information, traffic displays, and on-screen buttons.  Existing
+profiles initialise every set from the previous global values.
+
+Selecting a set opens its scrollable element list.  The
+\button{Setting overrides} button at the bottom opens the optional display
+settings owned by that set.  An empty override list inherits every global map
+display setting.  Press \button{Add} to choose a submenu (Orientation,
+Waypoints, Terrain, or Airspace), then check one or more settings and press
+\button{Add} again.  \button{Select all} and \button{Clear} change the whole
+selection within that submenu.  New overrides copy their current global values.
+
+The override list shows each setting beside its editable input field, using
+the same controls as the main configuration menu.  Press \button{Remove},
+choose a submenu, and check the overrides to remove to restore inheritance.
+\button{OK} accepts the changes; \button{Cancel} discards all additions,
+removals, and value changes made in this override editor.  The enclosing
+Map Element Set dialogue must also be accepted to save the set.
+
+Overrides are available for terrain, map orientation, waypoint display, and
+airspace display.  Waypoint-type and airspace-class overrides control display
+only.  In particular, hiding an airspace class does not change its warning
+policy, colours, borders, or fill style.  Changing a global setting immediately
+updates sets which inherit it, while an explicit set override continues to win.
+Copying and pasting a Map Element Set includes its setting overrides.
+
+\textbf{Airspace warning behaviour:} the Airspace submenu also offers
+Warnings, Warnings dialog, Warning time, Repetitive sound, Acknowledge time,
+and Margin.  Overrides for these settings change the active warning behaviour
+when a page or automatic flight mode selects the set; they can disable
+warnings or change their timing and margin.  Leave them out of the override
+list to inherit the global warning settings.
 
 %%%%%%%%%%%%%%%%%%
 \section{Setup / Logger} \label{conf:logger}

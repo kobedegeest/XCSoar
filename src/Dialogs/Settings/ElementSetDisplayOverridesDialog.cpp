@@ -17,6 +17,7 @@
 #include "Widget/LargeTextWidget.hpp"
 #include "Widget/MultiSelectListWidget.hpp"
 #include "Widget/RowFormWidget.hpp"
+#include "Widget/StaticHelpTextWidget.hpp"
 #include "Widget/TwoWidgets.hpp"
 #include "Widget/VScrollWidget.hpp"
 
@@ -62,6 +63,14 @@ static const char *
 GetHelp(const DisplaySettingDescriptor &descriptor) noexcept
 {
   return descriptor.help != nullptr ? gettext(descriptor.help) : nullptr;
+}
+
+static const char *
+GetAirspaceHelp() noexcept
+{
+  return _("Airspace includes warning settings. Warning overrides can enable "
+           "or disable warnings and change warning timing when a page or "
+           "flight mode selects this set.");
 }
 
 /** A section of the override list, using the main config menu's controls. */
@@ -256,8 +265,12 @@ SelectSettings(UI::SingleWindow &parent, const DialogLook &look,
 {
   auto picker = std::make_unique<SettingSelectionWidget>(items);
   auto *const picker_ptr = picker.get();
+  std::unique_ptr<Widget> content = std::move(picker);
+  if (!items.empty() && items.front()->group == DisplaySettingGroup::AIRSPACE)
+    content = std::make_unique<StaticHelpTextWidget>(std::move(content),
+                                                    GetAirspaceHelp());
   WidgetDialog dialog(WidgetDialog::Full{}, parent, look, caption,
-                      picker.release());
+                      content.release());
   picker_ptr->SetApplyButton(*dialog.AddButton(action, mrOK));
   dialog.AddButton(_("Select all"), [picker_ptr](){ picker_ptr->SelectAll(); });
   dialog.AddButton(_("Clear"), [picker_ptr](){ picker_ptr->ClearSelection(); });
@@ -365,7 +378,11 @@ ElementSetDisplayOverridesDialog::CreateForm()
       look, _("This element set inherits all display settings. "
               "Choose Add, then a submenu, to select setting overrides."));
 
-  return std::make_unique<VScrollWidget>(std::move(form), look);
+  form = std::make_unique<VScrollWidget>(std::move(form), look);
+  if (!GetItems(DisplaySettingGroup::AIRSPACE, false).empty())
+    form = std::make_unique<StaticHelpTextWidget>(std::move(form),
+                                                 GetAirspaceHelp());
+  return form;
 }
 
 void

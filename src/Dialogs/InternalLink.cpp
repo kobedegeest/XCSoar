@@ -82,7 +82,7 @@ static constexpr ConfigPanelLink config_panel_links[] = {
   {"config/pages",      N_("Pages"),      CreatePagesConfigPanel},
   {"config/weglide",    N_("WeGlide"),    CreateWeGlideConfigPanel},
   {"config/network",    N_("Network"),    CreateNetworkConfigPanel},
-  {"config/weather",    N_("Map Element Sets"), CreateMapElementSetsConfigPanel},
+  {"config/map-element-sets", N_("Map Element Sets"), CreateMapElementSetsConfigPanel},
   {"config/safety",     N_("Safety Factors"), CreateSafetyFactorsConfigPanel},
   {"config/tracking",   N_("Tracking"),   CreateTrackingConfigPanel},
   {"config/terrain",    N_("Terrain Display"), CreateTerrainDisplayConfigPanel},
