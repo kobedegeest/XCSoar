@@ -13,6 +13,7 @@
 #include "Renderer/TextRowRenderer.hpp"
 #include "Screen/Layout.hpp"
 #include "UIGlobals.hpp"
+#include "Units/Units.hpp"
 #include "Widget/LargeTextWidget.hpp"
 #include "Widget/MultiSelectListWidget.hpp"
 #include "Widget/RowFormWidget.hpp"
@@ -21,6 +22,8 @@
 
 #include <algorithm>
 #include <cassert>
+#include <chrono>
+#include <cmath>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -122,9 +125,36 @@ DisplaySettingsWidget::Prepare(ContainerWindow &parent,
     }
 
     case DisplaySettingValueType::INTEGER:
-      AddInteger(label, help, "%d", "%d",
-                 descriptor.minimum.value, descriptor.maximum.value,
-                 std::max(descriptor.integer_step, int32_t{1}), value.value);
+      switch (descriptor.numeric_format) {
+      case DisplaySettingNumericFormat::NUMBER:
+      case DisplaySettingNumericFormat::PERCENT: {
+        const char *format =
+          descriptor.numeric_format == DisplaySettingNumericFormat::PERCENT
+          ? "%d %%" : "%d";
+        AddInteger(label, help, format, "%d",
+                   descriptor.minimum.value, descriptor.maximum.value,
+                   std::max(descriptor.integer_step, int32_t{1}), value.value);
+        break;
+      }
+
+      case DisplaySettingNumericFormat::ALTITUDE: {
+        const auto unit = Units::GetUserAltitudeUnit();
+        AddFloat(label, help, "%.0f %s", "%.0f",
+                 Units::ToUserUnit(descriptor.minimum.value, unit),
+                 Units::ToUserUnit(descriptor.maximum.value, unit),
+                 descriptor.integer_step, false, UnitGroup::ALTITUDE,
+                 value.value);
+        break;
+      }
+
+      case DisplaySettingNumericFormat::DURATION:
+        AddDuration(label, help,
+                    std::chrono::seconds{descriptor.minimum.value},
+                    std::chrono::seconds{descriptor.maximum.value},
+                    std::chrono::seconds{descriptor.integer_step},
+                    std::chrono::seconds{value.value});
+        break;
+      }
       break;
     }
   }
@@ -150,7 +180,25 @@ DisplaySettingsWidget::Save(bool &changed) noexcept
       break;
 
     case DisplaySettingValueType::INTEGER:
-      value = DisplaySettingValue::Integer(GetValueInteger(row));
+      switch (descriptor.numeric_format) {
+      case DisplaySettingNumericFormat::NUMBER:
+      case DisplaySettingNumericFormat::PERCENT:
+        value = DisplaySettingValue::Integer(GetValueInteger(row));
+        break;
+
+      case DisplaySettingNumericFormat::ALTITUDE: {
+        double altitude = overrides.Get(descriptor.key)->value;
+        SaveValue(row, UnitGroup::ALTITUDE, altitude);
+        value = DisplaySettingValue::Integer(
+          static_cast<int32_t>(std::lround(altitude)));
+        break;
+      }
+
+      case DisplaySettingNumericFormat::DURATION:
+        value = DisplaySettingValue::Integer(
+          static_cast<int32_t>(GetValueTime(row).count()));
+        break;
+      }
       break;
     }
 

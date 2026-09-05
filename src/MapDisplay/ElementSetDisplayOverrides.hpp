@@ -34,6 +34,14 @@ enum class DisplaySettingValueType : uint8_t {
   INTEGER,
 };
 
+/** Presentation of integer values; persisted values keep their existing units. */
+enum class DisplaySettingNumericFormat : uint8_t {
+  NUMBER,
+  PERCENT,
+  ALTITUDE,
+  DURATION,
+};
+
 /**
  * Type-erased value used by the descriptor catalog and sparse overrides.
  * The owning descriptor supplies the type and validation rules.
@@ -119,6 +127,9 @@ struct DisplaySettingDescriptor {
   DisplaySettingAccessor accessor{};
   DisplaySettingEffects effects =
     ToDisplaySettingEffects(DisplaySettingEffect::NONE);
+
+  DisplaySettingNumericFormat numeric_format =
+    DisplaySettingNumericFormat::NUMBER;
 
   constexpr bool IsValid(DisplaySettingValue candidate) const noexcept {
     bool valid = false;

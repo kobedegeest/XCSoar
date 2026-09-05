@@ -14,6 +14,7 @@
 namespace {
 
 using namespace DisplaySettingCatalog;
+using NumericFormat = DisplaySettingNumericFormat;
 
 static_assert(::WAYPOINT_MAP_FILTER_TYPE_COUNT ==
               DisplaySettingCatalog::WAYPOINT_TYPE_COUNT);
@@ -51,6 +52,7 @@ constexpr DisplaySettingDescriptor
 Integer(DisplaySettingKey key, DisplaySettingGroup group,
         const char *profile_suffix, const char *label,
         int32_t minimum, int32_t maximum, int32_t step,
+        NumericFormat format,
         const char *help=nullptr) noexcept
 {
   DisplaySettingDescriptor descriptor{
@@ -60,6 +62,7 @@ Integer(DisplaySettingKey key, DisplaySettingGroup group,
     DisplaySettingValue::Integer(maximum), nullptr,
   };
   descriptor.integer_step = step;
+  descriptor.numeric_format = format;
   return descriptor;
 }
 
@@ -271,11 +274,13 @@ static const std::array<DisplaySettingDescriptor, COUNT> catalog = [] {
     TERRAIN_EFFECTS));
   add(Overwritable(
     Integer(Key::TERRAIN_CONTRAST, DisplaySettingGroup::TERRAIN,
-            "TerrainContrast", N_("Terrain contrast"), 0, 100, 5),
+            "TerrainContrast", N_("Terrain contrast"), 0, 100, 5,
+            NumericFormat::PERCENT),
     TERRAIN_EFFECTS));
   add(Overwritable(
     Integer(Key::TERRAIN_BRIGHTNESS, DisplaySettingGroup::TERRAIN,
-            "TerrainBrightness", N_("Terrain brightness"), 0, 100, 5),
+            "TerrainBrightness", N_("Terrain brightness"), 0, 100, 5,
+            NumericFormat::PERCENT),
     TERRAIN_EFFECTS));
   add(Overwritable(
     Choices(Enumeration(Key::TERRAIN_CONTOURS,
@@ -311,7 +316,7 @@ static const std::array<DisplaySettingDescriptor, COUNT> catalog = [] {
     Integer(Key::GLIDER_SCREEN_POSITION,
             DisplaySettingGroup::ORIENTATION,
             "GliderScreenPosition", N_("Glider position offset"),
-            10, 50, 5),
+            10, 50, 5, NumericFormat::PERCENT),
     ORIENTATION_EFFECTS));
 
   add(Overwritable(
@@ -348,7 +353,8 @@ static const std::array<DisplaySettingDescriptor, COUNT> catalog = [] {
     WAYPOINT_LOOK_EFFECTS));
   add(Overwritable(
     Integer(Key::WAYPOINT_ICON_SCALE, DisplaySettingGroup::WAYPOINTS,
-            "WaypointIconScale", N_("Waypoint icon size"), 50, 200, 10),
+            "WaypointIconScale", N_("Waypoint icon size"), 50, 200, 10,
+            NumericFormat::PERCENT),
     WAYPOINT_EFFECTS));
   add(Overwritable(
     Boolean(Key::WAYPOINT_DETAILED_LANDABLES,
@@ -357,7 +363,8 @@ static const std::array<DisplaySettingDescriptor, COUNT> catalog = [] {
     WAYPOINT_EFFECTS));
   add(Overwritable(
     Integer(Key::WAYPOINT_LANDABLE_SIZE, DisplaySettingGroup::WAYPOINTS,
-            "WaypointLandableSize", N_("Landable size"), 50, 200, 10),
+            "WaypointLandableSize", N_("Landable size"), 50, 200, 10,
+            NumericFormat::PERCENT),
     WAYPOINT_EFFECTS));
   add(Overwritable(
     Boolean(Key::WAYPOINT_SCALE_RUNWAY_LENGTH,
@@ -392,11 +399,13 @@ static const std::array<DisplaySettingDescriptor, COUNT> catalog = [] {
     AIRSPACE_EFFECTS));
   add(Overwritable(
     Integer(Key::AIRSPACE_CLIP_ALTITUDE, DisplaySettingGroup::AIRSPACE,
-            "AirspaceClipAltitude", N_("Clip altitude"), 0, 20000, 100),
+            "AirspaceClipAltitude", N_("Clip altitude"), 0, 20000, 100,
+            NumericFormat::ALTITUDE),
     AIRSPACE_EFFECTS));
   add(Overwritable(
     Integer(Key::AIRSPACE_MARGIN, DisplaySettingGroup::AIRSPACE,
-            "AirspaceMargin", N_("Margin"), 0, 10000, 100),
+            "AirspaceMargin", N_("Margin"), 0, 10000, 100,
+            NumericFormat::ALTITUDE),
     AIRSPACE_COMPUTER_EFFECTS));
   add(Overwritable(
     Boolean(Key::AIRSPACE_WARNINGS, DisplaySettingGroup::AIRSPACE,
@@ -408,7 +417,8 @@ static const std::array<DisplaySettingDescriptor, COUNT> catalog = [] {
     AIRSPACE_EFFECTS));
   add(Overwritable(
     Integer(Key::AIRSPACE_WARNING_TIME, DisplaySettingGroup::AIRSPACE,
-            "AirspaceWarningTime", N_("Warning time"), 10, 1000, 5),
+            "AirspaceWarningTime", N_("Warning time"), 10, 1000, 5,
+            NumericFormat::DURATION),
     AIRSPACE_COMPUTER_EFFECTS));
   add(Overwritable(
     Boolean(Key::AIRSPACE_REPETITIVE_SOUND, DisplaySettingGroup::AIRSPACE,
@@ -418,7 +428,7 @@ static const std::array<DisplaySettingDescriptor, COUNT> catalog = [] {
     Integer(Key::AIRSPACE_ACKNOWLEDGE_TIME,
             DisplaySettingGroup::AIRSPACE,
             "AirspaceAcknowledgeTime", N_("Acknowledge time"),
-            10, 1000, 5),
+            10, 1000, 5, NumericFormat::DURATION),
     AIRSPACE_COMPUTER_EFFECTS));
   add(Overwritable(
     Boolean(Key::AIRSPACE_BLACK_OUTLINE, DisplaySettingGroup::AIRSPACE,
