@@ -378,11 +378,7 @@ ElementSetDisplayOverridesDialog::CreateForm()
       look, _("This element set inherits all display settings. "
               "Choose Add, then a submenu, to select setting overrides."));
 
-  form = std::make_unique<VScrollWidget>(std::move(form), look);
-  if (!GetItems(DisplaySettingGroup::AIRSPACE, false).empty())
-    form = std::make_unique<StaticHelpTextWidget>(std::move(form),
-                                                 GetAirspaceHelp());
-  return form;
+  return std::make_unique<VScrollWidget>(std::move(form), look);
 }
 
 void
