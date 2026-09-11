@@ -9,6 +9,14 @@ OpenSoar - is an experimental fork of the wellknown gliding software XCSoar.
 ... and XCSoar is a tactical glide computer for Android, Linux, Mac OS X,
 and Windows.
 
+## Version lines
+
+Version 7.44.24 closes the 7.44 line of OpenSoar; it receives no further
+changes.  Development continues with OpenSoar 7.45.25, which carries the
+same functionality but is rebuilt on top of the current XCSoar master, so
+that the OpenSoar changes stay readable as a series of topics against
+upstream.
+
 This file is aimed at developers.  Developers should [read the (XCSoar-)
 developer manual](https://xcsoar.readthedocs.io/en/latest/).
 

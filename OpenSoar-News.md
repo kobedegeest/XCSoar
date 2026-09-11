@@ -1,38 +1,31 @@
-OpenSoar Version 7.44.24 - not released yet
+OpenSoar Version 7.44.24 - released 2026/09/13
 ---------------
-OpenSoar Test Version v7.44.24.t11 > 2026/08/XX
+  This release closes the 7.44 line.  It is continued by OpenSoar 7.45.25,
+  which is rebuilt on top of the current XCSoar master, so that the OpenSoar
+  changes stay readable as a series of topics against upstream.
+
+
 * bugfix stabilize BlueTooth detection: blocking behavior mismatch
 * use SkySight-Forecast for OpenVario too 
 
-OpenSoar Test Version v7.44.24.t09 > 2026/08/20
 * Test BlueTooth detection: very very often w/ a blocking behavior
 * cupx reader copied from XCSoar (w/ a windows bugfix)
-* some small bugfix and cleanup actions
 
----------------
-OpenSoar Test Version v7.44.24.t08 > 2026/08/07
-* .t07 was wrong: Linux and Android crashed
----------------
-OpenSoar Test Version v7.44.24.t07 > 2026/07/03
----------------
+* ManageDevice introduced for better abstraction for this devices
+  - migrate BlueFly driver and RemoteStick
+* PortMonitor: add "Send..." button for SEND_SETTINGS drivers
+
 * RemoteStick
   - automatic install on DeviceG (=portt6)
       - detected w/ PID/VID 1209:8500  
       - not editable, driver is hardcoded to RemoteStick
   - not selectable for other devices
-* ManageDevice introduced for better abstraction for this devices
-  - migrate BlueFly driver and RemoteStick
-* PortMonitor: add "Send..." button for SEND_SETTINGS drivers
-
-OpenSoar Test Version v7.44.24.t06 > 2026/06/26
-* RemoteStick
   - bugfix Android RemoteStick detection
   - add Manage window to control the remote stick from OpenSoar
   - add commands Send, Receive and Restart to reemote stick driver
-
-OpenSoar Test Version v7.44.24.t05 - released 2026/06/16 (prerelease for 7.44.24)
-* RemoteStick
   - add port and driver for detection of remote sticks (Arduino or better RemoteStick (1209:8500)
+
+* some small bugfix and cleanup actions
 
 #### XCSoar Version 7.44(3) - dev state on 2025/04/07
 
