@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright The XCSoar Project
 
+#if 0  // PROGRAM_VERSION >= "7.45"  // defined (__AUGUST__)
+
 #include "ConfigurationConfigPanel.hpp"
 // #include "net/client/WeGlide/Settings.hpp"
 #include "Profile/Keys.hpp"
@@ -113,3 +115,4 @@ CreateConfigurationConfigPanel() noexcept
 {
   return std::make_unique<ConfigurationConfigPanel>();
 }
+#endif

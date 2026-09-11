@@ -92,8 +92,10 @@ static ArrowPagerWidget *pager;
 
 static constexpr TabMenuPage basic_pages[] = {
   { N_("Site Files"), CreateSiteConfigPanel },
+#if 0  // PROGRAM_VERSION >= "7.45"  // defined (__AUGUST__)
   { N_("Device Configuration"), CreateConfigurationConfigPanel},
-#if defined(IS_OPENVARIO) && 0  // defined (__AUGUST__)
+#endif
+#if defined(IS_OPENVARIO)  // defined (__AUGUST__)
   { N_("TestOpenVario"), CreateSystemMenuWidget},
 #endif
   { nullptr, nullptr }
