@@ -1,4 +1,4 @@
-Version 7.45.2 - not yet released
+Version 7.45.2 - 2026-09-12
 * android
   - target Android 16 so Google Play still accepts updates #2874
   - fix internal and Bluetooth sensors going silent right after they
