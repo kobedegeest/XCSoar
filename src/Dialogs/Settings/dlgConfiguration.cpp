@@ -29,6 +29,7 @@
 #include "Panels/TerrainDisplayConfigPanel.hpp"
 #include "Panels/TopographyDisplayConfigPanel.hpp"
 #include "Panels/GlideComputerConfigPanel.hpp"
+#include "Panels/GlideConeConfigPanel.hpp"
 #include "Panels/WindConfigPanel.hpp"
 #include "Panels/SafetyFactorsConfigPanel.hpp"
 #include "Panels/RouteConfigPanel.hpp"
@@ -115,6 +116,7 @@ static constexpr TabMenuPage map_pages[] = {
 static constexpr TabMenuPage computer_pages[] = {
   { N_("Safety Factors"), CreateSafetyFactorsConfigPanel },
   { N_("Glide Computer"), CreateGlideComputerConfigPanel },
+  { N_("Glide Cone"), CreateGlideConeConfigPanel },
   { N_("Wind"), CreateWindConfigPanel },
   { N_("Route"), CreateRouteConfigPanel },
   { N_("Scoring"), CreateScoringConfigPanel },

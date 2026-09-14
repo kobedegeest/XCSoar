@@ -94,3 +94,6 @@ static constexpr Color COLOR_WIND_ARROW_INSTANTANEOUS =
   Color(0x80, 0x80, 0xff);
 
 static constexpr uint8_t ALPHA_OVERLAY = 0xA0;
+
+/** Glide cone relay path overlay. */
+static constexpr Color COLOR_GLIDE_CONE = Color(0x28, 0x78, 0xff);

@@ -1,4 +1,9 @@
 Version 7.46 - not yet released
+* map
+  - add an experimental terrain-aware glide cone overlay: when enabled,
+    performing a "Goto" to an airport triggers a GPU (OpenGL ES 3.1)
+    computation of the reachable terrain and draws the glide path from
+    the aircraft back to the airport (Android only)
 * android
   - add Share to Export flights so selected IGC/NMEA files can be
     sent via the system share sheet (Nearby Share, Drive, mail, …)
