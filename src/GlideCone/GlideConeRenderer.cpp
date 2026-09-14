@@ -110,33 +110,53 @@ GlideConeRenderer::BuildField(GeoPoint center, double radius_m,
     return false;
 
   const RasterProjection &proj = map.GetProjection();
-  double dem_m = map.PixelDistance(center, 1);
-  if (dem_m < 1)
-    dem_m = 1;
 
-  unsigned pool = std::max(1u, (unsigned)std::lround(desired_cell / dem_m));
-  double actual_cell = pool * dem_m;
+  /* DEM lon/lat pixels are not square metres: measure axes separately. */
+  double dem_x = map.PixelDistanceX(center, 1);
+  double dem_y = map.PixelDistanceY(center, 1);
+  if (dem_x < 1)
+    dem_x = 1;
+  if (dem_y < 1)
+    dem_y = 1;
 
-  unsigned half = std::max(1u,
-                           (unsigned)std::lround(radius_m / actual_cell));
-  if (half > GLIDE_CONE_MAX_DIM / 2) {
-    half = GLIDE_CONE_MAX_DIM / 2;
-    actual_cell = radius_m / half;
-    pool = std::max(1u, (unsigned)std::lround(actual_cell / dem_m));
-    actual_cell = pool * dem_m;
+  const double dem_ref = std::sqrt(dem_x * dem_y);
+  unsigned pool = std::max(1u, (unsigned)std::lround(desired_cell / dem_ref));
+
+  double cell_x = pool * dem_x;
+  double cell_y = pool * dem_y;
+
+  unsigned half_x = std::max(1u, (unsigned)std::lround(radius_m / cell_x));
+  unsigned half_y = std::max(1u, (unsigned)std::lround(radius_m / cell_y));
+
+  /* Fit a metric-radius window into the GPU dim cap by coarsening the
+     shared DEM pool factor (keeps N×N max-pool alignment). */
+  if (half_x > GLIDE_CONE_MAX_DIM / 2 || half_y > GLIDE_CONE_MAX_DIM / 2) {
+    const unsigned need_pool_x = std::max(1u, (unsigned)std::lround(
+      (radius_m / double(GLIDE_CONE_MAX_DIM / 2)) / dem_x));
+    const unsigned need_pool_y = std::max(1u, (unsigned)std::lround(
+      (radius_m / double(GLIDE_CONE_MAX_DIM / 2)) / dem_y));
+    pool = std::max(pool, std::max(need_pool_x, need_pool_y));
+    cell_x = pool * dem_x;
+    cell_y = pool * dem_y;
+    half_x = std::min(GLIDE_CONE_MAX_DIM / 2,
+                      std::max(1u, (unsigned)std::lround(radius_m / cell_x)));
+    half_y = std::min(GLIDE_CONE_MAX_DIM / 2,
+                      std::max(1u, (unsigned)std::lround(radius_m / cell_y)));
   }
-  const unsigned dim = 2 * half;
+
+  const unsigned dim_x = 2 * half_x;
+  const unsigned dim_y = 2 * half_y;
 
   const auto c = proj.ProjectCoarse(center);
   const SignedRasterLocation origin{
-    c.x - int(half * pool),
-    c.y - int(half * pool),
+    c.x - int(half_x * pool),
+    c.y - int(half_y * pool),
   };
 
   const auto nw = proj.UnprojectCoarse(origin);
   const auto se = proj.UnprojectCoarse(SignedRasterLocation{
-    origin.x + int(dim * pool),
-    origin.y + int(dim * pool),
+    origin.x + int(dim_x * pool),
+    origin.y + int(dim_y * pool),
   });
   const GeoBounds bounds{nw, se};
   if (!bounds.IsValid())
@@ -147,15 +167,16 @@ GlideConeRenderer::BuildField(GeoPoint center, double radius_m,
   const float invalid_elevation = float(max_alt + 10000);
 
   GlideConeGrid grid;
-  grid.width = dim;
-  grid.height = dim;
-  grid.cell_size_m = actual_cell;
+  grid.width = dim_x;
+  grid.height = dim_y;
+  grid.cell_size_x_m = cell_x;
+  grid.cell_size_y_m = cell_y;
   grid.glide_ratio = ratio;
   grid.max_alt = float(max_alt);
   grid.iteration_cap = gc.iteration_cap;
-  grid.elevation.resize(std::size_t(dim) * dim);
+  grid.elevation.resize(std::size_t(dim_x) * dim_y);
 
-  map.MaxPoolElevation(origin, pool, dim, dim,
+  map.MaxPoolElevation(origin, pool, dim_x, dim_y,
                        grid.elevation.data(), invalid_elevation);
   for (float &e : grid.elevation)
     if (e < invalid_elevation)
@@ -165,7 +186,8 @@ GlideConeRenderer::BuildField(GeoPoint center, double radius_m,
     const auto sp = proj.ProjectCoarse(seed);
     const int sx = (sp.x - origin.x) / int(pool);
     const int sy = (sp.y - origin.y) / int(pool);
-    if (sx < 0 || sy < 0 || unsigned(sx) >= dim || unsigned(sy) >= dim)
+    if (sx < 0 || sy < 0 ||
+        unsigned(sx) >= dim_x || unsigned(sy) >= dim_y)
       continue;
 
     const double seed_terrain =
@@ -182,7 +204,7 @@ GlideConeRenderer::BuildField(GeoPoint center, double radius_m,
 
   field.result = std::move(result);
   field.bounds = bounds;
-  field.cell_size_m = actual_cell;
+  field.cell_size_m = std::sqrt(cell_x * cell_y);
   field.max_alt = grid.max_alt;
   field.home_x = grid.seeds.front().x;
   field.home_y = grid.seeds.front().y;

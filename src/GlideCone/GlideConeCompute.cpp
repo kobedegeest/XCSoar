@@ -58,7 +58,8 @@ layout(std430, binding = 2) buffer CellOutBuf { Cell cout[]; };
 
 uniform int uWidth;
 uniform int uHeight;
-uniform float uCellSize;
+uniform float uCellSizeX;
+uniform float uCellSizeY;
 uniform float uGlideRatio;
 uniform float uMaxAlt;
 
@@ -155,9 +156,9 @@ bool isInViewToOrigin(int x0, int y0, int targetOx, int targetOy) {
 
 float coneAlt(int ox, int oy, int x, int y) {
   int oi = idx(ox, oy);
-  float dx = float(x - ox);
-  float dy = float(y - oy);
-  return cin[oi].alt + sqrt(dx * dx + dy * dy) * uCellSize / uGlideRatio;
+  float dx = float(x - ox) * uCellSizeX;
+  float dy = float(y - oy) * uCellSizeY;
+  return cin[oi].alt + sqrt(dx * dx + dy * dy) / uGlideRatio;
 }
 
 ivec2 electedFromNeighbor(int x, int y, int px, int py) {
@@ -389,8 +390,10 @@ GlideConeCompute::Run(const GlideConeGrid &grid, GlideConeResult &out) noexcept
   glUseProgram(program);
   glUniform1i(glGetUniformLocation(program, "uWidth"), int(width));
   glUniform1i(glGetUniformLocation(program, "uHeight"), int(height));
-  glUniform1f(glGetUniformLocation(program, "uCellSize"),
-              float(grid.cell_size_m));
+  glUniform1f(glGetUniformLocation(program, "uCellSizeX"),
+              float(grid.cell_size_x_m));
+  glUniform1f(glGetUniformLocation(program, "uCellSizeY"),
+              float(grid.cell_size_y_m));
   glUniform1f(glGetUniformLocation(program, "uGlideRatio"),
               float(grid.glide_ratio));
   glUniform1f(glGetUniformLocation(program, "uMaxAlt"), grid.max_alt);

@@ -25,8 +25,9 @@ struct GlideConeSeed {
 struct GlideConeGrid {
   unsigned width = 0, height = 0;
 
-  /** Approximate ground distance between adjacent cells [m]. */
-  double cell_size_m = 0;
+  /** Ground metres between adjacent cells east–west / north–south. */
+  double cell_size_x_m = 0;
+  double cell_size_y_m = 0;
 
   /** Fixed glide ratio (L/D) used by the propagation. */
   double glide_ratio = 1;

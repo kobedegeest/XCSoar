@@ -47,6 +47,8 @@ struct GlideConeSettings {
   /**
    * Target ground size of one GPU grid cell [m].  Native DEM pixels
    * are max-pooled to this step (snapped to an integer pool factor).
+   * East–west and north–south metres per cell are derived separately
+   * from the DEM projection so reach contours stay circular.
    */
   double cell_size;
 

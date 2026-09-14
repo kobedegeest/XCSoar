@@ -91,6 +91,16 @@ public:
     return projection.CoarsePixelDistance(location, pixels);
   }
 
+  [[gnu::pure]] double
+  PixelDistanceX(const GeoPoint &location, unsigned pixels) const noexcept {
+    return projection.CoarsePixelDistanceX(location, pixels);
+  }
+
+  [[gnu::pure]] double
+  PixelDistanceY(const GeoPoint &location, unsigned pixels) const noexcept {
+    return projection.CoarsePixelDistanceY(location, pixels);
+  }
+
   /**
    * Downsample the DEM by taking the maximum valid height in each
    * @p pool × @p pool block of coarse pixels, starting at @p origin.
