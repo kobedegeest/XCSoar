@@ -6,10 +6,12 @@
 #include "GlideConeField.hpp"
 #include "Geo/GeoPoint.hpp"
 #include "thread/Mutex.hxx"
+#include "util/Serial.hpp"
 
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <vector>
 
 class Canvas;
 class WindowProjection;
@@ -41,12 +43,17 @@ class GlideConeRenderer {
   GlideConeField field;
   GeoPoint computed_center = GeoPoint::Invalid();
   std::size_t computed_signature = 0;
+  Serial computed_terrain_serial{};
   bool have_field = false;
   bool computed_contours = false;
 
   /* debounce for parameter (e.g. glide ratio) changes */
   std::size_t debounce_signature = ~std::size_t{0};
   std::chrono::steady_clock::time_point debounce_since{};
+
+  /* debounce for terrain tile loads so we do not recompute every batch */
+  Serial debounce_terrain_serial{};
+  std::chrono::steady_clock::time_point terrain_debounce_since{};
 
 public:
   /**
@@ -73,6 +80,19 @@ public:
             const ComputerSettings &settings,
             const RasterTerrain *terrain, const Waypoints *waypoints,
             const MapLook &look) noexcept;
+
+  /**
+   * Expand a map-view terrain request so it also covers the glide-cone
+   * compute window (seed in single mode, aircraft in combined).
+   *
+   * @p location and @p radius are the visible-map request on input and
+   * the coverage to load on output.
+   */
+  static void AdjustTerrainCoverage(const ComputerSettings &settings,
+                                    GeoPoint aircraft, bool aircraft_valid,
+                                    GeoPoint target, bool target_valid,
+                                    GeoPoint &location,
+                                    double &radius) noexcept;
 
 private:
   /**

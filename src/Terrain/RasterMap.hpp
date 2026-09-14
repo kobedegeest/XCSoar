@@ -92,6 +92,16 @@ public:
   }
 
   /**
+   * Downsample the DEM by taking the maximum valid height in each
+   * @p pool × @p pool block of coarse pixels, starting at @p origin.
+   * Water is treated as 0 m.  Blocks with no valid sample are written
+   * as @p invalid_value.
+   */
+  void MaxPoolElevation(SignedRasterLocation origin, unsigned pool,
+                        unsigned width, unsigned height,
+                        float *dest, float invalid_value) const noexcept;
+
+  /**
    * Determine the non-interpolated height at the specified location.
    */
   [[gnu::pure]]

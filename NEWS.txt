@@ -3,7 +3,10 @@ Version 7.46 - not yet released
   - add an experimental terrain-aware glide cone overlay: when enabled,
     performing a "Goto" to an airport triggers a GPU (OpenGL ES 3.1)
     computation of the reachable terrain and draws the glide path from
-    the aircraft back to the airport (Android only)
+    the aircraft back to the airport (Android only).  Terrain is
+    max-pooled to a configurable cell size (default 400 m); the window
+    is 1.1 × max altitude × L/D around the airport (single) or 1.25 ×
+    around the glider (combined); default glide ratio is 25
 * android
   - add Share to Export flights so selected IGC/NMEA files can be
     sent via the system share sheet (Nearby Share, Drive, mail, …)

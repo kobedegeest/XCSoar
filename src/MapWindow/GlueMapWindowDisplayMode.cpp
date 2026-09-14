@@ -10,6 +10,9 @@
 #include "Profile/Profile.hpp"
 #include "Screen/Layout.hpp"
 #include "PageActions.hpp"
+#include "NMEA/MoreData.hpp"
+#include "NMEA/Derived.hpp"
+#include "GlideCone/GlideConeRenderer.hpp"
 
 #ifdef ENABLE_OPENGL
 #include "ui/canvas/opengl/Globals.hpp"
@@ -130,8 +133,20 @@ GlueMapWindow::UpdateScreenBounds() noexcept
      it's used by other calculations, therefore don't check if terrain
      display is enabled */
   if (terrain_thread != nullptr &&
-      visible_projection.IsValid())
-    terrain_thread->Trigger(visible_projection);
+      visible_projection.IsValid()) {
+    GeoPoint location = visible_projection.GetGeoScreenCenter();
+    auto radius = visible_projection.GetScreenWidthMeters() / 2;
+    const auto &basic = CommonInterface::Basic();
+    const auto &task_stats = CommonInterface::Calculated().task_stats;
+    const GeoPoint gc_target = task_stats.current_leg.location_remaining;
+    const bool gc_target_valid =
+      task_stats.task_valid && gc_target.IsValid();
+    GlideConeRenderer::AdjustTerrainCoverage(
+      CommonInterface::GetComputerSettings(),
+      basic.location, basic.location_available.IsValid(),
+      gc_target, gc_target_valid, location, radius);
+    terrain_thread->Trigger(location, radius);
+  }
 }
 
 void

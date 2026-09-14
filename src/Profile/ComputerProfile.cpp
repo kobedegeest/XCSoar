@@ -128,6 +128,7 @@ Profile::Load(const ProfileMap &map, GlideConeSettings &settings)
   map.GetEnum(ProfileKeys::GlideConeMode, settings.mode);
   map.Get(ProfileKeys::GlideConeGlideRatio, settings.glide_ratio);
   map.Get(ProfileKeys::GlideConeMaxAltitude, settings.max_altitude);
+  map.Get(ProfileKeys::GlideConeCellSize, settings.cell_size);
   map.Get(ProfileKeys::GlideConeIterationCap, settings.iteration_cap);
   map.Get(ProfileKeys::GlideConeContours, settings.contours);
   map.Get(ProfileKeys::GlideConeContoursMinScale, settings.contours_min_scale);

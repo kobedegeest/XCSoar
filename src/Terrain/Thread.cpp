@@ -16,10 +16,15 @@ TerrainThread::Trigger(const WindowProjection &projection)
 {
   assert(projection.IsValid());
 
+  Trigger(projection.GetGeoScreenCenter(),
+          projection.GetScreenWidthMeters() / 2);
+}
+
+void
+TerrainThread::Trigger(GeoPoint center, double radius)
+{
   const std::lock_guard lock{mutex};
 
-  GeoPoint center = projection.GetGeoScreenCenter();
-  auto radius = projection.GetScreenWidthMeters() / 2;
   if (last_center.IsValid() && last_radius >= radius &&
       last_center.DistanceS(center) < 1000)
     return;

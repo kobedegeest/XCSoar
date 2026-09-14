@@ -17,9 +17,10 @@ struct GlideConeSeed {
 /**
  * Input DEM grid for the glide cone GPU compute.
  *
- * The grid is a north-up regular lon/lat window.  Elevations are metres
- * MSL (terrain plus ground clearance).  One or more seed cells are the
- * airports/landables from which the cone is propagated.
+ * The grid is a north-up window aligned to DEM coarse pixels.
+ * Elevations are metres MSL (max-pooled terrain plus ground clearance).
+ * One or more seed cells are the airports/landables from which the cone
+ * is propagated.
  */
 struct GlideConeGrid {
   unsigned width = 0, height = 0;

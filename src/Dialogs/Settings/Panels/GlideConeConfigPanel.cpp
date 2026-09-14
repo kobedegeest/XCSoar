@@ -14,6 +14,7 @@ enum ControlIndex {
   Mode,
   GlideRatio,
   MaxAltitude,
+  CellSize,
   IterationCap,
   Contours,
   ContoursMinScale,
@@ -63,6 +64,11 @@ GlideConeConfigPanel::Prepare(ContainerWindow &parent,
              "computed reachable area."),
            "%.0f m", "%.0f", 100, 10000, 50, false, glide_cone.max_altitude);
 
+  AddFloat(_("Cell size"),
+           _("Target size of one compute cell [m].  Terrain is resampled by "
+             "taking the highest DEM sample in each cell."),
+           "%.0f m", "%.0f", 50, 2000, 50, false, glide_cone.cell_size);
+
   AddInteger(_("Iteration cap"),
              _("Upper bound on the number of GPU propagation iterations."),
              "%d", "%d", 100, 20000, 100, int(glide_cone.iteration_cap));
@@ -97,6 +103,9 @@ GlideConeConfigPanel::Save(bool &_changed) noexcept
 
   changed |= SaveValue(MaxAltitude, ProfileKeys::GlideConeMaxAltitude,
                        glide_cone.max_altitude);
+
+  changed |= SaveValue(CellSize, ProfileKeys::GlideConeCellSize,
+                       glide_cone.cell_size);
 
   if (SaveValueInteger(IterationCap, glide_cone.iteration_cap)) {
     Profile::Set(ProfileKeys::GlideConeIterationCap, glide_cone.iteration_cap);

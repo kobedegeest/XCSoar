@@ -40,9 +40,15 @@ struct GlideConeSettings {
 
   /**
    * Maximum working altitude [m MSL].  Also bounds the size of the
-   * computation window (radius = max_altitude * glide_ratio).
+   * computation window (see WindowRadiusM()).
    */
   double max_altitude;
+
+  /**
+   * Target ground size of one GPU grid cell [m].  Native DEM pixels
+   * are max-pooled to this step (snapped to an integer pool factor).
+   */
+  double cell_size;
 
   /** Upper bound on propagation iterations (0 = use internal default). */
   unsigned iteration_cap;
@@ -60,10 +66,27 @@ struct GlideConeSettings {
   /** On-screen distance between contour labels [base pixels, DPI-scaled]. */
   unsigned label_spacing;
 
+  /** Half-width factor for single-mode (around the seed). */
+  static constexpr double SINGLE_WINDOW_FACTOR = 1.1;
+
+  /** Half-width factor for combined-mode (around the aircraft). */
+  static constexpr double COMBINED_WINDOW_FACTOR = 1.25;
+
+  static constexpr double MAX_WINDOW_RADIUS_M = 200000;
+  static constexpr double MIN_WINDOW_RADIUS_M = 1000;
+  static constexpr double DEFAULT_CELL_SIZE_M = 400;
+
   void SetDefaults() noexcept;
 
   [[gnu::pure]]
   constexpr bool IsEnabled() const noexcept {
     return mode != Mode::OFF;
   }
+
+  /**
+   * Compute-window half-width [m]: 1.1 × max_alt × L/D in single mode,
+   * 1.25 × in combined mode, clamped to MIN/MAX_WINDOW_RADIUS_M.
+   */
+  [[gnu::pure]]
+  double WindowRadiusM() const noexcept;
 };
