@@ -8,6 +8,7 @@
 #include "Projection/WindowProjection.hpp"
 #include "Engine/Waypoint/Waypoints.hpp"
 #include "Engine/Waypoint/Waypoint.hpp"
+#include "Terrain/RasterTerrain.hpp"
 #include "Renderer/WaypointRendererSettings.hpp"
 #include "Renderer/TextInBox.hpp"
 #include "Renderer/LabelBlock.hpp"
