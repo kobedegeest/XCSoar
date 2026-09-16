@@ -19,16 +19,18 @@ class RasterTerrain;
 class Waypoints;
 struct MapLook;
 struct ComputerSettings;
+struct WaypointRendererSettings;
 
 /**
  * Owns the glide cone GPU computation and draws the resulting relay path
  * on the moving map.
  *
- * The seed(s) come from the active navigation target (single mode) or all
- * landables in a moving window around the aircraft (combined mode).  The
- * expensive GPU compute and the path drawing happen on the draw thread
- * (where the OpenGL context is current) inside Draw().  An explicit "Goto"
- * target may also be pushed from the UI thread as a single-mode fallback.
+ * The seed(s) come from the active navigation target (single mode) or
+ * landables that pass the map waypoint display filters (combined
+ * mode).  The expensive GPU compute and the path drawing happen on the
+ * draw thread (where the OpenGL context is current) inside Draw().  An
+ * explicit "Goto" target may also be pushed from the UI thread as a
+ * single-mode fallback.
  */
 class GlideConeRenderer {
   Mutex mutex;
@@ -70,15 +72,18 @@ public:
    * OpenGL context current.
    *
    * @param target the active navigation target (Goto/task destination)
-   * used as the seed in single mode
+   * used as the seed in single mode (not filtered)
    * @param waypoints waypoint store used to gather landables in combined
    * mode (may be nullptr)
+   * @param waypoint_settings map waypoint display filters used to
+   * select combined-mode seeds (type / Non-ICAO; not zoom/scale)
    */
   void Draw(Canvas &canvas, const WindowProjection &projection,
             GeoPoint aircraft, bool aircraft_valid,
             GeoPoint target, bool target_valid,
             const ComputerSettings &settings,
             const RasterTerrain *terrain, const Waypoints *waypoints,
+            const WaypointRendererSettings &waypoint_settings,
             const MapLook &look) noexcept;
 
   /**

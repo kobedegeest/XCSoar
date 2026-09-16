@@ -13,6 +13,7 @@
 #include "Terrain/RasterProjection.hpp"
 #include "Engine/Waypoint/Waypoints.hpp"
 #include "Engine/Waypoint/Waypoint.hpp"
+#include "Renderer/WaypointRendererSettings.hpp"
 #include "Renderer/TextInBox.hpp"
 #include "Renderer/LabelBlock.hpp"
 #include "Formatter/UserUnits.hpp"
@@ -68,6 +69,16 @@ SettingsSignature(const GlideConeSettings &s) noexcept
   h = h * 31 + std::hash<double>{}(s.max_altitude);
   h = h * 31 + std::hash<double>{}(s.cell_size);
   h = h * 31 + std::hash<unsigned>{}(s.iteration_cap);
+  return h;
+}
+
+[[gnu::pure]]
+static std::size_t
+WaypointDisplaySignature(const WaypointRendererSettings &s) noexcept
+{
+  std::size_t h = std::hash<bool>{}(s.display_non_icao_airports);
+  for (unsigned i = 0; i < unsigned(Waypoint::Type::COUNT); ++i)
+    h = h * 31 + std::hash<bool>{}(s.display_types[i]);
   return h;
 }
 
@@ -205,9 +216,14 @@ GlideConeRenderer::BuildField(GeoPoint center, double radius_m,
   field.result = std::move(result);
   field.bounds = bounds;
   field.cell_size_m = std::sqrt(cell_x * cell_y);
+  field.cell_size_x_m = cell_x;
+  field.cell_size_y_m = cell_y;
+  field.glide_ratio = ratio;
   field.max_alt = grid.max_alt;
   field.home_x = grid.seeds.front().x;
   field.home_y = grid.seeds.front().y;
+  field.seeds = std::move(grid.seeds);
+  field.elevation = std::move(grid.elevation);
   return field.IsValid();
 }
 
@@ -218,12 +234,15 @@ GlideConeRenderer::Draw(Canvas &canvas, const WindowProjection &projection,
                         const ComputerSettings &settings,
                         const RasterTerrain *terrain,
                         const Waypoints *waypoints,
+                        const WaypointRendererSettings &waypoint_settings,
                         const MapLook &look) noexcept
 {
   const GlideConeSettings &gc = settings.glide_cone;
   const auto mode = gc.mode;
 
-  const std::size_t signature = SettingsSignature(gc);
+  std::size_t signature = SettingsSignature(gc);
+  if (mode == GlideConeSettings::Mode::COMBINED)
+    signature = signature * 31 + WaypointDisplaySignature(waypoint_settings);
 
   if (mode == GlideConeSettings::Mode::OFF || terrain == nullptr ||
       !GlideConeCompute::Available()) {
@@ -299,10 +318,11 @@ GlideConeRenderer::Draw(Canvas &canvas, const WindowProjection &projection,
     if (mode == GlideConeSettings::Mode::COMBINED && seeds.empty() &&
         waypoints != nullptr) {
       waypoints->VisitWithinRange(center, radius_m,
-                                  [&seeds](const WaypointPtr &wp){
-        if (wp->IsLandable())
-          seeds.push_back(wp->location);
-      });
+        [&seeds, &waypoint_settings](const WaypointPtr &wp) {
+          if (wp->IsLandable() &&
+              waypoint_settings.IsWaypointDisplayed(*wp))
+            seeds.push_back(wp->location);
+        });
     }
 
     have_field = !seeds.empty() &&
@@ -325,17 +345,11 @@ GlideConeRenderer::Draw(Canvas &canvas, const WindowProjection &projection,
 
   /* publish the required altitude at the aircraft for the InfoBox */
   {
-    int ax, ay;
-    if (field.GeoToCell(aircraft, ax, ay)) {
-      const std::size_t index = std::size_t(ay) * field.result.width + ax;
-      const float required = field.result.altitudes[index];
-      if (required < field.max_alt)
-        GlideConeStatus::Set({true, required});
-      else
-        GlideConeStatus::SetInvalid();
-    } else {
+    const auto required = field.RequiredAltitude(aircraft);
+    if (required)
+      GlideConeStatus::Set({true, *required});
+    else
       GlideConeStatus::SetInvalid();
-    }
   }
 
   /* altitude contour lines of the reachable area */
@@ -433,16 +447,54 @@ GlideConeRenderer::Draw(Canvas &canvas, const WindowProjection &projection,
     computed_contours = false;
   }
 
-  const std::vector<GeoPoint> path = field.Trace(aircraft);
-  if (path.size() < 2)
+  const std::vector<GlideConeField::TraceCell> cells = field.Trace(aircraft);
+  if (cells.size() < 2)
     return;
 
-  std::vector<BulkPixelPoint> points(path.size());
-  std::transform(path.begin(), path.end(), points.begin(),
-                 [&projection](const GeoPoint &p) {
-                   return projection.GeoToScreen(p);
-                 });
+  /* group consecutive same-style hops; dashed downhill-ground uses
+     DrawLine because OpenGL DrawPolyline ignores pen dash style */
+  std::vector<BulkPixelPoint> run;
+  bool run_ground = false;
+  const auto flush = [&]() {
+    if (run.size() < 2)
+      return;
+    if (run_ground) {
+      canvas.Select(look.glide_cone_ground_pen);
+      for (std::size_t i = 1; i < run.size(); ++i)
+        canvas.DrawLine(run[i - 1], run[i]);
+    } else {
+      canvas.Select(look.glide_cone_pen);
+      canvas.DrawPolyline(run.data(), unsigned(run.size()));
+    }
+  };
 
-  canvas.Select(look.glide_cone_pen);
-  canvas.DrawPolyline(points.data(), unsigned(points.size()));
+  for (std::size_t i = 1; i < cells.size(); ++i) {
+    const auto &from = cells[i - 1];
+    const auto &to = cells[i];
+    const bool ground = field.IsDownhillGroundSegment(from.x, from.y,
+                                                      to.x, to.y);
+    const BulkPixelPoint from_pt = projection.GeoToScreen(
+      field.CellToGeo(from.x, from.y));
+    const BulkPixelPoint to_pt = projection.GeoToScreen(
+      field.CellToGeo(to.x, to.y));
+
+    if (run.empty()) {
+      run_ground = ground;
+      run.push_back(from_pt);
+      run.push_back(to_pt);
+      continue;
+    }
+
+    if (ground == run_ground) {
+      run.push_back(to_pt);
+      continue;
+    }
+
+    flush();
+    run.clear();
+    run_ground = ground;
+    run.push_back(from_pt);
+    run.push_back(to_pt);
+  }
+  flush();
 }
